@@ -9,11 +9,14 @@ const CustomCalendar = ({
     minDate = null,
     maxDate = null,
     className = "",
-    showTime = false 
+    showTime = false,
+    allowManualInput = true 
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedTime, setSelectedTime] = useState({ hours: '12', minutes: '00', period: 'AM' });
+    const [inputValue, setInputValue] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
     const calendarRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -37,9 +40,10 @@ const CustomCalendar = ({
     }, []);
 
     useEffect(() => {
-        if (value) {
+        if (value && !isTyping) {
             const date = new Date(value);
             setCurrentMonth(new Date(date.getFullYear(), date.getMonth()));
+            setInputValue(formatDisplayValue(date));
             if (showTime) {
                 const hours = date.getHours();
                 const minutes = date.getMinutes();
@@ -51,8 +55,10 @@ const CustomCalendar = ({
                     period
                 });
             }
+        } else if (!value && !isTyping) {
+            setInputValue('');
         }
-    }, [value, showTime]);
+    }, [value, showTime, isTyping]);
 
     const getDaysInMonth = (date) => {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -87,7 +93,8 @@ const CustomCalendar = ({
     const handleDateSelect = (date) => {
         if (isDateDisabled(date)) return;
         
-        let finalDate = new Date(date);
+        // Create a new date at noon to avoid timezone issues
+        let finalDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
         
         if (showTime) {
             const hours24 = selectedTime.period === 'PM' && selectedTime.hours !== '12' 
@@ -96,10 +103,12 @@ const CustomCalendar = ({
                 ? 0 
                 : parseInt(selectedTime.hours);
             
-            finalDate.setHours(hours24, parseInt(selectedTime.minutes));
+            finalDate.setHours(hours24, parseInt(selectedTime.minutes), 0, 0);
         }
         
-        onChange(finalDate);
+        onChange(finalDate); // Pass Date object
+        setIsTyping(false);
+        setInputValue(formatDisplayValue(finalDate));
         if (!showTime) {
             setIsOpen(false);
         }
@@ -136,12 +145,12 @@ const CustomCalendar = ({
         handleDateSelect(today);
     };
 
-    const formatDisplayValue = () => {
-        if (!value) return '';
-        const date = new Date(value);
+    const formatDisplayValue = (dateValue = null) => {
+        const dateToFormat = dateValue || (value ? new Date(value) : null);
+        if (!dateToFormat) return '';
         
         if (showTime) {
-            return date.toLocaleString('en-US', {
+            return dateToFormat.toLocaleString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
@@ -151,11 +160,160 @@ const CustomCalendar = ({
             });
         }
         
-        return date.toLocaleDateString('en-US', {
+        return dateToFormat.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    const parseInputValue = (input) => {
+        // Try different date formats
+        const formats = [
+            /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // MM/DD/YYYY or M/D/YYYY
+            /^(\d{1,2})-(\d{1,2})-(\d{4})$/, // MM-DD-YYYY or M-D-YYYY
+            /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/, // YYYY/MM/DD or YYYY/M/D
+            /^(\d{4})-(\d{1,2})-(\d{1,2})$/, // YYYY-MM-DD or YYYY-M-D
+        ];
+
+        for (let i = 0; i < formats.length; i++) {
+            const match = input.match(formats[i]);
+            if (match) {
+                let year, month, day;
+                if (i < 2) {
+                    // MM/DD/YYYY or MM-DD-YYYY format
+                    month = parseInt(match[1], 10) - 1; // JavaScript months are 0-based
+                    day = parseInt(match[2], 10);
+                    year = parseInt(match[3], 10);
+                } else {
+                    // YYYY/MM/DD or YYYY-MM-DD format
+                    year = parseInt(match[1], 10);
+                    month = parseInt(match[2], 10) - 1; // JavaScript months are 0-based
+                    day = parseInt(match[3], 10);
+                }
+
+                // Create date at noon to avoid timezone issues
+                const date = new Date(year, month, day, 12, 0, 0, 0);
+                // Validate the date
+                if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+                    return date;
+                }
+            }
+        }
+
+        // Try parsing with Date constructor as fallback
+        const date = new Date(input);
+        if (!isNaN(date.getTime())) {
+            // Adjust to noon to avoid timezone issues
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
+        }
+        return null;
+    };
+
+    const combineDateTime = (date) => {
+        if (!showTime) return date;
+        
+        const hours = selectedTime.period === 'PM' && selectedTime.hours !== '12' 
+            ? parseInt(selectedTime.hours, 10) + 12 
+            : selectedTime.period === 'AM' && selectedTime.hours === '12'
+            ? 0 
+            : parseInt(selectedTime.hours, 10);
+        
+        const minutes = parseInt(selectedTime.minutes, 10);
+        
+        const newDate = new Date(date);
+        newDate.setHours(hours, minutes, 0, 0);
+        return newDate;
+    };
+
+    const handleInputChange = (e) => {
+        const newValue = e.target.value;
+        setInputValue(newValue);
+        setIsTyping(true);
+
+        // Try to parse the date as user types (only when input looks complete)
+        if (newValue.trim()) {
+            // Only attempt parsing when we have enough characters for a complete date
+            if (newValue.length >= 8 && newValue.match(/^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$|^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/)) {
+                const parsedDate = parseInputValue(newValue.trim());
+                if (parsedDate && !isDateDisabled(parsedDate)) {
+                    // Valid date, update the value - pass Date object
+                    const finalDate = showTime ? combineDateTime(parsedDate) : parsedDate;
+                    onChange(finalDate);
+                    setCurrentMonth(new Date(parsedDate.getFullYear(), parsedDate.getMonth()));
+                }
+            }
+        } else {
+            // Empty input, clear the value
+            onChange(null);
+        }
+    };
+
+    const handleInputBlur = () => {
+        setIsTyping(false);
+        
+        // Try to parse and validate the final input
+        if (inputValue.trim()) {
+            const parsedDate = parseInputValue(inputValue.trim());
+            if (parsedDate && !isDateDisabled(parsedDate)) {
+                // Valid date, make sure it's properly set
+                const finalDate = showTime ? combineDateTime(parsedDate) : parsedDate;
+                onChange(finalDate); // Pass Date object
+                setCurrentMonth(new Date(parsedDate.getFullYear(), parsedDate.getMonth()));
+                setInputValue(formatDisplayValue(finalDate));
+            } else {
+                // Invalid date, revert to previous value or clear
+                if (value) {
+                    setInputValue(formatDisplayValue());
+                } else {
+                    setInputValue('');
+                    onChange(null);
+                }
+            }
+        } else {
+            // Empty input
+            onChange(null);
+        }
+    };
+
+    const handleInputKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            setIsOpen(false);
+            setIsTyping(false);
+            
+            // Validate and set the final value
+            if (inputValue.trim()) {
+                const parsedDate = parseInputValue(inputValue.trim());
+                if (parsedDate && !isDateDisabled(parsedDate)) {
+                    // Valid date, make sure it's properly set
+                    const finalDate = showTime ? combineDateTime(parsedDate) : parsedDate;
+                    onChange(finalDate); // Pass Date object
+                    setCurrentMonth(new Date(parsedDate.getFullYear(), parsedDate.getMonth()));
+                    setInputValue(formatDisplayValue(finalDate));
+                } else {
+                    // Invalid date, revert to previous value or clear
+                    if (value) {
+                        setInputValue(formatDisplayValue());
+                    } else {
+                        setInputValue('');
+                        onChange(null);
+                    }
+                }
+            } else {
+                // Empty input
+                onChange(null);
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            setIsOpen(false);
+            if (value) {
+                setInputValue(formatDisplayValue());
+            } else {
+                setInputValue('');
+            }
+            setIsTyping(false);
+        }
     };
 
     const renderCalendarDays = () => {
@@ -224,15 +382,39 @@ const CustomCalendar = ({
 
     return (
         <div className={`custom-calendar-container ${className}`}>
-            <div 
-                ref={inputRef}
-                className={`custom-calendar-input ${isOpen ? 'calendar-input-focused' : ''} ${disabled ? 'calendar-input-disabled' : ''}`}
-                onClick={() => !disabled && setIsOpen(!isOpen)}
-            >
-                <span className={value ? 'calendar-input-value' : 'calendar-input-placeholder'}>
-                    {value ? formatDisplayValue() : placeholder}
-                </span>
-                <CalendarIcon size={18} className="calendar-input-icon" />
+            <div className={`custom-calendar-input ${isOpen ? 'calendar-input-focused' : ''} ${disabled ? 'calendar-input-disabled' : ''}`}>
+                {allowManualInput ? (
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={inputValue}
+                        onChange={handleInputChange}
+                        onBlur={handleInputBlur}
+                        onKeyDown={handleInputKeyDown}
+                        onFocus={() => setIsTyping(true)}
+                        placeholder={placeholder}
+                        disabled={disabled}
+                        className="calendar-text-input"
+                    />
+                ) : (
+                    <div 
+                        ref={inputRef}
+                        onClick={() => !disabled && setIsOpen(!isOpen)}
+                        className="calendar-display-input"
+                    >
+                        <span className={value ? 'calendar-input-value' : 'calendar-input-placeholder'}>
+                            {value ? formatDisplayValue() : placeholder}
+                        </span>
+                    </div>
+                )}
+                <button
+                    type="button"
+                    onClick={() => !disabled && setIsOpen(!isOpen)}
+                    className="calendar-toggle-button"
+                    disabled={disabled}
+                >
+                    <CalendarIcon size={18} className="calendar-input-icon" />
+                </button>
             </div>
 
             {isOpen && (
