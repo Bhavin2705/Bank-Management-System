@@ -1,5 +1,6 @@
 import { Calendar, Plus, Repeat, Trash2, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { useNotification } from '../components/NotificationProvider';
 import { getNonAdminUsers } from '../utils/auth';
 
@@ -274,24 +275,21 @@ const RecurringPayments = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">Next Payment Date</label>
-              <input
-                type="date"
-                name="nextPaymentDate"
-                className="form-input"
-                value={formData.nextPaymentDate}
-                onChange={(e) => setFormData({ ...formData, nextPaymentDate: e.target.value })}
-                required
+              <CustomCalendar
+                value={formData.nextPaymentDate ? new Date(formData.nextPaymentDate) : null}
+                onChange={(date) => setFormData({ ...formData, nextPaymentDate: date ? date.toISOString().split('T')[0] : '' })}
+                placeholder="Select next payment date"
+                minDate={new Date()}
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">End Date (Optional)</label>
-              <input
-                type="date"
-                name="endDate"
-                className="form-input"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              <CustomCalendar
+                value={formData.endDate ? new Date(formData.endDate) : null}
+                onChange={(date) => setFormData({ ...formData, endDate: date ? date.toISOString().split('T')[0] : '' })}
+                placeholder="Select end date"
+                minDate={formData.nextPaymentDate ? new Date(formData.nextPaymentDate) : new Date()}
               />
             </div>
 

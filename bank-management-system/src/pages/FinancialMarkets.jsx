@@ -20,13 +20,6 @@ const FinancialMarkets = () => {
         { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock' }
     ];
 
-    useEffect(() => {
-        fetchMarketData();
-        // Refresh data every 5 minutes
-        const interval = setInterval(fetchMarketData, 5 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [fetchMarketData]);
-
     const fetchMarketData = useCallback(async () => {
         try {
             setLoading(true);
@@ -97,6 +90,13 @@ const FinancialMarkets = () => {
             setLoading(false);
         }
     }, []);
+
+    useEffect(() => {
+        fetchMarketData();
+        // Refresh data every 5 minutes
+        const interval = setInterval(fetchMarketData, 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [fetchMarketData]);
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-US', {

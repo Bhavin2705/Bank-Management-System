@@ -1,5 +1,6 @@
 import { Bell, Building2, Calendar, Eye, EyeOff, Lock, Mail, MapPin, Phone, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { api } from '../utils/api';
 
 const Settings = ({ user, onUserUpdate }) => {
@@ -322,23 +323,12 @@ const Settings = ({ user, onUserUpdate }) => {
 
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="date"
-                      name="dateOfBirth"
-                      className="form-input"
-                      value={profileData.dateOfBirth}
-                      onChange={handleProfileChange}
-                      style={{ paddingRight: '40px' }}
-                    />
-                    <Calendar size={18} style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--text-secondary)'
-                    }} />
-                  </div>
+                  <CustomCalendar
+                    value={profileData.dateOfBirth ? new Date(profileData.dateOfBirth) : null}
+                    onChange={(date) => setProfileData({ ...profileData, dateOfBirth: date ? date.toISOString().split('T')[0] : '' })}
+                    placeholder="Select date of birth"
+                    maxDate={new Date()}
+                  />
                 </div>
 
                 <div className="form-group">

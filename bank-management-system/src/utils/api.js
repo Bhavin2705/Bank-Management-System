@@ -7,17 +7,20 @@ const getAuthToken = () => {
 };
 
 // Helper function to handle API responses
-const handleResponse = async (response) => {
+const handleResponse = async (response, isLoginRequest = false) => {
     const data = await response.json();
 
     if (!response.ok) {
         // Handle unauthorized access
         if (response.status === 401) {
-            // Clear auth data but don't redirect - let React handle routing
-            localStorage.removeItem('bank_auth_token');
-            localStorage.removeItem('bank_auth_user');
-            // Instead of redirecting, throw error to be handled by components
-            throw new Error('Authentication required');
+            // Don't clear auth data for login failures - only for token authentication failures
+            if (!isLoginRequest) {
+                // Clear auth data but don't redirect - let React handle routing
+                localStorage.removeItem('bank_auth_token');
+                localStorage.removeItem('bank_auth_user');
+                // Instead of redirecting, throw error to be handled by components
+                throw new Error('Authentication required');
+            }
         }
 
         throw new Error(data.error || `Request failed with status ${response.status}`);
@@ -57,7 +60,9 @@ const apiRequest = async (endpoint, options = {}) => {
             timeoutPromise
         ]);
 
-        return await handleResponse(response);
+        // Check if this is a login request to handle 401 differently
+        const isLoginRequest = endpoint === '/auth/login';
+        return await handleResponse(response, isLoginRequest);
     } catch (error) {
         console.error('API Request Error:', error);
         throw error;
@@ -115,6 +120,16 @@ export const api = {
 
         refreshToken: () => apiRequest('/auth/refresh', {
             method: 'POST'
+        }),
+
+        forgotPassword: (emailData) => apiRequest('/auth/forgotpassword', {
+            method: 'POST',
+            body: JSON.stringify(emailData)
+        }),
+
+        resetPassword: (resetToken, passwordData) => apiRequest(`/auth/resetpassword/${resetToken}`, {
+            method: 'PUT',
+            body: JSON.stringify(passwordData)
         })
     },
 
@@ -181,7 +196,11 @@ export const api = {
         updateStatus: (id, statusData) => apiRequest(`/users/${id}/status`, {
             method: 'PUT',
             body: JSON.stringify(statusData)
-        })
+        }),
+
+        checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
+
+        checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`)
     }
 };
 

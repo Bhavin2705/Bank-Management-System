@@ -2,6 +2,9 @@ import { ArrowRight, Eye, EyeOff, Shield, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../utils/auth';
+import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
+import PasswordResetSuccess from './PasswordResetSuccess';
 
 const Login = ({ onLogin, switchToRegister }) => {
   const navigate = useNavigate();
@@ -13,6 +16,11 @@ const Login = ({ onLogin, switchToRegister }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetSuccess, setShowResetSuccess] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -46,6 +54,55 @@ const Login = ({ onLogin, switchToRegister }) => {
       [e.target.name]: e.target.value
     });
   };
+
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true);
+  };
+
+  const handleBackToLogin = () => {
+    setShowForgotPassword(false);
+    setShowResetPassword(false);
+    setShowResetSuccess(false);
+    setResetToken('');
+    setResetEmail('');
+  };
+
+  const handleResetTokenGenerated = (token, email) => {
+    setResetToken(token);
+    setResetEmail(email);
+    setShowForgotPassword(false);
+    setShowResetPassword(true);
+  };
+
+  const handleResetSuccess = () => {
+    setShowResetPassword(false);
+    setShowResetSuccess(true);
+  };
+
+  // Show different components based on state
+  if (showResetSuccess) {
+    return <PasswordResetSuccess onBackToLogin={handleBackToLogin} />;
+  }
+
+  if (showResetPassword) {
+    return (
+      <ResetPassword
+        resetToken={resetToken}
+        email={resetEmail}
+        onBack={handleBackToLogin}
+        onSuccess={handleResetSuccess}
+      />
+    );
+  }
+
+  if (showForgotPassword) {
+    return (
+      <ForgotPassword
+        onBack={handleBackToLogin}
+        onResetTokenGenerated={handleResetTokenGenerated}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -141,9 +198,13 @@ const Login = ({ onLogin, switchToRegister }) => {
                   </button>
                 </div>
                 <div className="mt-2 text-right">
-                  <a href="#" className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium"
+                  >
                     Forgot password?
-                  </a>
+                  </button>
                 </div>
               </div>
 

@@ -1,7 +1,8 @@
-import { Bot, Clock, Loader2, Mail, MapPin, MessageCircle, Phone, RefreshCw, Send, User } from 'lucide-react';
+import { Bot, Loader2, MessageCircle, RefreshCw, Send, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import io from 'socket.io-client';
 import { useNotification } from '../components/NotificationProvider';
-import { sendMessageToGemini } from '../utils/geminiService';
+import '../styles/Support.css';
 
 const Support = ({ user }) => {
   const { showError, showSuccess } = useNotification();
@@ -9,22 +10,90 @@ const Support = ({ user }) => {
     {
       id: 1,
       type: 'bot',
-      content: `Hello ${user?.name || 'there'}! 👋\n\nI'm your BankPro AI assistant. I'm here to help you with:\n\n• Account balance and transactions\n• Money transfers and payments\n• Card management and security\n• Loan and credit information\n• General banking questions\n\nHow can I assist you today?`,
-      timestamp: new Date()
-    }
+      content: `Hello ${user?.name || 'there'}! 👋\n\nWelcome to BankPro Support Chat. Our support team is here to help you with:\n\n• Account balance and transactions\n• Money transfers and payments\n• Card management and security\n• Loan and credit information\n\nPlease describe your issue and a support agent will assist you shortly.`,
+      timestamp: new Date(),
+    },
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-focus input when component mounts
+  useEffect(() => {
+    const token = localStorage.getItem('bank_auth_token');
+    if (!token) {
+      showError('Please login to use support chat');
+      return;
+    }
+
+    const newSocket = io('http://localhost:5000', {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true,
+    });
+
+    setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Connected to support chat');
+      setConnectionStatus('connected');
+      showSuccess('Connected to support chat');
+      newSocket.emit('join_support', { userId: user?._id, name: user?.name });
+    });
+
+    newSocket.on('support_message', (message) => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          type: 'bot',
+          content: message.content,
+          timestamp: new Date(message.timestamp),
+          isAutoResponse: message.isAutoResponse,
+          agentName: message.agentName,
+        },
+      ]);
+    });
+
+    newSocket.on('support_typing', (data) => {
+      setIsTyping(data.isTyping);
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      setConnectionStatus('error');
+      showError('Failed to connect to support chat. Please check if you are logged in.');
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('Disconnected from support chat:', reason);
+      setConnectionStatus('disconnected');
+      showError('Disconnected from support chat. Trying to reconnect...');
+    });
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [user, showError, showSuccess]);
+
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
   }, []);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
 
   const quickReplies = [
     'Check my balance',
@@ -34,112 +103,69 @@ const Support = ({ user }) => {
     'Security question',
     'Contact support',
     'Find a branch',
-    'Loan information'
+    'Loan information',
   ];
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || isTyping || isLoading) return;
+    if (!newMessage.trim() || isTyping || isLoading || connectionStatus !== 'connected' || !socket) return;
 
     const userMessage = {
       id: Date.now(),
       type: 'user',
       content: newMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    console.log('User message sent:', userMessage.content);
+
+    setMessages((prev) => [...prev, userMessage]);
     setNewMessage('');
-    setIsTyping(true);
     setIsLoading(true);
 
     try {
-      const userContext = {
+      socket.emit('user_message', {
+        content: userMessage.content,
+        userId: user?._id,
         name: user?.name,
-        hasAccount: !!user,
-        accountType: user?.accountType || 'savings'
-      };
-
-      const botResponse = await sendMessageToGemini(userMessage.content, userContext);
-
-      const botMessage = {
-        id: Date.now() + 1,
-        type: 'bot',
-        content: botResponse,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-
-    } catch (error) {
-      console.error('Chat error:', error);
-      showError('Failed to get response. Please try again.');
-
-      const errorMessage = {
-        id: Date.now() + 1,
-        type: 'bot',
-        content: 'I apologize, but I\'m having trouble connecting right now. Please try again or contact our support team at 1-800-BANK-HELP.',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
-      setIsLoading(false);
-      // Re-focus input after sending
+      });
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
         }
       }, 100);
+    } catch (error) {
+      console.error('Chat error:', error);
+      showError('Failed to send message. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleQuickReply = async (reply) => {
-    if (isTyping || isLoading) return;
+    if (isTyping || isLoading || connectionStatus !== 'connected' || !socket) return;
 
     const userMessage = {
       id: Date.now(),
       type: 'user',
       content: reply,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
+    console.log('User quick reply sent:', userMessage.content);
+
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
-      const userContext = {
+      socket.emit('user_message', {
+        content: reply,
+        userId: user?._id,
         name: user?.name,
-        hasAccount: !!user,
-        accountType: user?.accountType || 'savings'
-      };
-
-      const botResponse = await sendMessageToGemini(reply, userContext);
-
-      const botMessage = {
-        id: Date.now() + 1,
-        type: 'bot',
-        content: botResponse,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-
+      });
     } catch (error) {
       console.error('Quick reply error:', error);
-      showError('Failed to process your request. Please try again.');
-
-      const errorMessage = {
-        id: Date.now() + 1,
-        type: 'bot',
-        content: 'I apologize, but I\'m having trouble processing your request. Please try again or contact our support team.',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
+      showError('Failed to send message. Please try again.');
     } finally {
-      setIsTyping(false);
       setIsLoading(false);
     }
   };
@@ -156,261 +182,244 @@ const Support = ({ user }) => {
       {
         id: Date.now(),
         type: 'bot',
-        content: `Hello ${user?.name || 'there'}! 👋\n\nI'm your BankPro AI assistant. How can I help you today?`,
-        timestamp: new Date()
-      }
+        content: `Hello ${user?.name || 'there'}! 👋\n\nWelcome to BankPro Support Chat. How can I help you today?`,
+        timestamp: new Date(),
+      },
     ]);
     showSuccess('Chat cleared successfully!');
+  };
+
+  const reconnectSocket = () => {
+    if (socket) {
+      socket.disconnect();
+    }
+    setConnectionStatus('connecting');
+
+    setTimeout(() => {
+      const token = localStorage.getItem('bank_auth_token');
+      if (token) {
+        const newSocket = io('http://localhost:5000', {
+          auth: { token },
+          transports: ['websocket', 'polling'],
+          timeout: 20000,
+          forceNew: true,
+        });
+        setSocket(newSocket);
+
+        newSocket.on('connect', () => {
+          setConnectionStatus('connected');
+          showSuccess('Reconnected to support chat');
+          newSocket.emit('join_support', { userId: user?._id, name: user?.name });
+        });
+
+        newSocket.on('connect_error', () => {
+          setConnectionStatus('error');
+          showError('Failed to reconnect. Please try again.');
+        });
+      }
+    }, 1000);
   };
 
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   return (
-    <div className="support-container">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <MessageCircle size={28} style={{ color: '#667eea' }} />
-          AI Support Assistant
-        </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          Get instant help with your banking questions powered by advanced AI
-        </p>
-      </div>
+    <div className="support-page">
+      <div className="support-container">
+        <header className="support-header">
+          <h1>
+            <MessageCircle size={28} />
+            Support Chat
+          </h1>
+          <p>Get real-time help from our support team</p>
+        </header>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        {/* Chat Section */}
-        <div className="card chat-container">
-          {/* Chat Header */}
-          <div style={{
-            padding: '1rem 1.5rem',
-            borderBottom: '1px solid var(--border-color)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Bot size={20} />
-              </div>
-              <div>
-                <div style={{ fontWeight: '600', fontSize: '1rem' }}>BankPro Assistant</div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>
-                  {isTyping ? 'Typing...' : 'Online'}
+        <div className="dashboard-grid">
+          {/* Chat Section */}
+          <section className="card chat-container">
+            <div className="chat-header">
+              <div className="chat-header-info">
+                <div className="avatar">
+                  <Bot size={20} />
                 </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#28a745',
-                animation: 'pulse 2s infinite'
-              }}></div>
-              <button
-                onClick={clearChat}
-                style={{
-                  padding: '0.5rem',
-                  border: 'none',
-                  borderRadius: '6px',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                title="Clear chat"
-              >
-                <RefreshCw size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Messages Container */}
-          <div
-            ref={messagesContainerRef}
-            className="chat-messages"
-          >
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`message ${message.type}`}
-              >
-                <div className="message-content">
-                  <div className="message-header">
-                    {message.type === 'bot' ? (
-                      <Bot size={14} style={{ color: '#667eea' }} />
-                    ) : (
-                      <User size={14} />
-                    )}
-                    <span className="message-sender">
-                      {message.type === 'user' ? 'You' : 'Assistant'}
-                    </span>
-                    <span className="message-time">• {formatTime(message.timestamp)}</span>
-                  </div>
-                  <div className="message-text">
-                    {message.content}
+                <div>
+                  <div className="chat-header-title">BankPro Support</div>
+                  <div className="chat-header-status">
+                    {connectionStatus === 'connected'
+                      ? isTyping
+                        ? 'Typing...'
+                        : 'Online'
+                      : connectionStatus === 'connecting'
+                        ? 'Connecting...'
+                        : connectionStatus === 'error'
+                          ? 'Connection Failed'
+                          : 'Reconnecting...'}
                   </div>
                 </div>
               </div>
-            ))}
+              <div className="chat-header-actions">
+                <span
+                  className={`status-dot ${connectionStatus === 'connected'
+                    ? 'status-connected'
+                    : connectionStatus === 'connecting'
+                      ? 'status-connecting'
+                      : 'status-error'
+                    }`}
+                ></span>
+                <button
+                  onClick={clearChat}
+                  title="Clear chat"
+                  aria-label="Clear chat"
+                  className="action-btn"
+                >
+                  <RefreshCw size={16} />
+                </button>
+                {connectionStatus !== 'connected' && (
+                  <button
+                    onClick={reconnectSocket}
+                    title="Reconnect"
+                    aria-label="Reconnect to chat"
+                    className="action-btn"
+                  >
+                    🔄
+                  </button>
+                )}
+              </div>
+            </div>
 
-            {isTyping && (
-              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div className="chat-messages" ref={messagesContainerRef}>
+              {messages.map((message) => (
+                <div key={message.id} className={`message ${message.type}`}>
+                  <div className="message-content">
+                    <div className="message-header">
+                      {message.type === 'bot' ? (
+                        <Bot size={14} />
+                      ) : (
+                        <User size={14} />
+                      )}
+                      <span className="message-sender">
+                        {message.type === 'user'
+                          ? 'You'
+                          : message.agentName
+                            ? `${message.agentName} (Support)`
+                            : message.isAutoResponse
+                              ? 'BankPro Assistant'
+                              : 'Support'}
+                      </span>
+                      <span className="message-time">• {formatTime(message.timestamp)}</span>
+                    </div>
+                    <div className="message-text">{message.content}</div>
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
                 <div className="typing-indicator">
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                  <div className="dot"></div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Message Input */}
-          <div className="chat-input-container">
-            <div className="chat-input">
-              <textarea
-                ref={inputRef}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message... (Press Enter to send)"
-                disabled={isTyping || isLoading}
-                rows={1}
-              />
-              {newMessage.length > 0 && (
-                <div className="character-count">
-                  {newMessage.length}
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
                 </div>
               )}
-              <button
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isTyping || isLoading}
-                className="send-button"
-              >
-                {isLoading ? (
-                  <Loader2 size={18} className="rotating" />
-                ) : (
-                  <Send size={18} />
+            </div>
+
+            <div className="chat-input-container">
+              <div className="chat-input">
+                <textarea
+                  ref={inputRef}
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message... (Press Enter to send)"
+                  disabled={isTyping || isLoading || connectionStatus !== 'connected'}
+                  rows={1}
+                  aria-label="Type your message"
+                />
+                {newMessage.length > 0 && (
+                  <div className="character-count">{newMessage.length}</div>
                 )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Quick Actions */}
-          <div className="card">
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <MessageCircle size={18} style={{ color: '#667eea' }} />
-              Quick Help
-            </h3>
-            <div className="quick-replies">
-              {quickReplies.map((reply, index) => (
                 <button
-                  key={index}
-                  onClick={() => handleQuickReply(reply)}
-                  disabled={isTyping || isLoading}
-                  className="quick-reply-btn"
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || isTyping || isLoading || connectionStatus !== 'connected'}
+                  className="send-button"
+                  aria-label="Send message"
                 >
-                  {reply}
+                  {isLoading ? <Loader2 size={18} className="rotating" /> : <Send size={18} />}
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Contact Information */}
-          <div className="card">
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Phone size={18} style={{ color: '#667eea' }} />
-              Contact Support
-            </h3>
-            <div className="contact-info">
-              <div className="contact-item">
-                <Phone size={16} style={{ color: '#28a745' }} />
-                <div>
-                  <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>24/7 Support</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    1-800-BANK-HELP
+          {/* Sidebar section commented out to prevent rendering */}
+          {/*
+            <aside className="sidebar">
+              <div className="card">
+                <h3>
+                  <MessageCircle size={18} />
+                  Quick Help
+                </h3>
+                <div className="quick-replies">
+                  {quickReplies.map((reply, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickReply(reply)}
+                      disabled={isTyping || isLoading || connectionStatus !== 'connected'}
+                      className="quick-reply-btn"
+                      aria-label={`Send quick reply: ${reply}`}
+                    >
+                      {reply}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card">
+                <h3>
+                  <Phone size={18} />
+                  Contact Support
+                </h3>
+                <div className="contact-info">
+                  <div className="contact-item">
+                    <Phone size={16} />
+                    <div>
+                      <div>24/7 Support</div>
+                      <div>1-800-BANK-HELP</div>
+                    </div>
+                  </div>
+                  <div className="contact-item">
+                    <Mail size={16} />
+                    <div>
+                      <div>Email</div>
+                      <div>support@bankpro.com</div>
+                    </div>
+                  </div>
+                  <div className="contact-item">
+                    <MapPin size={16} />
+                    <div>
+                      <div>Branch Locator</div>
+                      <div>Find nearest branch</div>
+                    </div>
+                  </div>
+                  <div className="contact-item">
+                    <Clock size={16} />
+                    <div>
+                      <div>Business Hours</div>
+                      <div>Mon-Fri: 9AM-9PM EST</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="contact-item">
-                <Mail size={16} style={{ color: '#667eea' }} />
-                <div>
-                  <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>Email</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    support@bankpro.com
-                  </div>
-                </div>
+              <div className="card emergency-card">
+                <h3>🚨 Emergency</h3>
+                <p>For lost/stolen cards or suspected fraud:</p>
+                <div className="emergency-contact">1-800-555-1234</div>
+                <div className="emergency-info">Available 24/7 • Immediate Response</div>
               </div>
-
-              <div className="contact-item">
-                <MapPin size={16} style={{ color: '#ffc107' }} />
-                <div>
-                  <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>Branch Locator</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Find nearest branch
-                  </div>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <Clock size={16} style={{ color: '#17a2b8' }} />
-                <div>
-                  <div style={{ fontWeight: '500', fontSize: '0.9rem' }}>Business Hours</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Mon-Fri: 9AM-9PM EST
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Emergency Contact */}
-          <div className="card" style={{
-            border: '2px solid #dc3545',
-            background: 'linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%)'
-          }}>
-            <h3 style={{ marginBottom: '1rem', color: '#dc3545', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              🚨 Emergency
-            </h3>
-            <p style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
-              For lost/stolen cards or suspected fraud:
-            </p>
-            <div style={{
-              fontSize: '1.1rem',
-              fontWeight: '700',
-              color: '#dc3545',
-              textAlign: 'center',
-              padding: '0.5rem',
-              background: 'rgba(220, 53, 69, 0.1)',
-              borderRadius: '8px'
-            }}>
-              1-800-BANK-SECURE
-            </div>
-            <div style={{ fontSize: '0.8rem', color: '#dc3545', marginTop: '0.5rem', textAlign: 'center' }}>
-              Available 24/7 • Immediate Response
-            </div>
-          </div>
+            </aside>
+          */}
         </div>
       </div>
     </div>

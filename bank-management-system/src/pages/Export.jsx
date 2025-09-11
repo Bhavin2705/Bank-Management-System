@@ -1,5 +1,6 @@
 import { Download, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { getTransactions } from '../utils/transactions';
 
 const Export = ({ user }) => {
@@ -108,21 +109,21 @@ const Export = ({ user }) => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
           <div className="form-group">
             <label className="form-label">Start Date</label>
-            <input
-              type="date"
-              className="form-input"
-              value={dateRange.start}
-              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+            <CustomCalendar
+              value={dateRange.start ? new Date(dateRange.start) : null}
+              onChange={(date) => setDateRange({ ...dateRange, start: date ? date.toISOString().split('T')[0] : '' })}
+              placeholder="Select start date"
+              maxDate={dateRange.end ? new Date(dateRange.end) : null}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">End Date</label>
-            <input
-              type="date"
-              className="form-input"
-              value={dateRange.end}
-              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+            <CustomCalendar
+              value={dateRange.end ? new Date(dateRange.end) : null}
+              onChange={(date) => setDateRange({ ...dateRange, end: date ? date.toISOString().split('T')[0] : '' })}
+              placeholder="Select end date"
+              minDate={dateRange.start ? new Date(dateRange.start) : null}
             />
           </div>
 

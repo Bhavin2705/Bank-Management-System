@@ -8,7 +8,9 @@ const {
     getUserByAccountNumber,
     getBanks,
     updateUserRole,
-    updateUserStatus
+    updateUserStatus,
+    checkEmailExists,
+    checkPhoneExists
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
@@ -18,6 +20,12 @@ const router = express.Router();
 
 // Public route for banks list (must be before protect middleware)
 router.get('/banks', getBanks);
+
+// Public route to check if email exists
+router.get('/check-email', checkEmailExists);
+
+// Public route to check if phone exists
+router.get('/check-phone', checkPhoneExists);
 
 // All routes below require authentication
 router.use(protect);

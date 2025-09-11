@@ -25,6 +25,7 @@ export const login = async (identifier, password) => {
 
     return { success: false, error: 'Login failed' };
   } catch (error) {
+    // Return the actual error message from the API instead of generic message
     return { success: false, error: error.message };
   }
 };

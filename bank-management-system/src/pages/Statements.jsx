@@ -1,5 +1,6 @@
 import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import CustomCalendar from '../components/UI/CustomCalendar';
 
 const Statements = ({ user }) => {
   const [transactions, setTransactions] = useState([]);
@@ -203,21 +204,23 @@ const Statements = ({ user }) => {
             <Calendar size={16} />
             <span style={{ fontWeight: '500' }}>Date Range:</span>
           </div>
-          <input
-            type="date"
-            value={dateRange.start}
-            onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-            className="form-input"
-            style={{ width: 'auto', minWidth: '150px' }}
-          />
+          <div style={{ minWidth: '150px' }}>
+            <CustomCalendar
+              value={dateRange.start ? new Date(dateRange.start) : null}
+              onChange={(date) => setDateRange({ ...dateRange, start: date ? date.toISOString().split('T')[0] : '' })}
+              placeholder="Start date"
+              maxDate={dateRange.end ? new Date(dateRange.end) : null}
+            />
+          </div>
           <span>to</span>
-          <input
-            type="date"
-            value={dateRange.end}
-            onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-            className="form-input"
-            style={{ width: 'auto', minWidth: '150px' }}
-          />
+          <div style={{ minWidth: '150px' }}>
+            <CustomCalendar
+              value={dateRange.end ? new Date(dateRange.end) : null}
+              onChange={(date) => setDateRange({ ...dateRange, end: date ? date.toISOString().split('T')[0] : '' })}
+              placeholder="End date"
+              minDate={dateRange.start ? new Date(dateRange.start) : null}
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>

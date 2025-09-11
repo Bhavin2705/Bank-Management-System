@@ -370,6 +370,62 @@ const getBanks = async (req, res) => {
     }
 };
 
+// @desc    Check if email exists
+// @route   GET /api/users/check-email
+// @access  Public
+const checkEmailExists = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email query parameter is required'
+            });
+        }
+
+        const emailExists = await User.exists({ email });
+
+        res.status(200).json({
+            success: true,
+            exists: !!emailExists
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server error checking email'
+        });
+    }
+};
+
+// @desc    Check if phone exists
+// @route   GET /api/users/check-phone
+// @access  Public
+const checkPhoneExists = async (req, res) => {
+    try {
+        const { phone } = req.query;
+
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                error: 'Phone query parameter is required'
+            });
+        }
+
+        const phoneExists = await User.exists({ phone });
+
+        res.status(200).json({
+            success: true,
+            exists: !!phoneExists
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server error checking phone'
+        });
+    }
+};
+
 module.exports = {
     getUsers,
     getUser,
@@ -379,5 +435,7 @@ module.exports = {
     getUserByAccountNumber,
     getBanks,
     updateUserRole,
-    updateUserStatus
+    updateUserStatus,
+    checkEmailExists,
+    checkPhoneExists
 };

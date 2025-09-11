@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import Sidebar from './components/Layout/Sidebar';
 import { NotificationProvider } from './components/NotificationProvider';
 import AccountManagement from './pages/AccountManagement';
+import AdminSupport from './pages/AdminSupport';
 import Bills from './pages/Bills';
 import Budget from './pages/Budget';
 import Calculator from './pages/Calculator';
@@ -199,6 +200,7 @@ function App() {
           <Route path="/notifications" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Notifications user={user} /></main></div></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Settings user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Users /></main></div></ProtectedRoute>} />
+          <Route path="/admin-support" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><AdminSupport user={user} /></main></div></ProtectedRoute>} />
 
           <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
           <Route path="*" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />

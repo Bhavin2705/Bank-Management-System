@@ -31,16 +31,6 @@ const CurrencyExchange = () => {
         { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', icon: null }
     ];
 
-    useEffect(() => {
-        fetchExchangeRates();
-    }, [fetchExchangeRates]);
-
-    useEffect(() => {
-        if (Object.keys(exchangeRates).length > 0) {
-            performConversion();
-        }
-    }, [performConversion, exchangeRates]);
-
     const fetchExchangeRates = useCallback(async (isRefresh = false) => {
         try {
             if (isRefresh) {
@@ -130,12 +120,12 @@ const CurrencyExchange = () => {
             }
 
             // Only show error if it's not a refresh and we don't have existing data
-            if (!isRefresh || Object.keys(exchangeRates).length === 0) {
+            if (!isRefresh) {
                 setError(`Failed to load exchange rates: ${errorMessage}`);
             }
 
             // Fallback to mock data only if we don't have any existing rates
-            if (Object.keys(exchangeRates).length === 0) {
+            if (!isRefresh) {
                 const fallbackRates = {
                     USD: 1,
                     EUR: 0.85,
@@ -155,29 +145,32 @@ const CurrencyExchange = () => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [useLiveData, exchangeRates]);
+    }, [useLiveData]);
 
-    const performConversion = useCallback(() => {
-        if (!exchangeRates[conversion.fromCurrency] || !exchangeRates[conversion.toCurrency]) {
-            return;
+    useEffect(() => {
+        fetchExchangeRates();
+    }, [fetchExchangeRates]);
+
+    useEffect(() => {
+        // Perform conversion when exchange rates or conversion parameters change
+        if (Object.keys(exchangeRates).length > 0 && 
+            exchangeRates[conversion.fromCurrency] && 
+            exchangeRates[conversion.toCurrency]) {
+            
+            const amount = parseFloat(conversion.amount) || 0;
+            const amountInUSD = amount / exchangeRates[conversion.fromCurrency];
+            const convertedAmount = amountInUSD * exchangeRates[conversion.toCurrency];
+            const rate = exchangeRates[conversion.toCurrency] / exchangeRates[conversion.fromCurrency];
+
+            setResult({
+                originalAmount: amount,
+                convertedAmount: convertedAmount,
+                rate: rate,
+                fromCurrency: conversion.fromCurrency,
+                toCurrency: conversion.toCurrency
+            });
         }
-
-        const amount = parseFloat(conversion.amount) || 0;
-
-        // Convert to USD first, then to target currency
-        const amountInUSD = amount / exchangeRates[conversion.fromCurrency];
-        const convertedAmount = amountInUSD * exchangeRates[conversion.toCurrency];
-
-        const rate = exchangeRates[conversion.toCurrency] / exchangeRates[conversion.fromCurrency];
-
-        setResult({
-            originalAmount: amount,
-            convertedAmount: convertedAmount,
-            rate: rate,
-            fromCurrency: conversion.fromCurrency,
-            toCurrency: conversion.toCurrency
-        });
-    }, [exchangeRates, conversion]);
+    }, [exchangeRates, conversion.fromCurrency, conversion.toCurrency, conversion.amount]);
 
     const swapCurrencies = () => {
         setConversion({

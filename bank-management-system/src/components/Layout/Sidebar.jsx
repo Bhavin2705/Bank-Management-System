@@ -8,6 +8,7 @@ import {
   DollarSign,
   Download,
   FileText,
+  Headphones,
   Home,
   LogOut,
   MessageCircle,
@@ -65,6 +66,7 @@ const Sidebar = ({
 
   if (canAccessAdminFeatures(user)) {
     navItems.splice(2, 0, { id: 'users', label: 'Users', icon: Users, path: '/users' });
+    navItems.splice(13, 0, { id: 'admin-support', label: 'Admin Support', icon: Headphones, path: '/admin-support' });
   }
 
   return (

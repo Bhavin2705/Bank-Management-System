@@ -1,5 +1,6 @@
 import { Plus, Receipt } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { useNotification } from '../components/NotificationProvider';
 import { getCurrentUser, updateUserBalance } from '../utils/auth';
 import { addTransaction, getTransactions } from '../utils/transactions';
@@ -161,12 +162,11 @@ const Bills = ({ user, onUserUpdate }) => {
 
               <div className="form-group">
                 <label className="form-label">Due Date</label>
-                <input
-                  type="date"
-                  name="dueDate"
-                  className="form-input"
-                  value={formData.dueDate}
-                  onChange={handleChange}
+                <CustomCalendar
+                  value={formData.dueDate ? new Date(formData.dueDate) : null}
+                  onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : '' })}
+                  placeholder="Select due date"
+                  minDate={new Date()}
                 />
               </div>
             </div>

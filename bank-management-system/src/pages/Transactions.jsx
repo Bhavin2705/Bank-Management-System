@@ -1,5 +1,6 @@
 import { Activity, ArrowDownLeft, ArrowUpRight, Calendar, Download, FileText, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { useNotification } from '../components/NotificationProvider';
 import { generateAccountStatementPDF, generateMiniStatementPDF } from '../utils/pdfGenerator';
 import { addTransaction, getTransactions } from '../utils/transactions';
@@ -177,27 +178,27 @@ const Transactions = ({ user, onUserUpdate }) => {
           <div className="statement-period-selector">
             <div className="form-group">
               <label className="form-label">Start Date</label>
-              <input
-                type="date"
-                className="form-input"
-                value={statementPeriod.startDate.toISOString().split('T')[0]}
-                onChange={(e) => setStatementPeriod({
+              <CustomCalendar
+                value={statementPeriod.startDate}
+                onChange={(date) => setStatementPeriod({
                   ...statementPeriod,
-                  startDate: new Date(e.target.value)
+                  startDate: date || new Date()
                 })}
+                placeholder="Select start date"
+                maxDate={statementPeriod.endDate}
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">End Date</label>
-              <input
-                type="date"
-                className="form-input"
-                value={statementPeriod.endDate.toISOString().split('T')[0]}
-                onChange={(e) => setStatementPeriod({
+              <CustomCalendar
+                value={statementPeriod.endDate}
+                onChange={(date) => setStatementPeriod({
                   ...statementPeriod,
-                  endDate: new Date(e.target.value)
+                  endDate: date || new Date()
                 })}
+                placeholder="Select end date"
+                minDate={statementPeriod.startDate}
               />
             </div>
           </div>

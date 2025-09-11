@@ -1,0 +1,475 @@
+/* Support page specific styles - scoped to avoid conflicts */
+.support-page {
+    /* Use global CSS variables from index.css */
+    --primary-color: #667eea;
+    --success-color: var(--success);
+    --warning-color: #ffc107;
+    --error-color: var(--error);
+    --text-primary: var(--text-primary);
+    --text-secondary: var(--text-secondary);
+    --border-color: var(--border-color);
+    --background-dark: var(--sidebar-bg);
+    --background-card: var(--bg-secondary);
+    --emergency-bg: #fff5f5;
+    --card-text: var(--text-primary);
+}
+
+/* General container - scoped to support page */
+.support-page .support-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    color: var(--card-text);
+    text-align: left;
+}
+
+/* Header - scoped to support page */
+.support-page .support-header {
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.support-page .support-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--card-text);
+}
+
+.support-page .support-header p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Grid layout - scoped to support page */
+.support-page .dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    color: var(--card-text);
+}
+
+@media (max-width: 768px) {
+    .support-page .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Card styling - scoped to support page */
+.support-page .card {
+    background: var(--background-card);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px var(--shadow);
+    padding: 1.5rem;
+    color: var(--card-text);
+    text-align: left;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+/* Chat container - scoped to support page */
+.support-page .chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 70vh;
+    /* Adjusted for better visibility */
+    max-height: 70vh;
+}
+
+.support-page .chat-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.support-page .chat-header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.support-page .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.support-page .chat-header-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.support-page .chat-header-status {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.support-page .chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.support-page .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.support-page .status-connected {
+    background: var(--success-color);
+    animation: pulse 2s infinite;
+}
+
+.support-page .status-connecting {
+    background: var(--warning-color);
+}
+
+.support-page .status-error {
+    background: var(--error-color);
+}
+
+.support-page .action-btn {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.support-page .action-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Messages - scoped to support page */
+.support-page .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--background-card);
+    color: var(--card-text);
+}
+
+.support-page .message {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+.support-page .message.bot {
+    justify-content: flex-start;
+}
+
+.support-page .message.user {
+    justify-content: flex-end;
+}
+
+.support-page .message-content {
+    max-width: 70%;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    color: var(--card-text);
+    border: 1px solid var(--border-color);
+}
+
+.support-page .message.bot .message-content {
+    background: var(--bg-tertiary);
+}
+
+.support-page .message.user .message-content {
+    background: var(--bg-primary);
+    color: white;
+    border: none;
+}
+
+.support-page .message-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.support-page .message-sender {
+    color: var(--text-secondary);
+}
+
+.support-page .message.user .message-sender {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.support-page .message-time {
+    color: var(--text-secondary);
+}
+
+.support-page .message.user .message-time {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.support-page .message-text {
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    color: var(--card-text);
+}
+
+/* Typing indicator - scoped to support page */
+.support-page .typing-indicator {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.75rem 1rem;
+    justify-content: flex-start;
+}
+
+.support-page .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    animation: typing 1.2s infinite;
+}
+
+.support-page .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.support-page .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0% {
+        opacity: 0.3;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+
+    100% {
+        opacity: 0.3;
+        transform: translateY(0);
+    }
+}
+
+/* Chat input - scoped to support page */
+.support-page .chat-input-container {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--background-card);
+}
+
+.support-page .chat-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.support-page textarea {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    resize: none;
+    font-size: 0.9rem;
+    min-height: 40px;
+    max-height: 120px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    color: var(--card-text);
+}
+
+.support-page textarea:focus {
+    outline: none;
+    border-color: var(--text-accent);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.support-page textarea:disabled {
+    background: var(--bg-tertiary);
+    cursor: not-allowed;
+}
+
+.support-page .character-count {
+    position: absolute;
+    right: 60px;
+    bottom: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.support-page .send-button {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.support-page .send-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.support-page .send-button:disabled {
+    background: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.support-page .rotating {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Remove the conflicting sidebar rule completely and scope remaining styles */
+.support-page .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .support-page .sidebar {
+        margin-top: 1rem;
+    }
+}
+
+/* Quick replies and other elements - scoped to support page */
+.support-page .card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--card-text);
+}
+
+.support-page .quick-replies {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+}
+
+.support-page .quick-reply-btn {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--card-text);
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.support-page .quick-reply-btn:hover:not(:disabled) {
+    background: var(--text-accent);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.support-page .quick-reply-btn:disabled {
+    background: var(--bg-tertiary);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.support-page .contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.support-page .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.support-page .contact-item>div {
+    font-size: 0.9rem;
+    color: var(--card-text);
+}
+
+.support-page .contact-item>div>div:first-child {
+    font-weight: 500;
+    color: var(--card-text);
+}
+
+.support-page .contact-item>div>div:last-child {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.support-page .emergency-card {
+    border: 2px solid var(--error-color);
+    background: var(--bg-secondary);
+}
+
+.support-page .emergency-card h3 {
+    color: var(--error-color);
+}
+
+.support-page .emergency-card p {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    color: var(--card-text);
+}
+
+.support-page .emergency-contact {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--error-color);
+    padding: 0.5rem;
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 8px;
+    text-align: left;
+}
+
+.support-page .emergency-info {
+    font-size: 0.8rem;
+    color: var(--error-color);
+    text-align: left;
+    margin-top: 0.5rem;
+}

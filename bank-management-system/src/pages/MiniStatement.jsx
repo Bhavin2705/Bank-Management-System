@@ -1,5 +1,5 @@
 import { Download, FileText, Printer, Receipt, TrendingDown, TrendingUp } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const MiniStatement = ({ user }) => {
     const [transactions, setTransactions] = useState([]);
