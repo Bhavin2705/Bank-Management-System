@@ -1,7 +1,9 @@
 import { Eye, EyeOff, Key, Lock, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { useNotification } from '../components/NotificationProvider';
 
 const Security = ({ user, onUserUpdate }) => {
+  const { showSuccess, showError } = useNotification();
   const [activeTab, setActiveTab] = useState('password');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -31,12 +33,12 @@ const Security = ({ user, onUserUpdate }) => {
     setMessage('');
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError('New passwords do not match');
+      showError('New passwords do not match');
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      setError('Password must be at least 6 characters long');
+      showError('Password must be at least 6 characters long');
       return;
     }
 
@@ -49,7 +51,7 @@ const Security = ({ user, onUserUpdate }) => {
       users[userIndex].password = passwordForm.newPassword;
       localStorage.setItem('bank_users', JSON.stringify(users));
 
-      setMessage('Password updated successfully!');
+      showSuccess('Password updated successfully! 🔒');
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -64,19 +66,19 @@ const Security = ({ user, onUserUpdate }) => {
     setMessage('');
 
     if (pinForm.newPin.length !== 4 || !/^\d+$/.test(pinForm.newPin)) {
-      setError('PIN must be exactly 4 digits');
+      showError('PIN must be exactly 4 digits');
       return;
     }
 
     if (pinForm.newPin !== pinForm.confirmPin) {
-      setError('New PINs do not match');
+      showError('New PINs do not match');
       return;
     }
 
     // Store PIN in localStorage (in real app, this would be encrypted)
     localStorage.setItem(`user_pin_${user.id}`, pinForm.newPin);
 
-    setMessage('PIN updated successfully!');
+    showSuccess('PIN updated successfully! 🔑');
     setPinForm({
       currentPin: '',
       newPin: '',
@@ -90,12 +92,12 @@ const Security = ({ user, onUserUpdate }) => {
     setMessage('');
 
     if (!securityQuestions.question1 || !securityQuestions.answer1) {
-      setError('Please fill in at least one security question');
+      showError('Please fill in at least one security question');
       return;
     }
 
     localStorage.setItem(`security_questions_${user.id}`, JSON.stringify(securityQuestions));
-    setMessage('Security questions updated successfully!');
+    showSuccess('Security questions updated successfully! 🛡️');
   };
 
   const getLoginHistory = () => {

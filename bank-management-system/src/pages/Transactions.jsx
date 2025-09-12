@@ -1,7 +1,7 @@
 import { Activity, ArrowDownLeft, ArrowUpRight, Calendar, Download, FileText, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import CustomCalendar from '../components/UI/CustomCalendar';
 import { useNotification } from '../components/NotificationProvider';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { generateAccountStatementPDF, generateMiniStatementPDF } from '../utils/pdfGenerator';
 import { addTransaction, getTransactions } from '../utils/transactions';
 

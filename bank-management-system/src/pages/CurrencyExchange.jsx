@@ -153,10 +153,10 @@ const CurrencyExchange = () => {
 
     useEffect(() => {
         // Perform conversion when exchange rates or conversion parameters change
-        if (Object.keys(exchangeRates).length > 0 && 
-            exchangeRates[conversion.fromCurrency] && 
+        if (Object.keys(exchangeRates).length > 0 &&
+            exchangeRates[conversion.fromCurrency] &&
             exchangeRates[conversion.toCurrency]) {
-            
+
             const amount = parseFloat(conversion.amount) || 0;
             const amountInUSD = amount / exchangeRates[conversion.fromCurrency];
             const convertedAmount = amountInUSD * exchangeRates[conversion.toCurrency];

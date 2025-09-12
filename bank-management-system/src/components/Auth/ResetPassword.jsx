@@ -49,10 +49,10 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
     }
 
     try {
-      const response = await api.auth.resetPassword(resetToken, { 
-        password: formData.password 
+      const response = await api.auth.resetPassword(resetToken, {
+        password: formData.password
       });
-      
+
       if (response.success) {
         onSuccess();
       } else {
@@ -94,7 +94,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Left side - Illustration/Info */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+      <div className="hidden-mobile lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold">BankPro</h1>
         </div>
@@ -123,9 +123,9 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
       </div>
 
       {/* Right side - Reset Password Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
+      <div className="full-width-mobile flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="text-center mb-2 lg:hidden">
+          <div className="text-center mb-2 mobile-header">
             <div className="flex items-center justify-center space-x-2 mb-2">
               <h1 className="text-2xl font-bold text-gray-800">BankPro</h1>
             </div>
@@ -181,10 +181,10 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
                       <span className="text-xs text-gray-500">Password strength:</span>
                       <span
                         className={`text-xs font-medium ${passwordStrength <= 2
-                            ? 'text-red-500'
-                            : passwordStrength <= 3
-                              ? 'text-yellow-500'
-                              : 'text-green-500'
+                          ? 'text-red-500'
+                          : passwordStrength <= 3
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
                           }`}
                       >
                         {getPasswordStrengthText()}

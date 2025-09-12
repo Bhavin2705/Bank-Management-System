@@ -48,7 +48,7 @@ const Navbar = ({ user, onLogout }) => {
               <button
                 onClick={onLogout}
                 className="btn btn-secondary"
-                style={{ padding: '8px 16px', color: 'black' }}
+                style={{ padding: '8px 16px', color: 'white' }}
               >
                 <LogOut size={16} />
                 Logout

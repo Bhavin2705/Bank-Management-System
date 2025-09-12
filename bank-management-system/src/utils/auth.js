@@ -25,7 +25,36 @@ export const login = async (identifier, password) => {
 
     return { success: false, error: 'Login failed' };
   } catch (error) {
+    // Handle multiple accounts case
+    if (error.status === 300 && error.data && error.data.needsAccountSelection) {
+      return {
+        success: false,
+        error: error.data.error,
+        needsAccountSelection: true,
+        accounts: error.data.accounts,
+        message: error.data.message
+      };
+    }
+
     // Return the actual error message from the API instead of generic message
+    return { success: false, error: error.message };
+  }
+};
+
+export const loginWithAccount = async (identifier, password, accountId) => {
+  try {
+    const response = await api.auth.loginWithAccount({ identifier, password, accountId });
+
+    if (response.success) {
+      // Store user data and token
+      localStorage.setItem(AUTH_KEY, JSON.stringify(response.data.user));
+      localStorage.setItem(TOKEN_KEY, response.data.token);
+
+      return { success: true, user: response.data.user };
+    }
+
+    return { success: false, error: 'Login failed' };
+  } catch (error) {
     return { success: false, error: error.message };
   }
 };
@@ -108,25 +137,23 @@ export const getAllUsers = async () => {
     const response = await api.users.getAll();
     return response.success ? response.data : [];
   } catch (error) {
-    console.error('Error fetching users:', error);
-    // Return empty array for unauthorized access (403) - this is expected for non-admin users
+    // Silently handle authorization errors - this is expected for non-admin users
     if (error.message && error.message.includes('not authorized')) {
       return [];
     }
+    console.error('Error fetching users:', error);
     return [];
   }
 };
 
 export const getNonAdminUsers = async () => {
   try {
-    const users = await getAllUsers();
-    // Check if users is an array before filtering
-    if (Array.isArray(users)) {
-      return users.filter(u => u.role !== 'admin');
-    }
-    return [];
+    // Use the new transfer recipients endpoint instead of the admin-only users endpoint
+    const response = await api.users.getTransferRecipients();
+    return response.success ? response.data : [];
   } catch (error) {
-    console.error('Error fetching non-admin users:', error);
+    console.error('Error fetching transfer recipients:', error);
+    // Return empty array on error to prevent UI crashes
     return [];
   }
 };

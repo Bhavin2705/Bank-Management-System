@@ -11,6 +11,7 @@ import {
   Headphones,
   Home,
   LogOut,
+  MapPin,
   MessageCircle,
   Moon,
   PieChart,
@@ -52,6 +53,7 @@ const Sidebar = ({
     { id: 'mini-statement', label: 'Mini Statement', icon: Receipt, path: '/mini-statement' },
     { id: 'currency-exchange', label: 'Currency Exchange', icon: DollarSign, path: '/currency-exchange' },
     { id: 'financial-markets', label: 'Financial Markets', icon: BarChart3, path: '/financial-markets' },
+    { id: 'branch-locator', label: 'Branch Locator', icon: MapPin, path: '/branch-locator' },
     { id: 'support', label: 'Support', icon: MessageCircle, path: '/support' },
     { id: 'bills', label: 'Bill Payments', icon: FileText, path: '/bills' },
     { id: 'goals', label: 'Savings Goals', icon: Target, path: '/goals' },
@@ -116,7 +118,7 @@ const Sidebar = ({
           <button
             onClick={onLogout}
             className="sidebar-nav-link"
-            style={{ width: '100%', marginTop: '0.5rem', color: 'black' }}
+            style={{ width: '100%', marginTop: '0.5rem', color: 'white' }}
           >
             <LogOut size={20} />
             {!isCollapsed && <span>Logout</span>}

@@ -1,7 +1,7 @@
 import { Plus, Receipt } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import CustomCalendar from '../components/UI/CustomCalendar';
 import { useNotification } from '../components/NotificationProvider';
+import CustomCalendar from '../components/UI/CustomCalendar';
 import { getCurrentUser, updateUserBalance } from '../utils/auth';
 import { addTransaction, getTransactions } from '../utils/transactions';
 

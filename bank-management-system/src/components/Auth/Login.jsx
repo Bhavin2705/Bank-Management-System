@@ -1,10 +1,10 @@
-import { ArrowRight, Eye, EyeOff, Shield, Smartphone } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Shield, Smartphone, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../utils/auth';
+import { login, loginWithAccount } from '../../utils/auth';
 import ForgotPassword from './ForgotPassword';
-import ResetPassword from './ResetPassword';
 import PasswordResetSuccess from './PasswordResetSuccess';
+import ResetPassword from './ResetPassword';
 
 const Login = ({ onLogin, switchToRegister }) => {
   const navigate = useNavigate();
@@ -21,11 +21,22 @@ const Login = ({ onLogin, switchToRegister }) => {
   const [showResetSuccess, setShowResetSuccess] = useState(false);
   const [resetToken, setResetToken] = useState('');
   const [resetEmail, setResetEmail] = useState('');
+  const [showAccountSelection, setShowAccountSelection] = useState(false);
+  const [availableAccounts, setAvailableAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,6 +49,11 @@ const Login = ({ onLogin, switchToRegister }) => {
       if (result.success) {
         onLogin(result.user);
         navigate('/dashboard', { replace: true });
+      } else if (result.needsAccountSelection) {
+        // Multiple accounts found - show selection screen
+        setAvailableAccounts(result.accounts);
+        setShowAccountSelection(true);
+        setError(''); // Clear any previous errors
       } else {
         setError(result.error || 'Invalid email or password');
       }
@@ -48,23 +64,40 @@ const Login = ({ onLogin, switchToRegister }) => {
     setLoading(false);
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleAccountSelection = async (accountId) => {
+    setLoading(true);
+    setError('');
 
-  const handleForgotPassword = () => {
-    setShowForgotPassword(true);
+    try {
+      const result = await loginWithAccount(formData.email, formData.password, accountId);
+
+      if (result.success) {
+        onLogin(result.user);
+        navigate('/dashboard', { replace: true });
+      } else {
+        setError(result.error || 'Login failed');
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
+    }
+
+    setLoading(false);
   };
 
   const handleBackToLogin = () => {
+    setShowAccountSelection(false);
+    setAvailableAccounts([]);
+    setSelectedAccountId('');
     setShowForgotPassword(false);
     setShowResetPassword(false);
     setShowResetSuccess(false);
     setResetToken('');
     setResetEmail('');
+    setError('');
+  };
+
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true);
   };
 
   const handleResetTokenGenerated = (token, email) => {
@@ -82,6 +115,60 @@ const Login = ({ onLogin, switchToRegister }) => {
   // Show different components based on state
   if (showResetSuccess) {
     return <PasswordResetSuccess onBackToLogin={handleBackToLogin} />;
+  }
+
+  if (showAccountSelection) {
+    return (
+      <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="w-full max-w-md">
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Select Account</h2>
+                <p className="text-gray-600">Multiple accounts found for this phone number. Please select which account to login to.</p>
+              </div>
+
+              {error && (
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="space-y-3 mb-6">
+                {availableAccounts.map((account) => (
+                  <div
+                    key={account._id}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-colors"
+                    onClick={() => handleAccountSelection(account._id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{account.name}</h3>
+                        <p className="text-sm text-gray-600">Account: {account.accountNumber}</p>
+                        <p className="text-sm text-gray-600">Bank: {account.bankDetails?.bankName || 'BankPro'}</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleBackToLogin}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors mb-4"
+                disabled={loading}
+              >
+                Back to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (showResetPassword) {

@@ -119,6 +119,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -340,12 +341,12 @@
         max-height: 90vh;
         overflow-y: auto;
     }
-    
+
     .calendar-day {
         min-height: 32px;
         font-size: 0.8rem;
     }
-    
+
     .calendar-weekday {
         font-size: 0.7rem;
         padding: 0.25rem;
@@ -366,6 +367,10 @@
     background: var(--sidebar-hover);
 }
 
+[data-theme="dark"] .calendar-text-input {
+    color: var(--text-primary) !important;
+}
+
 /* Animation for month transitions */
 .calendar-days {
     animation: slideIn 0.2s ease-out;
@@ -376,6 +381,7 @@
         opacity: 0;
         transform: translateX(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);

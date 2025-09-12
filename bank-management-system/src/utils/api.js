@@ -102,6 +102,11 @@ export const api = {
             body: JSON.stringify(credentials)
         }),
 
+        loginWithAccount: (credentials) => apiRequest('/auth/login-account', {
+            method: 'POST',
+            body: JSON.stringify(credentials)
+        }),
+
         logout: () => apiRequest('/auth/logout', {
             method: 'POST'
         }),
@@ -172,6 +177,9 @@ export const api = {
             const queryString = new URLSearchParams(params).toString();
             return apiRequest(`/users?${queryString}`);
         },
+
+        // Get transfer recipients (authenticated users only)
+        getTransferRecipients: () => apiRequest('/users/transfer-recipients'),
 
         getById: (id) => apiRequest(`/users/${id}`),
 

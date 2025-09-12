@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
+import ForgotPassword from './components/Auth/ForgotPassword';
 import Login from './components/Auth/Login';
+import PasswordResetSuccess from './components/Auth/PasswordResetSuccess';
 import Register from './components/Auth/Register';
+import ResetPassword from './components/Auth/ResetPassword';
 import Dashboard from './components/Dashboard/Dashboard';
 import Sidebar from './components/Layout/Sidebar';
 import { NotificationProvider } from './components/NotificationProvider';
 import AccountManagement from './pages/AccountManagement';
 import AdminSupport from './pages/AdminSupport';
 import Bills from './pages/Bills';
+import BranchLocator from './pages/BranchLocator';
 import Budget from './pages/Budget';
 import Calculator from './pages/Calculator';
 import Cards from './pages/Cards';
@@ -145,21 +149,21 @@ function App() {
 
   const ErrorDisplay = ({ error, onRetry }) => (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '2rem', textAlign: 'center' }}>
-      <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: '8px', padding: '2rem', maxWidth: '500px', marginBottom: '1rem' }}>
-        <h2 style={{ color: '#c33', marginBottom: '1rem' }}>⚠️ Connection Error</h2>
-        <p style={{ color: '#666', marginBottom: '1rem' }}>{error}</p>
-        <button onClick={onRetry} style={{ background: '#667eea', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem', marginRight: '0.5rem' }}>Retry Connection</button>
-        <button onClick={() => window.location.reload()} style={{ background: '#28a745', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem' }}>Refresh Page</button>
+      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '2rem', maxWidth: '500px', marginBottom: '1rem' }}>
+        <h2 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>⚠️ Connection Error</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{error}</p>
+        <button onClick={onRetry} style={{ background: 'var(--text-accent)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem', marginRight: '0.5rem' }}>Retry Connection</button>
+        <button onClick={() => window.location.reload()} style={{ background: 'var(--text-accent)', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem' }}>Refresh Page</button>
       </div>
     </div>
   );
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem', color: '#667eea' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem', color: 'var(--text-accent)' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ marginBottom: '1rem' }}>🔄 Connecting to Bank Management System...</div>
-          <div style={{ fontSize: '0.9rem', color: '#666' }}>Checking backend connection and loading user data</div>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Checking backend connection and loading user data</div>
         </div>
       </div>
     );
@@ -176,6 +180,9 @@ function App() {
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginWrapper />} />
           <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterWrapper />} />
+          <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
+          <Route path="/reset-password/:token" element={user ? <Navigate to="/dashboard" replace /> : <ResetPassword />} />
+          <Route path="/password-reset-success" element={user ? <Navigate to="/dashboard" replace /> : <PasswordResetSuccess />} />
 
           <Route path="/dashboard" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Dashboard user={user} /></main></div></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Transactions user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
@@ -191,6 +198,7 @@ function App() {
           <Route path="/financial-markets" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><FinancialMarkets /></main></div></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Support user={user} /></main></div></ProtectedRoute>} />
           <Route path="/bills" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Bills user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
+          <Route path="/branch-locator" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><BranchLocator user={user} /></main></div></ProtectedRoute>} />
           <Route path="/goals" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Goals user={user} /></main></div></ProtectedRoute>} />
           <Route path="/budget" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Budget user={user} /></main></div></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Search user={user} /></main></div></ProtectedRoute>} />

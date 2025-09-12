@@ -81,7 +81,17 @@ const Register = ({ onLogin, switchToLogin }) => {
     setPhoneCheckInProgress(true);
     try {
       const response = await api.users.checkPhone(phone);
-      setPhoneExists(response.exists);
+      const canRegister = response.canRegister;
+      setPhoneExists(!canRegister);
+
+      if (!canRegister) {
+        setError(`Maximum ${response.maxAllowed} accounts allowed per phone number. Current count: ${response.count}`);
+      } else {
+        // Clear any previous error if phone is available
+        if (error.includes('Maximum') && error.includes('accounts allowed')) {
+          setError('');
+        }
+      }
     } catch (error) {
       setError('Failed to verify phone number. Please try again.');
     } finally {
@@ -134,7 +144,7 @@ const Register = ({ onLogin, switchToLogin }) => {
     }
 
     if (phoneExists) {
-      setError('This phone number is already registered. Please sign in instead.');
+      setError('Maximum accounts allowed per phone number reached. Please use a different phone number or sign in to existing account.');
       setLoading(false);
       return;
     }
@@ -247,7 +257,7 @@ const Register = ({ onLogin, switchToLogin }) => {
           © {new Date().getFullYear()} BankPro. All rights reserved.
         </div>
       </div>
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 lg:bg-none">
         <div className={`w-full max-w-md transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center mb-2 lg:hidden">
             <div className="flex items-center justify-center space-x-2 mb-2">
@@ -289,6 +299,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     type="text"
                     name="name"
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.name}
                     onChange={handleChange}
                     required
@@ -306,6 +317,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     type="email"
                     name="email"
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.email}
                     onChange={handleChange}
                     required
@@ -333,6 +345,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     type="tel"
                     name="phone"
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.phone}
                     onChange={handleChange}
                     required
@@ -343,7 +356,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                 </div>
                 {phoneExists && (
                   <p className="text-red-500 text-sm mt-2" aria-live="polite">
-                    This phone number is already registered. Please sign in instead.
+                    Maximum accounts allowed per phone number reached. Please use a different phone number.
                   </p>
                 )}
                 {phoneCheckInProgress && (
@@ -363,7 +376,8 @@ const Register = ({ onLogin, switchToLogin }) => {
                   </div>
                   <select
                     name="selectedBank"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 appearance-none bg-white"
+                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 appearance-none"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.selectedBank}
                     onChange={handleChange}
                     required
@@ -408,6 +422,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.password}
                     onChange={handleChange}
                     required
@@ -428,10 +443,10 @@ const Register = ({ onLogin, switchToLogin }) => {
                       <span className="text-xs text-gray-500">Password strength:</span>
                       <span
                         className={`text-xs font-medium ${passwordStrength <= 2
-                            ? 'text-red-500'
-                            : passwordStrength <= 3
-                              ? 'text-yellow-500'
-                              : 'text-green-500'
+                          ? 'text-red-500'
+                          : passwordStrength <= 3
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
                           }`}
                       >
                         {getPasswordStrengthText()}
@@ -459,6 +474,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
@@ -484,6 +500,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     type="number"
                     name="initialDeposit"
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.initialDeposit}
                     onChange={handleChange}
                     min="0"
@@ -544,7 +561,7 @@ const Register = ({ onLogin, switchToLogin }) => {
               </div>
             </div>
           </div>
-          <div className="mt-8 text-center text-sm text-gray-500 lg:hidden">
+          <div className="mt-8 text-center text-sm text-gray-500 lg:hidden bg-transparent">
             © {new Date().getFullYear()} BankPro. All rights reserved.
           </div>
         </div>

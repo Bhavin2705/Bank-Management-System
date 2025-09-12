@@ -15,7 +15,7 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
 
     try {
       const response = await api.auth.forgotPassword({ email });
-      
+
       if (response.success) {
         setIsSubmitted(true);
         // In a real app, you wouldn't expose the token, but for demo purposes
@@ -80,16 +80,16 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
                   <Mail className="h-8 w-8 text-green-600" />
                 </div>
-                
+
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Check Your Email</h2>
                 <p className="text-gray-600 mb-6">
-                  We've sent password reset instructions to <strong>{email}</strong>. 
+                  We've sent password reset instructions to <strong>{email}</strong>.
                   Please check your inbox and follow the link to reset your password.
                 </p>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                   <p className="text-blue-800 text-sm">
-                    <strong>Note:</strong> For demo purposes, the reset token has been generated. 
+                    <strong>Note:</strong> For demo purposes, the reset token has been generated.
                     In a real application, this would be sent to your email.
                   </p>
                 </div>

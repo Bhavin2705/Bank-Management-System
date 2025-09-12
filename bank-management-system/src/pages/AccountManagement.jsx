@@ -1,7 +1,9 @@
 import { Building, CheckCircle, CreditCard, PiggyBank, Plus, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNotification } from '../components/NotificationProvider';
 
 const AccountManagement = ({ user, onUserUpdate }) => {
+    const { showSuccess, showError } = useNotification();
     const [accounts, setAccounts] = useState([]);
     const [showNewAccountForm, setShowNewAccountForm] = useState(false);
     const [newAccountData, setNewAccountData] = useState({
@@ -57,17 +59,17 @@ const AccountManagement = ({ user, onUserUpdate }) => {
         const depositAmount = parseFloat(newAccountData.initialDeposit);
 
         if (!selectedType) {
-            setError('Please select a valid account type');
+            showError('Please select a valid account type');
             return;
         }
 
         if (depositAmount < selectedType.minDeposit) {
-            setError(`Minimum deposit for ${selectedType.name} is ₹${selectedType.minDeposit}`);
+            showError(`Minimum deposit for ${selectedType.name} is ₹${selectedType.minDeposit}`);
             return;
         }
 
         if (depositAmount > user.balance) {
-            setError('Insufficient funds for initial deposit');
+            showError('Insufficient funds for initial deposit');
             return;
         }
 
@@ -107,7 +109,7 @@ const AccountManagement = ({ user, onUserUpdate }) => {
 
         setAccounts(updatedAccounts);
         onUserUpdate(updatedUser);
-        setMessage(`Successfully opened ${newAccount.name}!`);
+        showSuccess(`Successfully opened ${newAccount.name}! 🎉`);
         setShowNewAccountForm(false);
         setNewAccountData({
             type: 'savings',
@@ -125,14 +127,14 @@ const AccountManagement = ({ user, onUserUpdate }) => {
         if (!account) return;
 
         if (account.balance > 0) {
-            setError('Cannot close account with remaining balance. Please withdraw all funds first.');
+            showError('Cannot close account with remaining balance. Please withdraw all funds first.');
             return;
         }
 
         const updatedAccounts = accounts.filter(acc => acc.id !== accountId);
         localStorage.setItem(`user_accounts_${user.id}`, JSON.stringify(updatedAccounts));
         setAccounts(updatedAccounts);
-        setMessage('Account closed successfully');
+        showSuccess('Account closed successfully 🏦');
     };
 
     const formatCurrency = (amount) => {

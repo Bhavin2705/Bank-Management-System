@@ -63,19 +63,17 @@ const Transfer = ({ user, onUserUpdate }) => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        // For security reasons, regular users cannot see all users
-        // Only admins can access the users list
-        const allUsers = await getNonAdminUsers();
-        if (Array.isArray(allUsers)) {
+        // Load transfer recipients - this endpoint is available to all authenticated users
+        const transferRecipients = await getNonAdminUsers();
+        if (Array.isArray(transferRecipients)) {
           const userId = getUserId();
-          setUsers(allUsers.filter(u => (u._id !== userId && u.id !== userId)));
+          // Filter out current user if somehow included
+          setUsers(transferRecipients.filter(u => (u._id !== userId && u.id !== userId)));
         } else {
-          // If API call fails (e.g., no admin access), show empty list
           setUsers([]);
         }
       } catch (error) {
-        console.error('Error loading users:', error);
-        // Silently handle the error - this is expected for non-admin users
+        console.error('Error loading transfer recipients:', error);
         setUsers([]);
       }
     };
@@ -477,14 +475,9 @@ const Transfer = ({ user, onUserUpdate }) => {
             </div>
           )}
           {users.length === 0 && (
-            <div style={{
+            <div className="info-box" style={{
               marginTop: '1rem',
-              padding: '1rem',
-              background: 'var(--info-bg, #e3f2fd)',
-              border: '1px solid var(--info-border, #2196f3)',
-              borderRadius: '8px',
-              fontSize: '0.9rem',
-              color: 'var(--info-text, #1976d2)'
+              fontSize: '0.9rem'
             }}>
               <strong>💡 How to Transfer Money:</strong>
               <ul style={{ marginTop: '0.5rem', paddingLeft: '1.5rem' }}>

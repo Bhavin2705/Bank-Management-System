@@ -1,9 +1,11 @@
-import { Bell, Building2, Calendar, Eye, EyeOff, Lock, Mail, MapPin, Phone, User } from 'lucide-react';
+import { Bell, Building2, Eye, EyeOff, Lock, Mail, MapPin, Phone, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNotification } from '../components/NotificationProvider';
 import CustomCalendar from '../components/UI/CustomCalendar';
 import { api } from '../utils/api';
 
 const Settings = ({ user, onUserUpdate }) => {
+  const { showSuccess, showError, showWarning } = useNotification();
   const [activeTab, setActiveTab] = useState('profile');
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,19 @@ const Settings = ({ user, onUserUpdate }) => {
     loadBanks();
   }, []);
 
+  const handleFormKeyDown = (e) => {
+    // Prevent form submission on Enter key press for all inputs except submit buttons
+    if (e.key === 'Enter') {
+      const target = e.target;
+      // Only allow Enter on submit buttons and textareas
+      if (target.type !== 'submit' && target.tagName !== 'BUTTON' && target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }
+  };
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setError('');
@@ -56,7 +71,7 @@ const Settings = ({ user, onUserUpdate }) => {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(profileData.email)) {
-      setError('Please enter a valid email address');
+      showError('Please enter a valid email address');
       setLoading(false);
       return;
     }
@@ -64,7 +79,7 @@ const Settings = ({ user, onUserUpdate }) => {
     // Validate phone number (basic validation)
     const phoneRegex = /^\d{10}$/;
     if (profileData.phone && !phoneRegex.test(profileData.phone.replace(/\D/g, ''))) {
-      setError('Please enter a valid 10-digit phone number');
+      showError('Please enter a valid 10-digit phone number');
       setLoading(false);
       return;
     }
@@ -83,12 +98,12 @@ const Settings = ({ user, onUserUpdate }) => {
 
       if (result.success) {
         onUserUpdate(result.data);
-        setMessage('Profile updated successfully!');
+        showSuccess('Profile updated successfully! 🎉');
       } else {
-        setError(result.error || 'Failed to update profile');
+        showError(result.error || 'Failed to update profile');
       }
     } catch (error) {
-      setError('Failed to update profile. Please try again.');
+      showError('Failed to update profile. Please try again.');
     }
 
     setLoading(false);
@@ -117,12 +132,12 @@ const Settings = ({ user, onUserUpdate }) => {
 
       if (result.success) {
         onUserUpdate(result.data);
-        setMessage('Bank information updated successfully!');
+        showSuccess('Bank information updated successfully! 🏦');
       } else {
-        setError(result.error || 'Failed to update bank information');
+        showError(result.error || 'Failed to update bank information');
       }
     } catch (error) {
-      setError('Failed to update bank information. Please try again.');
+      showError('Failed to update bank information. Please try again.');
     }
 
     setLoading(false);
@@ -153,13 +168,13 @@ const Settings = ({ user, onUserUpdate }) => {
     setLoading(true);
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match!');
+      showError('New passwords do not match!');
       setLoading(false);
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      setError('Password must be at least 8 characters long!');
+      showError('Password must be at least 8 characters long!');
       setLoading(false);
       return;
     }
@@ -171,13 +186,13 @@ const Settings = ({ user, onUserUpdate }) => {
       });
 
       if (result.success) {
-        setMessage('Password changed successfully!');
+        showSuccess('Password changed successfully! 🔒');
         setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
-        setError(result.error || 'Failed to change password');
+        showError(result.error || 'Failed to change password');
       }
     } catch (error) {
-      setError('Failed to change password. Please try again.');
+      showError('Failed to change password. Please try again.');
     }
 
     setLoading(false);
@@ -263,7 +278,7 @@ const Settings = ({ user, onUserUpdate }) => {
               Profile Information
             </h3>
 
-            <form onSubmit={handleProfileUpdate}>
+            <form onSubmit={handleProfileUpdate} onKeyDown={handleFormKeyDown}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">Full Name</label>
@@ -323,12 +338,23 @@ const Settings = ({ user, onUserUpdate }) => {
 
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
-                  <CustomCalendar
-                    value={profileData.dateOfBirth ? new Date(profileData.dateOfBirth) : null}
-                    onChange={(date) => setProfileData({ ...profileData, dateOfBirth: date ? date.toISOString().split('T')[0] : '' })}
-                    placeholder="Select date of birth"
-                    maxDate={new Date()}
-                  />
+                  <div
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }
+                    }}
+                  >
+                    <CustomCalendar
+                      value={profileData.dateOfBirth ? new Date(profileData.dateOfBirth) : null}
+                      onChange={(date) => {
+                        setProfileData({ ...profileData, dateOfBirth: date ? date.toISOString().split('T')[0] : '' });
+                      }}
+                      placeholder="Select date of birth (DD/MM/YYYY)"
+                      maxDate={new Date()}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -391,27 +417,34 @@ const Settings = ({ user, onUserUpdate }) => {
               Bank Information
             </h3>
 
-            <form onSubmit={handleBankUpdate}>
+            <form onSubmit={handleBankUpdate} onKeyDown={handleFormKeyDown}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="form-label">Select Your Bank</label>
-                  <select
-                    name="selectedBank"
-                    className="form-input"
-                    value={bankData.selectedBank}
-                    onChange={handleBankChange}
-                    required
-                  >
-                    {banks.length > 0 ? (
-                      banks.map((bank) => (
-                        <option key={bank.id} value={bank.id}>
-                          {bank.logo} {bank.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="bankpro">🏦 BankPro</option>
-                    )}
-                  </select>
+                  <div className="custom-select-container">
+                    <select
+                      name="selectedBank"
+                      className="form-input custom-bank-select"
+                      value={bankData.selectedBank}
+                      onChange={handleBankChange}
+                      required
+                      style={{
+                        background: 'var(--bg-tertiary)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-light)'
+                      }}
+                    >
+                      {banks.length > 0 ? (
+                        banks.map((bank) => (
+                          <option key={bank.id} value={bank.id}>
+                            {bank.logo} {bank.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="bankpro">🏦 BankPro</option>
+                      )}
+                    </select>
+                  </div>
                   <small style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
                     Choose the bank where you hold your account
                   </small>
@@ -469,13 +502,7 @@ const Settings = ({ user, onUserUpdate }) => {
                 />
               </div>
 
-              <div style={{
-                padding: '1rem',
-                background: 'var(--info-bg, #e3f2fd)',
-                border: '1px solid var(--info-border, #2196f3)',
-                borderRadius: '8px',
-                marginBottom: '1rem'
-              }}>
+              <div className="info-box">
                 <strong>💡 Important:</strong> Your bank information is used for transfers and transactions.
                 Make sure the details are accurate for successful transactions.
               </div>

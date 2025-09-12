@@ -47,7 +47,7 @@ const PasswordResetSuccess = ({ onBackToLogin }) => {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
-              
+
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Password Reset Successful!</h2>
               <p className="text-gray-600 mb-8">
                 Your password has been successfully updated. You can now sign in to your account with your new password.

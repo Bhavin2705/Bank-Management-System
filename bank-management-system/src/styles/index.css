@@ -6,6 +6,7 @@
   --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --bg-secondary: white;
   --bg-tertiary: #f8f9fa;
+  --bg-hover: #f0f0f0;
   --text-primary: #333;
   --text-secondary: #6c757d;
   --text-accent: #667eea;
@@ -14,21 +15,388 @@
   --shadow-light: rgba(0, 0, 0, 0.08);
   --success: #28a745;
   --error: #dc3545;
+  --info-bg: #e3f2fd;
+  --info-border: #2196f3;
+  --info-text: #1976d2;
   --sidebar-bg: #2c3e50;
   --sidebar-text: #ecf0f1;
   --sidebar-hover: #34495e;
+}
+
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Utility classes */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.max-w-md {
+  max-width: 28rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.p-8 {
+  padding: 2rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mb-8 {
+  margin-bottom: 2rem;
+}
+
+.space-x-2>*+* {
+  margin-left: 0.5rem;
+}
+
+.space-x-3>*+* {
+  margin-left: 0.75rem;
+}
+
+.space-y-4>*+* {
+  margin-top: 1rem;
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--from-color), var(--to-color));
+}
+
+.from-blue-50 {
+  --from-color: #eff6ff;
+}
+
+.to-indigo-50 {
+  --to-color: #eef2ff;
+}
+
+.from-blue-600 {
+  --from-color: #2563eb;
+}
+
+.to-indigo-700 {
+  --to-color: #4338ca;
+}
+
+.text-white {
+  color: white;
+}
+
+.text-gray-800 {
+  color: var(--text-primary);
+}
+
+.text-gray-600 {
+  color: var(--text-secondary);
+}
+
+.text-gray-500 {
+  color: var(--text-secondary);
+}
+
+.text-blue-100 {
+  color: #dbeafe;
+}
+
+.text-blue-200 {
+  color: #bfdbfe;
+}
+
+.text-red-700 {
+  color: #b91c1c;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+}
+
+.text-4xl {
+  font-size: 2.25rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.rounded-2xl {
+  border-radius: 1rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.border {
+  border: 1px solid var(--border-color);
+}
+
+.border-gray-100 {
+  border-color: #f3f4f6;
+}
+
+.hidden {
+  display: none;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
+.w-5 {
+  width: 1.25rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+/* Additional utility classes */
+.p-3 {
+  padding: 0.75rem;
+}
+
+.p-12 {
+  padding: 3rem;
+}
+
+.bg-yellow-500 {
+  background-color: #eab308;
+}
+
+.bg-green-500 {
+  background-color: #22c55e;
+}
+
+.bg-red-500 {
+  background-color: #ef4444;
+}
+
+.lg\:w-1\/2 {
+  width: 50%;
+}
+
+.p-3 {
+  padding: 0.75rem;
+}
+
+/* Responsive classes */
+@media (min-width: 768px) {
+  .md\:p-10 {
+    padding: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:flex {
+    display: flex;
+  }
+
+  .lg\:w-1\/2 {
+    width: 50%;
+  }
+
+  .lg\:hidden {
+    display: none;
+  }
+
+  .hidden-mobile {
+    display: flex;
+    width: 50%;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3rem;
+    background: linear-gradient(to bottom right, #2563eb, #4338ca);
+    color: white;
+  }
+}
+
+@media (max-width: 1023px) {
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  .mobile-header {
+    display: block;
+  }
+
+  .full-width-mobile {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-header {
+    display: none;
+  }
+
+  .full-width-mobile {
+    width: 50%;
+  }
 }
 
 [data-theme="dark"] {
   --bg-primary: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   --bg-secondary: #34495e;
   --bg-tertiary: #2c3e50;
+  --bg-quaternary: #1e2a3a;
+  --bg-hover: #4a5f7a;
   --text-primary: #ecf0f1;
   --text-secondary: #bdc3c7;
   --text-accent: #3498db;
-  --border-color: #34495e;
+  --border-color: #52708a;
+  --border-light: #7f8c8d;
   --shadow: rgba(0, 0, 0, 0.3);
   --shadow-light: rgba(0, 0, 0, 0.2);
+  --info-bg: #2c3e50;
+  --info-border: #52708a;
+  --info-text: #bdc3c7;
+}
+
+/* Dark theme dropdown styling */
+[data-theme="dark"] .form-input select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-input select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-input select option:hover {
+  background: var(--text-accent);
+  color: white;
+}
+
+[data-theme="dark"] .form-input select option:checked {
+  background: var(--text-accent);
+  color: white;
+}
+
+/* Dark theme input styling */
+[data-theme="dark"] input {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="url"] {
+  color: var(--text-primary) !important;
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .form-input {
+  color: var(--text-primary) !important;
+}
+
+/* Enhanced dark mode borders for better visibility */
+[data-theme="dark"] .card {
+  border: 1px solid var(--border-light);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .card:hover {
+  border-color: var(--text-accent);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-control,
+[data-theme="dark"] select.form-input {
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] select.form-input:focus {
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+[data-theme="dark"] .form-group {
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .transaction-item,
+[data-theme="dark"] .user-item,
+[data-theme="dark"] .notification-item {
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .btn {
+  border: 1px solid var(--border-light);
 }
 
 * {
@@ -195,10 +563,211 @@ body {
   color: var(--text-primary);
 }
 
+/* Default input styling */
+input {
+  color: var(--text-primary);
+}
+
+/* Specifically for password inputs */
+input[type="password"],
+input[type="text"] {
+  color: var(--text-primary);
+}
+
+/* Ensure placeholder text is visible but not black */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.7;
+}
+
+/* Form inputs should use theme-appropriate colors */
+.w-full.pl-10.pr-4,
+.w-full.pl-10.pr-12,
+.form-input,
+input,
+textarea,
+select {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Focus states for form inputs */
+.form-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--text-accent) !important;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
+}
+
 .form-input:focus {
   outline: none;
   border-color: var(--text-accent);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Dropdown select styling */
+.form-input select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.form-input select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 8px 12px;
+}
+
+.form-input select option:hover {
+  background: var(--text-accent);
+  color: white;
+}
+
+.form-input select option:checked {
+  background: var(--text-accent);
+  color: white;
+}
+
+/* Custom select dropdown styling */
+select.form-input {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+select.form-input:hover {
+  border-color: var(--text-accent);
+}
+
+select.form-input:focus {
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Force all select elements to have black text */
+select {
+  color: black !important;
+  background: white !important;
+}
+
+/* Ensure selected value is black */
+select[name="selectedBank"] {
+  color: black !important;
+  background: white !important;
+}
+
+/* Force dropdown options to have black text */
+select option {
+  background: white !important;
+  color: black !important;
+  padding: 8px 12px;
+}
+
+select option:hover {
+  background: #f0f0f0 !important;
+  color: black !important;
+}
+
+select option:checked,
+select option:selected {
+  background: #e0e7ff !important;
+  color: black !important;
+}
+
+/* Additional specificity for any select elements */
+select[name="selectedBank"] option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+select[name="selectedBank"] option:selected,
+select[name="selectedBank"] option:checked {
+  background: var(--text-accent);
+  color: white;
+}
+
+/* Dark mode specific styles for selectedBank dropdown */
+[data-theme="dark"] select[name="selectedBank"] {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+[data-theme="dark"] select[name="selectedBank"]:focus {
+  background: var(--bg-quaternary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-accent) !important;
+}
+
+[data-theme="dark"] select[name="selectedBank"] option {
+  background: var(--bg-quaternary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] select[name="selectedBank"] option:selected,
+[data-theme="dark"] select[name="selectedBank"] option:checked {
+  background: var(--bg-quaternary) !important;
+  color: var(--text-primary) !important;
+  font-weight: bold !important;
+}
+
+/* Force all selects in dark mode to have proper styling */
+[data-theme="dark"] select.form-input {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] select.form-input option {
+  background: var(--bg-quaternary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* WebKit specific styling for better select appearance */
+[data-theme="dark"] select[name="selectedBank"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ecf0f1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Additional dark mode select styling */
+[data-theme="dark"] select {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+/* Custom bank select styling */
+.custom-bank-select {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+[data-theme="dark"] .custom-bank-select {
+  background: var(--bg-quaternary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-light) !important;
+}
+
+[data-theme="dark"] .custom-bank-select:focus {
+  background: var(--bg-quaternary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-accent) !important;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2) !important;
+}
+
+/* Ensure all dropdown options follow theme */
+option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .dashboard-grid {
@@ -736,4 +1305,52 @@ body {
 
 .statement-info p {
   margin: 0.25rem 0;
+}
+
+/* Toast notification animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Notification fade animations */
+.notification-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.notification-exit {
+  animation: slideOutRight 0.3s ease-in;
+}
+
+/* Info box styles */
+.info-box {
+  padding: 1rem;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  color: var(--info-text);
+}
+
+.info-box strong {
+  color: var(--info-text);
 }

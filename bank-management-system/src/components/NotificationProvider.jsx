@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle, Info, X, XCircle } from 'lucide-react';
 import { createContext, useCallback, useContext, useState } from 'react';
 
-const NotificationContext = createContext();
+const NotificationContext = createContext(null);
 
 export const useNotification = () => {
     const context = useContext(NotificationContext);
@@ -13,6 +13,10 @@ export const useNotification = () => {
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
+
+    const removeNotification = useCallback((id) => {
+        setNotifications(prev => prev.filter(notification => notification.id !== id));
+    }, []);
 
     const addNotification = useCallback((message, type = 'info', duration = 5000) => {
         const id = Date.now() + Math.random();
@@ -33,11 +37,7 @@ export const NotificationProvider = ({ children }) => {
         }
 
         return id;
-    }, []);
-
-    const removeNotification = useCallback((id) => {
-        setNotifications(prev => prev.filter(notification => notification.id !== id));
-    }, []);
+    }, [removeNotification]);
 
     const showSuccess = useCallback((message, duration) => {
         return addNotification(message, 'success', duration);
