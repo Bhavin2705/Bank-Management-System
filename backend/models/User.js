@@ -24,7 +24,6 @@ const userSchema = new mongoose.Schema({
     phone: {
         type: String,
         required: [true, 'Phone number is required'],
-        unique: true, // This creates a unique index
         validate: {
             validator: function (phone) {
                 return /^\d{10}$/.test(phone);
@@ -198,14 +197,28 @@ userSchema.methods.createPasswordResetToken = function () {
     return resetToken;
 };
 
-// Static method to find user by email or phone
+// Static method to find users by email or phone (returns array for phone, single for email)
 userSchema.statics.findByEmailOrPhone = function (identifier) {
-    return this.findOne({
-        $or: [
-            { email: identifier },
-            { phone: identifier }
-        ]
-    });
+    // Check if identifier is an email
+    const isEmail = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(identifier);
+
+    if (isEmail) {
+        // For email, return single user (email is unique)
+        return this.findOne({ email: identifier });
+    } else {
+        // For phone, return all users with that phone (up to 3)
+        return this.find({ phone: identifier });
+    }
+};
+
+// Add method to check phone number account limit
+userSchema.statics.checkPhoneAccountLimit = async function (phone) {
+    const count = await this.countDocuments({ phone });
+    return {
+        count,
+        canRegister: count < 3,
+        maxAllowed: 3
+    };
 };
 
 module.exports = mongoose.model('User', userSchema);

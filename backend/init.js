@@ -51,9 +51,18 @@ const initializeDB = async () => {
         // Create indexes for better performance
         console.log('🔧 Creating database indexes...');
 
+        // Drop the unique index on phone if it exists (to allow multiple accounts per phone)
+        try {
+            await User.collection.dropIndex('phone_1');
+            console.log('✅ Dropped unique phone index');
+        } catch (error) {
+            // Index might not exist, which is fine
+            console.log('ℹ️  Phone unique index not found (already removed or never existed)');
+        }
+
         await User.collection.createIndex({ role: 1 });
 
-        console.log('✅ Database indexes created');
+        console.log('✅ Database indexes updated');
 
     } catch (error) {
         console.error('❌ Database initialization error:', error.message);

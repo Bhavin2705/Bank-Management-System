@@ -20,6 +20,9 @@ connectDB();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
+const branchRoutes = require('./routes/branches');
+const geocodingRoutes = require('./routes/geocoding');
+const banksRoutes = require('./routes/banks');
 
 // Initialize Express app
 const app = express();
@@ -62,6 +65,9 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/branches', branchRoutes);
+app.use('/api/geocoding', geocodingRoutes);
+app.use('/api/banks', banksRoutes);
 
 // Socket.io middleware for authentication
 io.use((socket, next) => {

@@ -25,15 +25,21 @@ const register = async (req, res) => {
     try {
         const { name, email, phone, password, initialDeposit, bankDetails } = req.body;
 
-        // Check if user exists
-        const userExists = await User.findOne({
-            $or: [{ email }, { phone }]
-        });
-
-        if (userExists) {
+        // Check if email exists (email should remain unique)
+        const emailExists = await User.findOne({ email });
+        if (emailExists) {
             return res.status(400).json({
                 success: false,
-                error: userExists.email === email ? 'Email already registered' : 'Phone number already registered'
+                error: 'Email already registered'
+            });
+        }
+
+        // Check phone number account limit
+        const phoneCheck = await User.checkPhoneAccountLimit(phone);
+        if (!phoneCheck.canRegister) {
+            return res.status(400).json({
+                success: false,
+                error: `Maximum ${phoneCheck.maxAllowed} accounts allowed per phone number. Current count: ${phoneCheck.count}`
             });
         }
 
@@ -108,7 +114,41 @@ const login = async (req, res) => {
         const { identifier, password } = req.body;
 
         // Check for user
-        const user = await User.findByEmailOrPhone(identifier).select('+password');
+        const users = await User.findByEmailOrPhone(identifier).select('+password');
+
+        // Handle multiple users for phone number case
+        let user;
+        if (Array.isArray(users)) {
+            // Multiple users found for phone number
+            if (users.length === 0) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Invalid credentials'
+                });
+            } else if (users.length === 1) {
+                user = users[0];
+            } else {
+                // Multiple accounts exist for this phone number
+                // Return list of accounts for user to choose from
+                const accountChoices = users.map(u => ({
+                    _id: u._id,
+                    name: u.name,
+                    accountNumber: u.accountNumber,
+                    bankDetails: u.bankDetails
+                }));
+
+                return res.status(300).json({
+                    success: false,
+                    error: 'Multiple accounts found',
+                    message: 'Multiple accounts found for this phone number. Please specify which account to login to.',
+                    accounts: accountChoices,
+                    needsAccountSelection: true
+                });
+            }
+        } else {
+            // Single user found (email case)
+            user = users;
+        }
 
         if (!user || !(await user.comparePassword(password))) {
             return res.status(401).json({
@@ -169,6 +209,103 @@ const login = async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         console.error('Error stack:', error.stack);
+        res.status(500).json({
+            success: false,
+            error: 'Server error during login',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
+// @desc    Login with specific account selection (when multiple accounts exist for phone)
+// @route   POST /api/auth/login-account
+// @access  Public
+const loginWithAccount = async (req, res) => {
+    try {
+        const { identifier, password, accountId } = req.body;
+
+        if (!accountId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Account ID is required'
+            });
+        }
+
+        // Find the specific user account
+        const user = await User.findById(accountId).select('+password');
+
+        if (!user || !(await user.comparePassword(password))) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid credentials'
+            });
+        }
+
+        // Verify the identifier matches this user (additional security)
+        const isEmail = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(identifier);
+        if (isEmail && user.email !== identifier) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid credentials'
+            });
+        } else if (!isEmail && user.phone !== identifier) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid credentials'
+            });
+        }
+
+        // Check if account is locked
+        if (user.security && user.security.lockUntil && user.security.lockUntil > Date.now()) {
+            return res.status(423).json({
+                success: false,
+                error: 'Account is temporarily locked due to too many failed attempts'
+            });
+        }
+
+        // Reset login attempts on successful login
+        if (user.security && user.security.loginAttempts > 0) {
+            user.security.loginAttempts = 0;
+            user.security.lockUntil = undefined;
+            await user.save();
+        }
+
+        // Update last login
+        if (user.security) {
+            user.security.lastLogin = new Date();
+        } else {
+            user.security = { lastLogin: new Date() };
+        }
+        await user.save({ validateBeforeSave: false });
+
+        // Generate tokens
+        const token = generateToken(user._id);
+        const refreshToken = generateRefreshToken(user._id);
+
+        // Remove password from response
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            balance: user.balance,
+            accountNumber: user.accountNumber,
+            bankDetails: user.bankDetails,
+            profile: user.profile,
+            preferences: user.preferences
+        };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                user: userResponse,
+                token,
+                refreshToken
+            }
+        });
+    } catch (error) {
+        console.error('Login with account error:', error);
         res.status(500).json({
             success: false,
             error: 'Server error during login',
@@ -415,6 +552,7 @@ const refreshToken = async (req, res) => {
 module.exports = {
     register,
     login,
+    loginWithAccount,
     logout,
     getMe,
     updateDetails,

@@ -398,7 +398,7 @@ const checkEmailExists = async (req, res) => {
     }
 };
 
-// @desc    Check if phone exists
+// @desc    Check if phone exists and account limit
 // @route   GET /api/users/check-phone
 // @access  Public
 const checkPhoneExists = async (req, res) => {
@@ -412,16 +412,51 @@ const checkPhoneExists = async (req, res) => {
             });
         }
 
-        const phoneExists = await User.exists({ phone });
+        const phoneCheck = await User.checkPhoneAccountLimit(phone);
 
         res.status(200).json({
             success: true,
-            exists: !!phoneExists
+            exists: !phoneCheck.canRegister,
+            count: phoneCheck.count,
+            maxAllowed: phoneCheck.maxAllowed,
+            canRegister: phoneCheck.canRegister,
+            message: phoneCheck.canRegister
+                ? `Phone number available (${phoneCheck.count}/${phoneCheck.maxAllowed} accounts used)`
+                : `Maximum ${phoneCheck.maxAllowed} accounts allowed per phone number`
         });
     } catch (error) {
         res.status(500).json({
             success: false,
             error: 'Server error checking phone'
+        });
+    }
+};
+
+// @desc    Get users for transfer (limited info)
+// @route   GET /api/users/transfer-recipients
+// @access  Private (authenticated users only)
+const getTransferRecipients = async (req, res) => {
+    try {
+        // Get all users except the current user and admins
+        // Only return essential information for transfers
+        const users = await User.find({
+            _id: { $ne: req.user.id }, // Exclude current user
+            role: { $ne: 'admin' }, // Exclude admin users
+            status: 'active' // Only active users
+        })
+            .select('firstName lastName email accountNumber profilePicture') // Limited fields
+            .sort({ firstName: 1, lastName: 1 }); // Sort alphabetically
+
+        res.status(200).json({
+            success: true,
+            data: users,
+            count: users.length
+        });
+    } catch (error) {
+        console.error('Error getting transfer recipients:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Server error getting transfer recipients'
         });
     }
 };
@@ -437,5 +472,6 @@ module.exports = {
     updateUserRole,
     updateUserStatus,
     checkEmailExists,
-    checkPhoneExists
+    checkPhoneExists,
+    getTransferRecipients
 };

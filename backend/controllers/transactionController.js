@@ -325,10 +325,32 @@ const validateTransferDetails = async (req, res) => {
 
         // First, try to find recipient in our system
         let recipient = null;
+        let multipleAccounts = false;
+        let availableAccounts = [];
+
         if (recipientAccount) {
             recipient = await User.findOne({ accountNumber: recipientAccount });
         } else if (recipientPhone) {
-            recipient = await User.findOne({ phone: recipientPhone });
+            const users = await User.find({ phone: recipientPhone });
+            if (users.length === 1) {
+                recipient = users[0];
+            } else if (users.length > 1) {
+                multipleAccounts = true;
+                availableAccounts = users.map(u => ({
+                    _id: u._id,
+                    name: u.name,
+                    accountNumber: u.accountNumber,
+                    bankDetails: u.bankDetails
+                }));
+
+                return res.status(300).json({
+                    success: false,
+                    error: 'Multiple accounts found',
+                    message: 'Multiple accounts found for this phone number. Please specify which account to transfer to.',
+                    accounts: availableAccounts,
+                    needsAccountSelection: true
+                });
+            }
         }
 
         // Determine transfer type
@@ -406,7 +428,23 @@ const transferMoney = async (req, res) => {
         if (recipientAccount) {
             recipient = await User.findOne({ accountNumber: recipientAccount });
         } else if (recipientPhone) {
-            recipient = await User.findOne({ phone: recipientPhone });
+            const users = await User.find({ phone: recipientPhone });
+            if (users.length === 1) {
+                recipient = users[0];
+            } else if (users.length > 1) {
+                return res.status(300).json({
+                    success: false,
+                    error: 'Multiple accounts found',
+                    message: 'Multiple accounts found for this phone number. Please specify account number instead.',
+                    accounts: users.map(u => ({
+                        _id: u._id,
+                        name: u.name,
+                        accountNumber: u.accountNumber,
+                        bankDetails: u.bankDetails
+                    })),
+                    needsAccountSelection: true
+                });
+            }
         }
 
         // Determine transfer type based on whether recipient exists and their bank

@@ -10,7 +10,8 @@ const {
     updateUserRole,
     updateUserStatus,
     checkEmailExists,
-    checkPhoneExists
+    checkPhoneExists,
+    getTransferRecipients
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
@@ -29,6 +30,9 @@ router.get('/check-phone', checkPhoneExists);
 
 // All routes below require authentication
 router.use(protect);
+
+// Route for getting transfer recipients (authenticated users only)
+router.get('/transfer-recipients', getTransferRecipients);
 
 // Admin only routes
 router.get('/stats', authorize('admin'), getUserStats);

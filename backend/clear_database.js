@@ -52,8 +52,19 @@ const clearDatabase = async () => {
             }
         }
 
+        console.log('🗑️  Clearing indexes...');
+
+        // Drop the unique phone index if it exists
+        try {
+            await User.collection.dropIndex('phone_1');
+            console.log('✅ Dropped phone unique index');
+        } catch (error) {
+            console.log('ℹ️  Phone unique index not found');
+        }
+
         console.log('🎉 Database cleared successfully!');
         console.log('📊 All user accounts, transactions, and related data have been removed.');
+        console.log('🔧 Outdated indexes have been removed.');
 
     } catch (error) {
         console.error('❌ Error clearing database:', error.message);
