@@ -68,8 +68,8 @@ const userSchema = new mongoose.Schema({
         },
         ifscCode: {
             type: String,
-            required: [true, 'IFSC code is required'],
-            default: 'BANK0001234'
+            required: false,
+            default: ''
         },
         branchName: {
             type: String,

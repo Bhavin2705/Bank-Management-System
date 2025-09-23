@@ -465,17 +465,18 @@ const transferMoney = async (req, res) => {
             transferType = 'external';
 
             // Validate external transfer requirements
-            if (!recipientBank || !recipientBank.ifscCode || !recipientBank.bankName) {
+            if (!recipientBank || !recipientBank.bankName) {
                 return res.status(400).json({
                     success: false,
                     error: 'Recipient bank details are required for external transfers'
                 });
             }
 
-            if (!recipientAccount) {
+            // Only require recipientAccount if not transferring by phone number
+            if (!recipientAccount && !recipientPhone) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Recipient account number is required for external transfers'
+                    error: 'Recipient account number or phone number is required for external transfers'
                 });
             }
         }

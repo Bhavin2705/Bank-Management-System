@@ -123,8 +123,8 @@ const validateTransfer = [
         .optional()
         .custom((value) => {
             if (value) {
-                if (!value.bankName || !value.ifscCode) {
-                    throw new Error('Bank name and IFSC code are required for external transfers');
+                if (!value.bankName) {
+                    throw new Error('Bank name is required for external transfers');
                 }
             }
             return true;

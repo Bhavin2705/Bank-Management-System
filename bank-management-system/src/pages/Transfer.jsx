@@ -11,7 +11,7 @@ const Transfer = ({ user, onUserUpdate }) => {
     recipientPhone: '',
     recipientAccount: '',
     recipientName: '',
-    recipientBank: { id: 'bankpro', name: 'BankPro', ifscCode: 'BANK0001234' },
+      recipientBank: { id: 'bankpro', name: 'BankPro' },
     amount: '',
     description: ''
   });
@@ -118,8 +118,8 @@ const Transfer = ({ user, onUserUpdate }) => {
 
         if (isExternalTransfer) {
           // External transfer with phone
-          if (!formData.recipientName || !formData.recipientBank.name || !formData.recipientBank.ifscCode) {
-            setError('Recipient name and bank details are required for external transfers');
+          if (!formData.recipientName || !formData.recipientBank.name) {
+            setError('Recipient name and bank is required for external transfers');
             setTransferring(false);
             return;
           }
@@ -128,7 +128,6 @@ const Transfer = ({ user, onUserUpdate }) => {
             recipientName: formData.recipientName,
             recipientBank: {
               bankName: formData.recipientBank.name,
-              ifscCode: formData.recipientBank.ifscCode,
               branchName: formData.recipientBank.branchName || ''
             },
             amount,
@@ -152,8 +151,8 @@ const Transfer = ({ user, onUserUpdate }) => {
 
         if (isExternalTransfer) {
           // External transfer with account
-          if (!formData.recipientName || !formData.recipientBank.name || !formData.recipientBank.ifscCode) {
-            setError('Recipient name and bank details are required for external transfers');
+          if (!formData.recipientName || !formData.recipientBank.name) {
+            setError('Recipient name and bank is required for external transfers');
             setTransferring(false);
             return;
           }
@@ -162,7 +161,6 @@ const Transfer = ({ user, onUserUpdate }) => {
             recipientName: formData.recipientName,
             recipientBank: {
               bankName: formData.recipientBank.name,
-              ifscCode: formData.recipientBank.ifscCode,
               branchName: formData.recipientBank.branchName || ''
             },
             amount,
