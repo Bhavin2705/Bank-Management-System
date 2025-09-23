@@ -7,7 +7,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Name is required'],
         trim: true,
-        maxlength: [50, 'Name cannot be more than 50 characters']
+        maxlength: [50, 'Name cannot be more than 50 characters'],
+        validate: {
+            validator: function (v) {
+                // Only allow letters, spaces, hyphens, and apostrophes
+                return /^[a-zA-Z\s'-]+$/.test(v);
+            },
+            message: 'Name can only contain letters, spaces, hyphens, and apostrophes'
+        }
     },
     email: {
         type: String,
@@ -187,12 +194,13 @@ userSchema.methods.generateAccountNumber = function () {
 userSchema.methods.createPasswordResetToken = function () {
     const resetToken = crypto.randomBytes(32).toString('hex');
 
-    this.passwordResetToken = crypto
+    this.security = this.security || {};
+    this.security.passwordResetToken = crypto
         .createHash('sha256')
         .update(resetToken)
         .digest('hex');
 
-    this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    this.security.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     return resetToken;
 };

@@ -4,6 +4,7 @@ import api from './api.js';
 
 export const AUTH_KEY = 'bank_auth_user';
 export const TOKEN_KEY = 'bank_auth_token';
+export const REFRESH_TOKEN_KEY = 'bank_auth_refresh_token';
 
 // Initialize - no longer needed with API
 export const initializeUsers = () => {
@@ -16,11 +17,11 @@ export const login = async (identifier, password) => {
     const response = await api.auth.login({ identifier, password });
 
     if (response.success) {
-      // Store user data and token
-      localStorage.setItem(AUTH_KEY, JSON.stringify(response.data.user));
-      localStorage.setItem(TOKEN_KEY, response.data.token);
+  // Store both token and refresh token
+  localStorage.setItem(TOKEN_KEY, response.data.token);
+  localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
 
-      return { success: true, user: response.data.user };
+  return { success: true, user: response.data.user };
     }
 
     return { success: false, error: 'Login failed' };
@@ -46,11 +47,11 @@ export const loginWithAccount = async (identifier, password, accountId) => {
     const response = await api.auth.loginWithAccount({ identifier, password, accountId });
 
     if (response.success) {
-      // Store user data and token
-      localStorage.setItem(AUTH_KEY, JSON.stringify(response.data.user));
-      localStorage.setItem(TOKEN_KEY, response.data.token);
+  // Store both token and refresh token
+  localStorage.setItem(TOKEN_KEY, response.data.token);
+  localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
 
-      return { success: true, user: response.data.user };
+  return { success: true, user: response.data.user };
     }
 
     return { success: false, error: 'Login failed' };
@@ -64,11 +65,11 @@ export const register = async (userData) => {
     const response = await api.auth.register(userData);
 
     if (response.success) {
-      // Store user data and token
-      localStorage.setItem(AUTH_KEY, JSON.stringify(response.data.user));
-      localStorage.setItem(TOKEN_KEY, response.data.token);
+  // Store both token and refresh token
+  localStorage.setItem(TOKEN_KEY, response.data.token);
+  localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
 
-      return { success: true, user: response.data.user };
+  return { success: true, user: response.data.user };
     }
 
     return { success: false, error: 'Registration failed' };
@@ -88,14 +89,14 @@ export const logout = async () => {
     console.warn('Logout API error:', error);
   } finally {
     // Always clear local storage
-    localStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 };
 
 export const getCurrentUser = () => {
-  const user = localStorage.getItem(AUTH_KEY);
-  return user ? JSON.parse(user) : null;
+  // Always fetch user from backend, not localStorage
+  return null;
 };
 
 export const updateUserBalance = async (userId, newBalance) => {
@@ -106,11 +107,9 @@ export const updateUserBalance = async (userId, newBalance) => {
       throw new Error('User not found or unauthorized');
     }
 
-    // Update user data locally (balance will be updated via API responses)
-    const updatedUser = { ...currentUser, balance: newBalance };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(updatedUser));
-
-    return updatedUser;
+  // Do not update localStorage for user balance. Always fetch from backend for accuracy.
+  // Optionally, trigger a UI refresh or refetch user data from backend here.
+  return { ...currentUser, balance: newBalance };
   } catch (error) {
     console.error('Error updating user balance:', error);
     throw error;
@@ -121,13 +120,45 @@ export const refreshUserData = async () => {
   try {
     const response = await api.auth.getMe();
     if (response.success) {
-      localStorage.setItem(AUTH_KEY, JSON.stringify(response.data));
+      // Only update UI state, not persistent user details in localStorage
       return response.data;
     }
   } catch (error) {
-    console.warn('Error refreshing user data:', error);
-    // If refresh fails, just return null - don't logout automatically
-    // The user will be prompted to login again if needed
+    // If token is expired (401), try to refresh it
+    if (error.message && error.message.includes('Authentication required')) {
+      try {
+        const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+        if (refreshToken) {
+          const refreshResponse = await api.auth.refreshToken(refreshToken);
+          if (refreshResponse.success) {
+            // Store new token
+            localStorage.setItem(TOKEN_KEY, refreshResponse.data.token);
+            // Retry getMe with new token
+            const retryResponse = await api.auth.getMe();
+            if (retryResponse.success) {
+              return retryResponse.data;
+            }
+          } else {
+            // Refresh failed, clear tokens and force logout
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
+            return null;
+          }
+        } else {
+          // No refresh token, clear tokens and force logout
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
+          return null;
+        }
+      } catch (refreshError) {
+        // Refresh failed, clear tokens and force logout
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+        return null;
+      }
+    }
+    // Other error, just return null
+    return null;
   }
   return null;
 };
@@ -170,8 +201,7 @@ export const updateUserDetails = async (userData) => {
   try {
     const response = await api.auth.updateDetails(userData);
     if (response.success) {
-      // Update local storage with new user data
-      localStorage.setItem(AUTH_KEY, JSON.stringify(response.data));
+      // Only update UI state, not persistent user details in localStorage
       return { success: true, user: response.data };
     }
     return { success: false, error: 'Update failed' };

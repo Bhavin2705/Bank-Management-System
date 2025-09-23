@@ -1,6 +1,7 @@
 import { Eye, EyeOff, Key, Lock, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
+import api from '../utils/api';
 
 const Security = ({ user, onUserUpdate }) => {
   const { showSuccess, showError } = useNotification();
@@ -42,22 +43,26 @@ const Security = ({ user, onUserUpdate }) => {
       return;
     }
 
-    // In a real app, you'd verify the current password against the stored hash
-    // For demo purposes, we'll just update it
-    const users = JSON.parse(localStorage.getItem('bank_users') || '[]');
-    const userIndex = users.findIndex(u => u.id === user.id);
-
-    if (userIndex !== -1) {
-      users[userIndex].password = passwordForm.newPassword;
-      localStorage.setItem('bank_users', JSON.stringify(users));
-
-      showSuccess('Password updated successfully! 🔒');
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+    // Use backend API for password update
+    api.auth.updatePassword({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    })
+      .then((result) => {
+        if (result.success) {
+          showSuccess(result.message || 'Password updated successfully! 🔒');
+          setPasswordForm({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          });
+        } else {
+          showError(result.error || 'Password update failed.');
+        }
+      })
+      .catch((err) => {
+        showError(err.message || 'Password update failed.');
       });
-    }
   };
 
   const handlePinChange = (e) => {

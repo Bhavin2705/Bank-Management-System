@@ -20,7 +20,8 @@ const Transactions = ({ user, onUserUpdate }) => {
     type: 'debit',
     amount: '',
     description: '',
-    category: 'other'
+    // Default to a sensible category so the select has a value when the form is shown
+    category: 'food',
   });
 
   useEffect(() => {
@@ -44,8 +45,14 @@ const Transactions = ({ user, onUserUpdate }) => {
     e.preventDefault();
 
     const amount = parseFloat(formData.amount);
-    if (amount <= 0) return;
-
+    if (!formData.type || !formData.description || isNaN(amount) || amount <= 0) {
+      showError('Please fill in all required fields with valid values.');
+      return;
+    }
+    if (formData.type === 'debit' && (!formData.category || formData.category === '')) {
+      showError('Please select a category for withdrawals.');
+      return;
+    }
     if (formData.type === 'debit' && amount > user.balance) {
       showError('Insufficient balance for this transaction');
       return;
@@ -58,24 +65,27 @@ const Transactions = ({ user, onUserUpdate }) => {
         type: formData.type,
         amount: amount,
         description: formData.description || `${formData.type === 'credit' ? 'Deposit' : 'Withdrawal'}`,
-        category: formData.category
+        category: formData.type === 'debit' ? formData.category : undefined
       };
 
       const result = await addTransaction(transaction);
 
-      if (result.success) {
+      // addTransaction returns the created transaction object (or throws). Treat a truthy result as success.
+      if (result) {
         showSuccess('Transaction added successfully!');
+
         // Update user balance in parent component
         const newBalance = formData.type === 'credit'
           ? user.balance + amount
           : user.balance - amount;
 
         onUserUpdate({ ...user, balance: newBalance });
-        loadTransactions();
+        await loadTransactions();
         setShowForm(false);
-        setFormData({ type: 'debit', amount: '', description: '', category: 'other' });
+        // Reset form to defaults (category back to default)
+        setFormData({ type: 'debit', amount: '', description: '', category: 'food' });
       } else {
-        showError(result.error || 'Failed to add transaction');
+        showError('Failed to add transaction');
       }
     } catch (error) {
       showError('Failed to add transaction. Please try again.');
@@ -277,24 +287,26 @@ const Transactions = ({ user, onUserUpdate }) => {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Category</label>
-                <select
-                  className="form-input"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="food">Food & Dining</option>
-                  <option value="transportation">Transportation</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="utilities">Utilities</option>
-                  <option value="shopping">Shopping</option>
-                  <option value="healthcare">Healthcare</option>
-                  <option value="salary">Salary</option>
-                  <option value="transfer">Transfer</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
+              {formData.type === 'debit' && (
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <select
+                    className="form-input"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="food">Food & Dining</option>
+                    <option value="transportation">Transportation</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="salary">Salary</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -342,7 +354,8 @@ const Transactions = ({ user, onUserUpdate }) => {
                       {transaction.description}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {formatDate(transaction.date)} • {transaction.category || 'Other'}
+                      {transaction.date ? formatDate(transaction.date) : ''}
+                      {transaction.type === 'debit' && transaction.category ? ` • ${transaction.category}` : ''}
                     </div>
                   </div>
                 </div>

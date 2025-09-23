@@ -11,7 +11,7 @@ const Transfer = ({ user, onUserUpdate }) => {
     recipientPhone: '',
     recipientAccount: '',
     recipientName: '',
-    recipientBank: null,
+    recipientBank: { id: 'bankpro', name: 'BankPro', ifscCode: 'BANK0001234' },
     amount: '',
     description: ''
   });
@@ -118,6 +118,11 @@ const Transfer = ({ user, onUserUpdate }) => {
 
         if (isExternalTransfer) {
           // External transfer with phone
+          if (!formData.recipientName || !formData.recipientBank.name || !formData.recipientBank.ifscCode) {
+            setError('Recipient name and bank details are required for external transfers');
+            setTransferring(false);
+            return;
+          }
           transferData = {
             recipientPhone: formData.recipientPhone,
             recipientName: formData.recipientName,
@@ -147,6 +152,11 @@ const Transfer = ({ user, onUserUpdate }) => {
 
         if (isExternalTransfer) {
           // External transfer with account
+          if (!formData.recipientName || !formData.recipientBank.name || !formData.recipientBank.ifscCode) {
+            setError('Recipient name and bank details are required for external transfers');
+            setTransferring(false);
+            return;
+          }
           transferData = {
             recipientAccount: formData.recipientAccount,
             recipientName: formData.recipientName,
@@ -185,7 +195,7 @@ const Transfer = ({ user, onUserUpdate }) => {
           recipientPhone: '',
           recipientAccount: '',
           recipientName: '',
-          recipientBank: null,
+          recipientBank: { id: 'bankpro', name: 'BankPro', ifscCode: 'BANK0001234' },
           amount: '',
           description: ''
         });
@@ -393,6 +403,27 @@ const Transfer = ({ user, onUserUpdate }) => {
               required
               placeholder="0.00"
             />
+            {/* Fee and total debit preview for external transfers */}
+            {formData.recipientBank && formData.recipientBank.id !== 'bankpro' && formData.amount && parseFloat(formData.amount) > 0 && (
+              <div style={{ marginTop: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                <strong>Transfer Preview:</strong><br />
+                Amount: <span style={{ color: 'var(--primary)' }}>{formatCurrency(parseFloat(formData.amount))}</span><br />
+                Processing Fee: <span style={{ color: 'var(--warning)' }}>{formatCurrency(Math.max(10, parseFloat(formData.amount) * 0.005))}</span><br />
+                <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Total to be debited: {formatCurrency(parseFloat(formData.amount) + Math.max(10, parseFloat(formData.amount) * 0.005))}</span>
+                <br />
+                <span style={{ fontSize: '0.85rem' }}>This is the total amount that will be deducted from your account for this transfer.</span>
+              </div>
+            )}
+            {/* Preview for internal transfers by account number */}
+            {formData.recipientBank && formData.recipientBank.id === 'bankpro' && formData.amount && parseFloat(formData.amount) > 0 && (
+              <div style={{ marginTop: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '6px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                <strong>Transfer Preview:</strong><br />
+                Amount: <span style={{ color: 'var(--primary)' }}>{formatCurrency(parseFloat(formData.amount))}</span><br />
+                <span style={{ color: 'var(--success)', fontWeight: 600 }}>No processing fee. Total to be debited: {formatCurrency(parseFloat(formData.amount))}</span>
+                <br />
+                <span style={{ fontSize: '0.85rem' }}>Internal transfers to BankPro accounts do not incur any fees.</span>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -457,7 +488,7 @@ const Transfer = ({ user, onUserUpdate }) => {
                   </div>
                 </div>
                 <div style={{ fontWeight: '600', color: 'var(--success)' }}>
-                  {formatCurrency(u.balance)}
+                  {typeof u.balance === 'number' && !isNaN(u.balance) ? formatCurrency(u.balance) : formatCurrency(0)}
                 </div>
               </div>
             ))

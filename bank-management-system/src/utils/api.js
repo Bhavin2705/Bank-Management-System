@@ -7,16 +7,17 @@ const getAuthToken = () => {
 };
 
 // Helper function to handle API responses
-const handleResponse = async (response, isLoginRequest = false) => {
+const handleResponse = async (response, isLoginRequest = false, isGetMeRequest = false) => {
     const data = await response.json();
 
     if (!response.ok) {
         // Handle unauthorized access
         if (response.status === 401) {
-            // Don't clear auth data for login failures - only for token authentication failures
-            if (!isLoginRequest) {
+            // Don't clear auth data for login failures or getMe requests (handled by auth logic)
+            if (!isLoginRequest && !isGetMeRequest) {
                 // Clear auth data but don't redirect - let React handle routing
                 localStorage.removeItem('bank_auth_token');
+                localStorage.removeItem('bank_auth_refresh_token');
                 localStorage.removeItem('bank_auth_user');
                 // Instead of redirecting, throw error to be handled by components
                 throw new Error('Authentication required');
@@ -60,9 +61,10 @@ const apiRequest = async (endpoint, options = {}) => {
             timeoutPromise
         ]);
 
-        // Check if this is a login request to handle 401 differently
+        // Check if this is a login request or getMe request to handle 401 differently
         const isLoginRequest = endpoint === '/auth/login';
-        return await handleResponse(response, isLoginRequest);
+        const isGetMeRequest = endpoint === '/auth/me';
+        return await handleResponse(response, isLoginRequest, isGetMeRequest);
     } catch (error) {
         console.error('API Request Error:', error);
         throw error;
@@ -123,8 +125,9 @@ export const api = {
             body: JSON.stringify(passwordData)
         }),
 
-        refreshToken: () => apiRequest('/auth/refresh', {
-            method: 'POST'
+        refreshToken: (refreshToken) => apiRequest('/auth/refresh', {
+            method: 'POST',
+            body: JSON.stringify({ refreshToken })
         }),
 
         forgotPassword: (emailData) => apiRequest('/auth/forgotpassword', {

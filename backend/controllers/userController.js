@@ -1,3 +1,39 @@
+// @desc    Get bank financial metrics (realistic simulation)
+// @route   GET /api/users/bank-metrics
+// @access  Private/Admin
+const getBankMetrics = async (req, res) => {
+    try {
+        const Account = require('../models/Account');
+        // Aggregate total deposits by account type
+        const accountStats = await Account.aggregate([
+            { $match: { status: 'active' } },
+            {
+                $group: {
+                    _id: '$accountType',
+                    totalBalance: { $sum: '$balance' },
+                    averageBalance: { $avg: '$balance' },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Calculate total deposits (sum of all active accounts)
+        const totalDeposits = accountStats.reduce((sum, acc) => sum + acc.totalBalance, 0);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalDeposits,
+                accountTypeBreakdown: accountStats
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server error getting bank metrics'
+        });
+    }
+};
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const { getAllBanks } = require('../utils/banks');
@@ -444,8 +480,8 @@ const getTransferRecipients = async (req, res) => {
             role: { $ne: 'admin' }, // Exclude admin users
             status: 'active' // Only active users
         })
-            .select('firstName lastName email accountNumber profilePicture') // Limited fields
-            .sort({ firstName: 1, lastName: 1 }); // Sort alphabetically
+            .select('name email accountNumber profilePicture') // Do NOT include balance
+            .sort({ name: 1 }); // Sort alphabetically
 
         res.status(200).json({
             success: true,
@@ -473,5 +509,6 @@ module.exports = {
     updateUserStatus,
     checkEmailExists,
     checkPhoneExists,
-    getTransferRecipients
+    getTransferRecipients,
+    getBankMetrics
 };

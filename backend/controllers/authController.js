@@ -6,14 +6,20 @@ const Transaction = require('../models/Transaction');
 
 // Generate JWT Token
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
+    if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET is not set. Using temporary development secret. Set JWT_SECRET in production.');
+    }
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'dev_jwt_secret_change_me', {
         expiresIn: process.env.JWT_EXPIRE || '7d',
     });
 };
 
 // Generate Refresh Token
 const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, {
+    if (!process.env.JWT_REFRESH_SECRET) {
+        console.error('JWT_REFRESH_SECRET is not set. Using temporary development secret. Set JWT_REFRESH_SECRET in production.');
+    }
+    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me', {
         expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
     });
 };
@@ -67,8 +73,7 @@ const register = async (req, res) => {
                 type: 'credit',
                 amount: initialDeposit,
                 balance: initialDeposit,
-                description: 'Initial account deposit',
-                category: 'deposit'
+                description: 'Initial account deposit'
             });
         }
 
@@ -448,6 +453,13 @@ const forgotPassword = async (req, res) => {
 
         await user.save({ validateBeforeSave: false });
 
+        // Log user document after save for debugging
+        const updatedUser = await User.findOne({ email: req.body.email });
+        console.log('Forgot password debug:');
+        console.log('  email:', updatedUser.email);
+        console.log('  passwordResetToken:', updatedUser.security?.passwordResetToken);
+        console.log('  passwordResetExpires:', updatedUser.security?.passwordResetExpires);
+
         // In a real application, you would send an email here
         // For now, we'll just return the token for testing purposes
         res.status(200).json({
@@ -468,28 +480,40 @@ const forgotPassword = async (req, res) => {
 // @access  Public
 const resetPassword = async (req, res) => {
     try {
-        // Get hashed token (the token from URL is already the raw token, we need to hash it to compare with stored hash)
+        const rawToken = req.params.resettoken;
         const resetPasswordToken = crypto
             .createHash('sha256')
-            .update(req.params.resettoken)
+            .update(rawToken)
             .digest('hex');
 
-        const user = await User.findOne({
-            passwordResetToken: resetPasswordToken,
-            passwordResetExpires: { $gt: Date.now() }
-        });
+        console.log('Password reset debug:');
+        console.log('  Raw token:', rawToken);
+        console.log('  Hashed token:', resetPasswordToken);
+
+        // Find user by token, regardless of expiry
+        const user = await User.findOne({ 'security.passwordResetToken': resetPasswordToken });
 
         if (!user) {
+            console.error('Password reset error: invalid token');
             return res.status(400).json({
                 success: false,
-                error: 'Invalid or expired token'
+                error: 'Invalid password reset token.'
+            });
+        }
+
+        // Check expiry
+        if (!user.security?.passwordResetExpires || user.security.passwordResetExpires < Date.now()) {
+            console.error('Password reset error: expired token');
+            return res.status(400).json({
+                success: false,
+                error: 'Password reset token has expired.'
             });
         }
 
         // Set new password
         user.password = req.body.password;
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
+        user.security.passwordResetToken = undefined;
+        user.security.passwordResetExpires = undefined;
         await user.save();
 
         const token = generateToken(user._id);
@@ -500,6 +524,7 @@ const resetPassword = async (req, res) => {
             message: 'Password reset successful'
         });
     } catch (error) {
+        console.error('Server error resetting password:', error);
         res.status(500).json({
             success: false,
             error: 'Server error resetting password'

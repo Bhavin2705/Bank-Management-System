@@ -184,7 +184,7 @@ function getServicesForUserBank(type, bankName) {
       'Financial Planning',
       'Insurance Services',
       'Credit Cards',
-      'Online Banking Support',
+      // ...existing code...
       'Mobile Banking'
     ];
     const numServices = Math.floor(Math.random() * 6) + 5; // 5-10 services for user's bank

@@ -11,10 +11,13 @@ const protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
         }
 
+
         // Check for token in cookies (if cookies are available)
         if (!token && req.cookies && req.cookies.token) {
             token = req.cookies.token;
         }
+
+        // Note: tokens must be provided in Authorization header as Bearer token or via cookies.
 
         if (!token) {
             return res.status(401).json({
@@ -36,8 +39,10 @@ const protect = async (req, res, next) => {
                     error: 'No user found with this token'
                 });
             }
-
+            // Attach full user document and a stable string id for handlers
             req.user = user;
+            // Mongoose documents expose `id` as a string, but ensure a consistent field
+            req.userId = user._id ? user._id.toString() : undefined;
             next();
         } catch (error) {
             return res.status(401).json({

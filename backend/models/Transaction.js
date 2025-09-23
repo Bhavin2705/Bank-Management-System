@@ -33,7 +33,7 @@ const transactionSchema = new mongoose.Schema({
     category: {
         type: String,
         enum: [
-            'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
+            'withdrawal', 'transfer', 'bill_payment', 'shopping',
             'food', 'transport', 'entertainment', 'utilities', 'salary',
             'investment', 'loan', 'fee', 'interest', 'other'
         ],
@@ -137,7 +137,7 @@ transactionSchema.statics.getUserTransactions = function (userId, options = {}) 
     let query = { userId };
 
     if (type) query.type = type;
-    if (category) query.category = category;
+    if (category && type !== 'credit') query.category = category;
     if (startDate || endDate) {
         query.createdAt = {};
         if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -190,7 +190,9 @@ transactionSchema.statics.getTransactionStats = function (userId, period = 'mont
                 },
                 transactionCount: { $sum: 1 },
                 categories: {
-                    $push: '$category'
+                    $push: {
+                        $cond: [{ $ne: ['$type', 'credit'] }, '$category', '$$REMOVE']
+                    }
                 }
             }
         }

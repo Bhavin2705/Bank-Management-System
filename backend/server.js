@@ -13,6 +13,21 @@ const jwt = require('jsonwebtoken');
 // Load environment variables
 require('dotenv').config();
 
+// Quick environment sanity checks (development-friendly)
+const requiredEnv = ['NODE_ENV'];
+if (process.env.NODE_ENV === 'development') {
+    // Provide developer-friendly defaults for JWT secrets to avoid runtime crashes during local development.
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+    process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me';
+}
+
+// Warn if essential env vars are missing in non-development environments.
+if (process.env.NODE_ENV !== 'development') {
+    const missing = requiredEnv.filter(e => !process.env[e]);
+    if (missing.length) {
+        console.warn('Warning: Missing environment variables:', missing.join(', '));
+    }
+}
 // Connect to database
 connectDB();
 
@@ -21,7 +36,6 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
 const branchRoutes = require('./routes/branches');
-const geocodingRoutes = require('./routes/geocoding');
 const banksRoutes = require('./routes/banks');
 
 // Initialize Express app
@@ -66,7 +80,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/branches', branchRoutes);
-app.use('/api/geocoding', geocodingRoutes);
 app.use('/api/banks', banksRoutes);
 
 // Socket.io middleware for authentication

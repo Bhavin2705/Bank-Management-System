@@ -1,12 +1,21 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+    // Use provided MONGODB_URI or fall back to a local MongoDB instance for development.
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/bank_management_system';
+
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI);
+        // Connect to MongoDB. If you need specific mongoose options, add them here.
+        const conn = await mongoose.connect(mongoURI);
 
         console.log(`MongoDB Connected: ${conn.connection.host}`);
+        if (!process.env.MONGODB_URI) {
+            console.warn('Warning: MONGODB_URI not set. Connected to local fallback:', mongoURI);
+        }
     } catch (error) {
         console.error('Database connection error:', error.message);
+        console.error('Tried to connect to:', mongoURI);
+        console.error('Set the MONGODB_URI environment variable to a valid MongoDB connection string.');
         process.exit(1);
     }
 };

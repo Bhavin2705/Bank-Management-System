@@ -114,14 +114,18 @@ const createTransaction = async (req, res) => {
             newBalance -= amount;
         }
 
+        // Ensure there is always a description (Mongoose requires it)
+        const finalDescription = description && description.trim().length > 0 ? description.trim() : (type === 'credit' ? 'Credit transaction' : 'Debit transaction');
+        const finalCategory = type === 'credit' ? 'salary' : (category || 'other');
+
         // Create transaction
         const transaction = await Transaction.create({
             userId: req.user._id,
             type,
             amount,
             balance: newBalance,
-            description,
-            category: category || 'other',
+            description: finalDescription,
+            category: finalCategory,
             recipientId,
             recipientAccount,
             recipientName
@@ -293,7 +297,7 @@ const getTransactionStats = async (req, res) => {
 const getTransactionCategories = async (req, res) => {
     try {
         const categories = [
-            'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
+            'withdrawal', 'transfer', 'bill_payment', 'shopping',
             'food', 'transport', 'entertainment', 'utilities', 'salary',
             'investment', 'loan', 'fee', 'interest', 'other'
         ];
@@ -504,8 +508,12 @@ const transferMoney = async (req, res) => {
             });
         }
 
-        // Create transactions
+        // Calculate new balance
         const senderNewBalance = sender.balance - totalDebit;
+
+        // Update sender balance FIRST before creating transactions
+        sender.balance = senderNewBalance;
+        await sender.save({ validateBeforeSave: false });
 
         // Sender transaction - record the actual transfer amount, not total debit
         const senderTransaction = await Transaction.create({
@@ -522,46 +530,38 @@ const transferMoney = async (req, res) => {
             recipientBank: recipientBank || null
         });
 
-        // For internal transfers (recipient exists in our system), create corresponding credit transaction
+        // For internal transfers, create corresponding credit transaction for recipient
         if (isInternalTransfer && recipient) {
             const recipientNewBalance = recipient.balance + amount;
-
+            
             await Transaction.create({
                 userId: recipient._id,
                 type: 'credit',
-                transferType: transferType,
+                transferType: 'internal',
                 amount,
                 balance: recipientNewBalance,
                 description: `Transfer from ${sender.name}`,
-                category: 'transfer'
+                category: 'transfer',
+                recipientId: req.user._id, // Reference back to sender
+                recipientAccount: sender.accountNumber,
+                recipientName: sender.name
             });
 
-            await User.findByIdAndUpdate(recipient._id, { balance: recipientNewBalance });
+            // Update recipient balance
+            recipient.balance = recipientNewBalance;
+            await recipient.save({ validateBeforeSave: false });
         }
 
-        // For external transfers, create a separate fee transaction
-        if (!isInternalTransfer && processingFee > 0) {
-            await Transaction.create({
-                userId: req.user._id,
-                type: 'debit',
-                transferType: 'fee',
-                amount: processingFee,
-                balance: senderNewBalance, // Balance remains the same since fee is already deducted
-                description: `Processing fee for transfer to ${recipientAccount}`,
-                category: 'fee'
-            });
-        }
-
-        // Update sender balance
-        await User.findByIdAndUpdate(req.user._id, { balance: senderNewBalance });
-
-        let message = `Successfully transferred ₹${amount.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
-        if (!isInternalTransfer) {
-            message += ` (${recipientBank ? recipientBank.bankName : 'External Bank'})`;
-            if (processingFee > 0) {
-                message += `. Processing fee: ₹${processingFee.toLocaleString('en-IN')} (Total debited: ₹${totalDebit.toLocaleString('en-IN')})`;
+            let message = `Successfully transferred ₹${amount.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
+            if (!isInternalTransfer) {
+                message += ` (${recipientBank ? recipientBank.bankName : 'External Bank'})`;
+                if (processingFee > 0) {
+                    message += `. Processing fee: ₹${processingFee.toLocaleString('en-IN')} (Total debited: ₹${totalDebit.toLocaleString('en-IN')})`;
+                }
             }
-        }
+
+            // Always inform user about fee and total debit
+            message += `\nNote: A processing fee of ₹${processingFee.toLocaleString('en-IN')} was deducted. Total debited from your account: ₹${totalDebit.toLocaleString('en-IN')}.`;
 
         res.status(201).json({
             success: true,

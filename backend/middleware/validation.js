@@ -4,10 +4,14 @@ const { body, param, query, validationResult } = require('express-validator');
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        // Build a readable error message from validation errors
+        const details = errors.array();
+        const message = details.map(err => err.msg).join('; ');
+
         return res.status(400).json({
             success: false,
-            error: 'Validation failed',
-            details: errors.array()
+            error: message || 'Validation failed',
+            details
         });
     }
     next();
@@ -18,7 +22,9 @@ const validateUserRegistration = [
     body('name')
         .trim()
         .isLength({ min: 2, max: 50 })
-        .withMessage('Name must be between 2 and 50 characters'),
+        .withMessage('Name must be between 2 and 50 characters')
+        .matches(/^[a-zA-Z\s'-]+$/)
+        .withMessage('Name can only contain letters, spaces, hyphens, and apostrophes'),
     body('email')
         .isEmail()
         .normalizeEmail()
@@ -89,8 +95,8 @@ const validateTransaction = [
         .optional()
         .isIn([
             'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
-            'food', 'transport', 'entertainment', 'utilities', 'salary',
-            'investment', 'loan', 'fee', 'interest', 'other'
+            'food', 'transport', 'transportation', 'entertainment', 'utilities', 'salary',
+            'healthcare', 'investment', 'loan', 'fee', 'interest', 'other'
         ])
         .withMessage('Invalid category'),
     handleValidationErrors

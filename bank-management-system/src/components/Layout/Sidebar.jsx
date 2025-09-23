@@ -8,11 +8,9 @@ import {
   DollarSign,
   Download,
   FileText,
-  Headphones,
   Home,
   LogOut,
   MapPin,
-  MessageCircle,
   Moon,
   PieChart,
   Receipt,
@@ -44,7 +42,7 @@ const Sidebar = ({
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
     { id: 'transactions', label: 'Transactions', icon: CreditCard, path: '/transactions' },
     { id: 'transfer', label: 'Transfer Money', icon: ArrowRightLeft, path: '/transfer' },
-    { id: 'accounts', label: 'Account Management', icon: UserCog, path: '/accounts' },
+  // Removed Account Management from sidebar
     { id: 'deposit-withdraw', label: 'Deposit & Withdraw', icon: ArrowUpCircle, path: '/deposit-withdraw' },
     { id: 'cards', label: 'My Cards', icon: CreditCard, path: '/cards' },
     { id: 'recurring', label: 'Recurring Payments', icon: Repeat, path: '/recurring' },
@@ -54,7 +52,7 @@ const Sidebar = ({
     { id: 'currency-exchange', label: 'Currency Exchange', icon: DollarSign, path: '/currency-exchange' },
     { id: 'financial-markets', label: 'Financial Markets', icon: BarChart3, path: '/financial-markets' },
     { id: 'branch-locator', label: 'Branch Locator', icon: MapPin, path: '/branch-locator' },
-    { id: 'support', label: 'Support', icon: MessageCircle, path: '/support' },
+    // ...existing code...
     { id: 'bills', label: 'Bill Payments', icon: FileText, path: '/bills' },
     { id: 'goals', label: 'Savings Goals', icon: Target, path: '/goals' },
     { id: 'budget', label: 'Budget', icon: PieChart, path: '/budget' },
@@ -68,7 +66,7 @@ const Sidebar = ({
 
   if (canAccessAdminFeatures(user)) {
     navItems.splice(2, 0, { id: 'users', label: 'Users', icon: Users, path: '/users' });
-    navItems.splice(13, 0, { id: 'admin-support', label: 'Admin Support', icon: Headphones, path: '/admin-support' });
+    // ...existing code...
   }
 
   return (
