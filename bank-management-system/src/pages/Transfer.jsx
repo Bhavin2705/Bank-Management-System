@@ -11,7 +11,7 @@ const Transfer = ({ user, onUserUpdate }) => {
     recipientPhone: '',
     recipientAccount: '',
     recipientName: '',
-      recipientBank: { id: 'bankpro', name: 'BankPro' },
+    recipientBank: { id: 'bankpro', name: 'BankPro' },
     amount: '',
     description: ''
   });
@@ -325,10 +325,10 @@ const Transfer = ({ user, onUserUpdate }) => {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       <AlertTriangle size={16} style={{ color: 'var(--warning)' }} />
-                      <strong>External Transfer Fee: ₹{Math.max(10, parseFloat(formData.amount || 0) * 0.005).toLocaleString('en-IN')}</strong>
+                      <strong>External Transfer Fee: Rs{Math.max(10, parseFloat(formData.amount || 0) * 0.005).toLocaleString('en-IN')}</strong>
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      External transfers incur a processing fee of ₹10 or 0.5% of the transfer amount, whichever is higher.
+                      External transfers incur a processing fee of Rs10 or 0.5% of the transfer amount, whichever is higher.
                     </div>
                   </div>
                 )}

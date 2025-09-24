@@ -27,7 +27,7 @@ const CurrencyExchange = () => {
         { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', icon: null },
         { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr', icon: null },
         { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', icon: null },
-        { code: 'INR', name: 'Indian Rupee', symbol: '₹', icon: null },
+        { code: 'INR', name: 'Indian Rupee', symbol: 'Rs', icon: null },
         { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', icon: null }
     ];
 

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const { getBankById, validateIFSC } = require('../utils/banks');
@@ -94,6 +95,7 @@ const getTransaction = async (req, res) => {
 // @route   POST /api/transactions
 // @access  Private
 const createTransaction = async (req, res) => {
+    console.log('[Transaction Controller] Creating transaction for user:', req.user._id);
     try {
         const { type, amount, description, category, recipientId, recipientAccount, recipientName } = req.body;
 
@@ -130,6 +132,7 @@ const createTransaction = async (req, res) => {
             recipientAccount,
             recipientName
         });
+        console.log('[Transaction Controller] Transaction created:', transaction);
 
         // Update user balance
         await User.findByIdAndUpdate(req.user._id, { balance: newBalance });
@@ -153,11 +156,24 @@ const createTransaction = async (req, res) => {
             }
         }
 
-        res.status(201).json({
-            success: true,
-            data: transaction
-        });
+        // Direct raw collection check to verify persistence
+        try {
+            const rawDoc = await mongoose.connection.db.collection('transactions').findOne({ _id: transaction._id });
+            const count = await mongoose.connection.db.collection('transactions').countDocuments();
+            console.log('[Raw Collection] findOne result:', rawDoc);
+            console.log('[Raw Collection] countDocuments:', count);
+            if (!rawDoc) {
+                console.error('Transaction not found in raw collection after create:', transaction._id);
+                return res.status(500).json({ success: false, error: 'Transaction not persisted to raw collection' });
+            }
+        } catch (rawErr) {
+            console.error('Error checking raw collection:', rawErr);
+            // continue to return created transaction since model returned it
+        }
+
+        res.status(201).json({ success: true, data: transaction });
     } catch (error) {
+        console.error('Error creating transaction:', error);
         res.status(500).json({
             success: false,
             error: 'Server error creating transaction'
@@ -404,7 +420,7 @@ const validateTransferDetails = async (req, res) => {
             success: true,
             data: preview,
             message: hasSufficientBalance
-                ? `Transfer preview: ₹${amount.toLocaleString('en-IN')} transfer${processingFee > 0 ? ` + ₹${processingFee.toLocaleString('en-IN')} fee = ₹${totalDebit.toLocaleString('en-IN')} total` : ''}`
+                ? `Transfer preview: Rs${amount.toLocaleString('en-IN')} transfer${processingFee > 0 ? ` + Rs${processingFee.toLocaleString('en-IN')} fee = Rs${totalDebit.toLocaleString('en-IN')} total` : ''}`
                 : 'Insufficient balance for this transfer'
         });
     } catch (error) {
@@ -499,7 +515,7 @@ const transferMoney = async (req, res) => {
         }
 
         // For external transfers, add processing fee
-        const processingFee = isInternalTransfer ? 0 : Math.max(10, amount * 0.005); // ₹10 or 0.5% whichever is higher
+        const processingFee = isInternalTransfer ? 0 : Math.max(10, amount * 0.005); // Rs10 or 0.5% whichever is higher
         const totalDebit = amount + processingFee;
 
         if (sender.balance < totalDebit) {
@@ -521,9 +537,11 @@ const transferMoney = async (req, res) => {
             userId: req.user._id,
             type: 'debit',
             transferType,
-            amount: amount, // Record the actual transfer amount
+            amount: isInternalTransfer ? amount : totalDebit, // For external, include fee in amount
             balance: senderNewBalance,
-            description: description || `Transfer to ${recipient ? recipient.name : recipientAccount}`,
+            description: isInternalTransfer
+                ? (description || `Transfer to ${recipient ? recipient.name : recipientAccount}`)
+                : `${description || `Transfer to ${recipient ? recipient.name : recipientAccount}`} (includes processing fee Rs${processingFee.toLocaleString('en-IN')})`,
             category: 'transfer',
             recipientId: recipient ? recipient._id : null,
             recipientAccount,
@@ -531,10 +549,12 @@ const transferMoney = async (req, res) => {
             recipientBank: recipientBank || null
         });
 
+        // No separate fee transaction; fee is included in main debit transaction
+
         // For internal transfers, create corresponding credit transaction for recipient
         if (isInternalTransfer && recipient) {
             const recipientNewBalance = recipient.balance + amount;
-            
+
             await Transaction.create({
                 userId: recipient._id,
                 type: 'credit',
@@ -553,16 +573,16 @@ const transferMoney = async (req, res) => {
             await recipient.save({ validateBeforeSave: false });
         }
 
-            let message = `Successfully transferred ₹${amount.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
-            if (!isInternalTransfer) {
-                message += ` (${recipientBank ? recipientBank.bankName : 'External Bank'})`;
-                if (processingFee > 0) {
-                    message += `. Processing fee: ₹${processingFee.toLocaleString('en-IN')} (Total debited: ₹${totalDebit.toLocaleString('en-IN')})`;
-                }
+        let message = `Successfully transferred Rs${amount.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
+        if (!isInternalTransfer) {
+            message += ` (${recipientBank ? recipientBank.bankName : 'External Bank'})`;
+            if (processingFee > 0) {
+                message += `. Processing fee: Rs${processingFee.toLocaleString('en-IN')} (Total debited: Rs${totalDebit.toLocaleString('en-IN')})`;
             }
+        }
 
-            // Always inform user about fee and total debit
-            message += `\nNote: A processing fee of ₹${processingFee.toLocaleString('en-IN')} was deducted. Total debited from your account: ₹${totalDebit.toLocaleString('en-IN')}.`;
+        // Always inform user about fee and total debit
+        message += `\nNote: A processing fee of Rs${processingFee.toLocaleString('en-IN')} was deducted. Total debited from your account: Rs${totalDebit.toLocaleString('en-IN')}.`;
 
         res.status(201).json({
             success: true,

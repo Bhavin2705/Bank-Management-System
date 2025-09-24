@@ -53,7 +53,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
             const result = await api.transactions.create(transactionData);
 
             if (result.success) {
-                showSuccess(`Successfully deposited ₹${depositAmount.toFixed(2)}`);
+                showSuccess(`Successfully deposited Rs${depositAmount.toFixed(2)}`);
 
                 // Update user balance in parent component
                 const newBalance = user.balance + depositAmount;
@@ -98,7 +98,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
             const result = await api.transactions.create(transactionData);
 
             if (result.success) {
-                showSuccess(`Successfully withdrew ₹${withdrawAmount.toFixed(2)}`);
+                showSuccess(`Successfully withdrew Rs${withdrawAmount.toFixed(2)}`);
 
                 // Update user balance in parent component
                 const newBalance = user.balance - withdrawAmount;

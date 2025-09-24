@@ -193,7 +193,7 @@ notificationSchema.statics.markAllAsRead = function (userId) {
 // Static method to create transaction notification
 notificationSchema.statics.createTransactionNotification = function (userId, transaction) {
     const title = transaction.type === 'credit' ? 'Money Received' : 'Money Sent';
-    const message = `₹${transaction.amount.toLocaleString('en-IN')} ${transaction.type === 'credit' ? 'credited to' : 'debited from'} your account`;
+    const message = `Rs${transaction.amount.toLocaleString('en-IN')} ${transaction.type === 'credit' ? 'credited to' : 'debited from'} your account`;
 
     return this.create({
         userId,
@@ -212,7 +212,7 @@ notificationSchema.statics.createTransactionNotification = function (userId, tra
 // Static method to create bill due notification
 notificationSchema.statics.createBillDueNotification = function (userId, bill) {
     const title = 'Bill Due Soon';
-    const message = `Your ${bill.name} bill of ₹${bill.amount.toLocaleString('en-IN')} is due on ${bill.dueDate.toDateString()}`;
+    const message = `Your ${bill.name} bill of Rs${bill.amount.toLocaleString('en-IN')} is due on ${bill.dueDate.toDateString()}`;
 
     return this.create({
         userId,
@@ -232,7 +232,7 @@ notificationSchema.statics.createBillDueNotification = function (userId, bill) {
 // Static method to create low balance notification
 notificationSchema.statics.createLowBalanceNotification = function (userId, account, balance) {
     const title = 'Low Balance Alert';
-    const message = `Your account balance is ₹${balance.toLocaleString('en-IN')}. Consider adding funds to avoid transaction failures.`;
+    const message = `Your account balance is Rs${balance.toLocaleString('en-IN')}. Consider adding funds to avoid transaction failures.`;
 
     return this.create({
         userId,

@@ -1,4 +1,6 @@
 import { Download, FileText, Printer, Receipt, TrendingDown, TrendingUp } from 'lucide-react';
+import { getTransactions } from '../utils/transactions';
+import { generateMiniStatementPDF } from '../utils/pdfGenerator';
 import { useEffect, useState } from 'react';
 
 const MiniStatement = ({ user }) => {
@@ -6,18 +8,22 @@ const MiniStatement = ({ user }) => {
     const [miniStatement, setMiniStatement] = useState(null);
 
     useEffect(() => {
-        loadTransactions();
+        // Load transactions for the current user only
+        const fetchTransactions = async () => {
+            try {
+                const txs = await getTransactions({ userId: user.id || user._id });
+                setTransactions(Array.isArray(txs) ? txs : []);
+            } catch (error) {
+                setTransactions([]);
+            }
+        };
+        fetchTransactions();
     }, [user]);
-
-    const loadTransactions = () => {
-        const allTransactions = JSON.parse(localStorage.getItem(`transactions_${user.id}`) || '[]');
-        setTransactions(allTransactions);
-    };
 
     const generateMiniStatement = () => {
         // Get last 10 transactions
         const recentTransactions = transactions
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp))
             .slice(0, 10);
 
         // Calculate summary
@@ -35,8 +41,8 @@ const MiniStatement = ({ user }) => {
             accountNumber: user.accountNumber || '****1234',
             generatedAt: new Date().toISOString(),
             period: {
-                from: recentTransactions.length > 0 ? recentTransactions[recentTransactions.length - 1].timestamp : new Date().toISOString(),
-                to: recentTransactions.length > 0 ? recentTransactions[0].timestamp : new Date().toISOString()
+                from: recentTransactions.length > 0 ? (recentTransactions[recentTransactions.length - 1].createdAt || recentTransactions[recentTransactions.length - 1].timestamp) : new Date().toISOString(),
+                to: recentTransactions.length > 0 ? (recentTransactions[0].createdAt || recentTransactions[0].timestamp) : new Date().toISOString()
             },
             summary: {
                 totalTransactions: recentTransactions.length,
@@ -60,7 +66,8 @@ const MiniStatement = ({ user }) => {
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleString('en-US', {
+            year: 'numeric',
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
@@ -134,7 +141,7 @@ const MiniStatement = ({ user }) => {
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
                   <div style="font-weight: 500;">${transaction.description}</div>
-                  <div style="font-size: 0.9em; color: #666;">${formatDate(transaction.timestamp)}</div>
+                  <div style="font-size: 0.9em; color: #666;">${formatDate(transaction.createdAt || transaction.timestamp)}</div>
                 </div>
                 <div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
                   ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
@@ -158,42 +165,14 @@ const MiniStatement = ({ user }) => {
 
     const downloadStatement = () => {
         if (!miniStatement) return;
-
-        const statementText = `
-BANKPRO MINI STATEMENT
-======================
-
-Account Holder: ${miniStatement.accountHolder}
-Account Number: ${miniStatement.accountNumber}
-Generated: ${formatDate(miniStatement.generatedAt)}
-Period: ${formatDate(miniStatement.period.from)} - ${formatDate(miniStatement.period.to)}
-
-SUMMARY
-=======
-Total Transactions: ${miniStatement.summary.totalTransactions}
-Credits: ${miniStatement.summary.credits} (${formatCurrency(miniStatement.summary.totalCredits)})
-Debits: ${miniStatement.summary.debits} (${formatCurrency(miniStatement.summary.totalDebits)})
-Net Change: ${formatCurrency(miniStatement.summary.netChange)}
-
-RECENT TRANSACTIONS
-===================
-${miniStatement.transactions.map((transaction, index) =>
-            `${index + 1}. ${formatDate(transaction.timestamp)} - ${transaction.description}
-   ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}`
-        ).join('\n')}
-
----
-This is a computer-generated statement.
-For any queries, please contact customer support.
-    `;
-
-        const blob = new Blob([statementText], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mini_statement_${new Date().toISOString().split('T')[0]}.txt`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        // Use PDF generator utility
+        generateMiniStatementPDF(
+            miniStatement.transactions,
+            { name: miniStatement.accountHolder, accountType: 'Savings' },
+            miniStatement.accountNumber,
+            new Date(miniStatement.period.from),
+            new Date(miniStatement.period.to)
+        );
     };
 
     return (
@@ -332,7 +311,7 @@ For any queries, please contact customer support.
                                                 {transaction.description}
                                             </div>
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                {formatDate(transaction.timestamp)}
+                                                {formatDate(transaction.createdAt || transaction.timestamp)}
                                             </div>
                                         </div>
                                     </div>

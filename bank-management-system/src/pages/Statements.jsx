@@ -1,82 +1,90 @@
-import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import CustomCalendar from '../components/UI/CustomCalendar';
+import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp } from 'lucide-react'
+import { getTransactions } from '../utils/transactions'
+import { useEffect, useState } from 'react'
+import CustomCalendar from '../components/UI/CustomCalendar'
 
 const Statements = ({ user }) => {
-  const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [transactions, setTransactions] = useState([])
+  const [filteredTransactions, setFilteredTransactions] = useState([])
   const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
+    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0]
-  });
-  const [filterType, setFilterType] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('date-desc');
+  })
+  const [filterType, setFilterType] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState('date-desc')
 
   useEffect(() => {
-    loadTransactions();
-  }, [user]);
+    const fetchTransactions = async () => {
+      try {
+        const txs = await getTransactions({ userId: user.id || user._id })
+        setTransactions(Array.isArray(txs) ? txs : [])
+      } catch (error) {
+        setTransactions([])
+      }
+    }
+    fetchTransactions()
+  }, [user])
 
   useEffect(() => {
-    filterTransactions();
-  }, [transactions, dateRange, filterType, searchTerm, sortBy]);
-
-  const loadTransactions = () => {
-    const allTransactions = JSON.parse(localStorage.getItem(`transactions_${user.id}`) || '[]');
-    setTransactions(allTransactions);
-  };
+    filterTransactions()
+  }, [transactions, dateRange, filterType, searchTerm, sortBy])
 
   const filterTransactions = () => {
-    let filtered = [...transactions];
+    let filtered = [...transactions]
 
-    // Date range filter
     filtered = filtered.filter(transaction => {
-      const transactionDate = new Date(transaction.timestamp);
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
-      endDate.setHours(23, 59, 59, 999); // Include the entire end date
-      return transactionDate >= startDate && transactionDate <= endDate;
-    });
+      const transactionDate = new Date(transaction.createdAt || transaction.date)
+      const startDate = new Date(dateRange.start)
+      const endDate = new Date(dateRange.end)
+      endDate.setHours(23, 59, 59, 999)
+      return transactionDate >= startDate && transactionDate <= endDate
+    })
 
-    // Type filter
     if (filterType !== 'all') {
-      filtered = filtered.filter(transaction => transaction.type === filterType);
+      if (filterType === 'transfer') {
+        filtered = filtered.filter(transaction => {
+          return transaction.type === 'transfer' || (
+            transaction.sender && transaction.recipient && (!transaction.type || transaction.type === '')
+          )
+        })
+      } else {
+        filtered = filtered.filter(transaction => transaction.type === filterType)
+      }
     }
 
-    // Search filter
     if (searchTerm) {
       filtered = filtered.filter(transaction =>
         transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         transaction.recipient?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         transaction.sender?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      )
     }
 
-    // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date-desc':
-          return new Date(b.timestamp) - new Date(a.timestamp);
+          return new Date(b.createdAt) - new Date(a.createdAt)
         case 'date-asc':
-          return new Date(a.timestamp) - new Date(b.timestamp);
+          return new Date(a.createdAt) - new Date(b.createdAt)
         case 'amount-desc':
-          return b.amount - a.amount;
+          return b.amount - a.amount
         case 'amount-asc':
-          return a.amount - b.amount;
+          return a.amount - b.amount
         default:
-          return 0;
+          return 0
       }
-    });
+    })
 
-    setFilteredTransactions(filtered);
-  };
+    setFilteredTransactions(filtered)
+  }
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR'
-    }).format(amount);
-  };
+    }).format(amount)
+  }
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -85,46 +93,70 @@ const Statements = ({ user }) => {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
-  };
+    })
+  }
 
   const getTransactionIcon = (type) => {
-    switch (type) {
-      case 'credit':
-        return <TrendingUp size={16} style={{ color: '#28a745' }} />;
-      case 'debit':
-        return <TrendingDown size={16} style={{ color: '#dc3545' }} />;
-      case 'transfer':
-        return <FileText size={16} style={{ color: '#667eea' }} />;
-      default:
-        return <FileText size={16} />;
+    if (type === 'transfer') {
+      return <FileText size={16} style={{ color: '#667eea' }} />
     }
-  };
+    if (type === 'credit') {
+      return <TrendingUp size={16} style={{ color: '#28a745' }} />
+    }
+    if (type === 'debit') {
+      return <TrendingDown size={16} style={{ color: '#dc3545' }} />
+    }
+    return <FileText size={16} />
+  }
+
+  const isTransfer = (transaction) => {
+    return transaction.type === 'transfer' || (transaction.sender && transaction.recipient)
+  }
 
   const calculateTotals = () => {
     const credits = filteredTransactions
-      .filter(t => t.type === 'credit')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter(t => t.type === 'credit' && typeof t.amount === 'number')
+      .reduce((sum, t) => sum + t.amount, 0)
 
     const debits = filteredTransactions
-      .filter(t => t.type === 'debit')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter(t => t.type === 'debit' && typeof t.amount === 'number')
+      .reduce((sum, t) => sum + t.amount, 0)
 
-    return { credits, debits, net: credits - debits };
-  };
+    return { credits, debits, net: credits - debits }
+  }
 
   const exportToCSV = () => {
+    if (!filteredTransactions.length) {
+      alert('No transactions to export for the selected period.');
+      return;
+    }
     const headers = ['Date', 'Type', 'Description', 'Amount', 'Balance'];
-    const csvData = filteredTransactions.map(transaction => [
-      formatDate(transaction.timestamp),
-      transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1),
-      transaction.description,
-      transaction.amount,
-      transaction.balance || 'N/A'
-    ]);
+    const csvData = filteredTransactions.map(transaction => {
+      // Combine date and time in one field
+      const dateObj = new Date(transaction.createdAt);
+      const dateStr = dateObj.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+      });
+      const timeStr = dateObj.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit'
+      });
+      const dateTime = `${dateStr} ${timeStr}`;
+
+      // Show type as Transfer if isTransfer
+      const typeStr = isTransfer(transaction) ? 'Transfer' : (transaction.type ? transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) : '');
+
+      // Wrap all fields in quotes to prevent comma issues
+      return [
+        `"${dateTime}"`,
+        `"${typeStr}"`,
+        `"${transaction.description || ''}"`,
+        `"${typeof transaction.amount === 'number' ? transaction.amount : 0}"`,
+        `"${typeof transaction.balance === 'number' ? transaction.balance : ''}"`
+      ];
+    });
 
     const csvContent = [headers, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
+      .map(row => row.join(','))
       .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -132,11 +164,13 @@ const Statements = ({ user }) => {
     const a = document.createElement('a');
     a.href = url;
     a.download = `statement_${dateRange.start}_to_${dateRange.end}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-  };
+  }
 
-  const totals = calculateTotals();
+  const totals = calculateTotals()
 
   return (
     <div className="container">
@@ -149,7 +183,6 @@ const Statements = ({ user }) => {
         </p>
       </div>
 
-      {/* Summary Cards */}
       <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
         <div className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -197,7 +230,6 @@ const Statements = ({ user }) => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="card" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -268,7 +300,6 @@ const Statements = ({ user }) => {
         </div>
       </div>
 
-      {/* Transactions List */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3>Transaction History</h3>
@@ -303,7 +334,7 @@ const Statements = ({ user }) => {
                       {transaction.description}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {formatDate(transaction.timestamp)}
+                      {formatDate(transaction.createdAt)}
                       {transaction.recipient && ` • To: ${transaction.recipient}`}
                       {transaction.sender && ` • From: ${transaction.sender}`}
                     </div>
@@ -312,10 +343,20 @@ const Statements = ({ user }) => {
                 <div style={{ textAlign: 'right' }}>
                   <div style={{
                     fontWeight: '600',
-                    color: transaction.type === 'credit' ? '#28a745' : '#dc3545',
+                    color: isTransfer(transaction)
+                      ? '#667eea'
+                      : transaction.type === 'credit'
+                        ? '#28a745'
+                        : '#dc3545',
                     fontSize: '1.1rem'
                   }}>
-                    {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    {isTransfer(transaction)
+                      ? ''
+                      : transaction.type === 'credit'
+                        ? '+'
+                        : '-'}
+                    {formatCurrency(transaction.amount)}
+                    {isTransfer(transaction) && <span style={{ color: '#667eea', fontWeight: '500', marginLeft: 4 }}>&nbsp;(Transfer)</span>}
                   </div>
                   {transaction.balance && (
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -329,7 +370,7 @@ const Statements = ({ user }) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Statements;
+export default Statements

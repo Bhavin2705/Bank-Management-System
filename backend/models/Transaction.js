@@ -125,6 +125,7 @@ transactionSchema.virtual('direction').get(function () {
 
 // Pre-save middleware to generate reference
 transactionSchema.pre('save', function (next) {
+    console.log('[Transaction Model] Pre-save hook called for:', this);
     if (!this.reference) {
         this.reference = 'TXN' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
     }

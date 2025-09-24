@@ -17,7 +17,7 @@ const Notifications = ({ user }) => {
         id: 'low-balance',
         type: 'warning',
         title: 'Low Balance Alert',
-        message: `Your account balance is low: ₹${user.balance.toFixed(2)}. Consider adding funds.`,
+        message: `Your account balance is low: Rs${user.balance.toFixed(2)}. Consider adding funds.`,
         timestamp: new Date().toISOString(),
         read: false
       });

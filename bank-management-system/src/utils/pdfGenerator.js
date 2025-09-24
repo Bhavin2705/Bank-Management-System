@@ -36,7 +36,7 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     pdf.text('Generated on: ' + new Date().toLocaleDateString(), 150, 15);
     pdf.text('Account: ' + accountNumber, 150, 25);
     pdf.text('Period: ' + startDate.toLocaleDateString() + ' - ' + endDate.toLocaleDateString(), 150, 35);
-    pdf.text('Currency: INR (₹)', 150, 45);
+    pdf.text('Currency: INR (Rs)', 150, 45);
 
     // Customer details
     let yPosition = 50;
@@ -71,11 +71,11 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
         .filter(t => t.type === 'debit')
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-    pdf.text('Total Credits: ₹' + totalCredits.toFixed(2), 20, yPosition);
+    pdf.text('Total Credits: Rs ' + totalCredits.toFixed(2), 20, yPosition);
     yPosition += 6;
-    pdf.text('Total Debits: ₹' + totalDebits.toFixed(2), 20, yPosition);
+    pdf.text('Total Debits: Rs ' + totalDebits.toFixed(2), 20, yPosition);
     yPosition += 6;
-    pdf.text('Net Balance: ₹' + (totalCredits - totalDebits).toFixed(2), 20, yPosition);
+    pdf.text('Net Balance: Rs ' + (totalCredits - totalDebits).toFixed(2), 20, yPosition);
 
     // Transactions table
     yPosition += 15;
@@ -106,12 +106,19 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
             yPosition = 20;
         }
 
-        const date = new Date(transaction.date).toLocaleDateString();
-        const description = transaction.description || 'Transaction';
-        const type = transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1);
-        const amount = '₹' + parseFloat(transaction.amount).toFixed(2);
+        // Use createdAt if available, fallback to date
+        const rawDate = transaction.createdAt || transaction.date;
+        let formattedDate = 'N/A';
+        if (rawDate) {
+            const d = new Date(rawDate);
+            formattedDate = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+        }
 
-        pdf.text(date, 20, yPosition);
+        const description = transaction.description || 'Transaction';
+        const type = transaction.type ? (transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)) : 'N/A';
+    const amount = transaction.amount ? ('Rs ' + parseFloat(transaction.amount).toFixed(2)) : 'Rs 0.00';
+
+        pdf.text(formattedDate, 20, yPosition);
         pdf.text(description.substring(0, 30), 50, yPosition);
         pdf.text(type, 120, yPosition);
         pdf.text(amount, 150, yPosition);
@@ -200,7 +207,7 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     pdf.text('Generated on: ' + new Date().toLocaleDateString(), 150, 20);
     pdf.text('Account: ' + accountNumber, 150, 30);
     pdf.text('Period: ' + startDate.toLocaleDateString() + ' - ' + endDate.toLocaleDateString(), 150, 40);
-    pdf.text('Currency: INR (₹)', 150, 50);
+    pdf.text('Currency: INR (Rs)', 150, 50);
 
     // Customer and account details
     let yPosition = 60;
@@ -238,13 +245,13 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
     const closingBalance = openingBalance + totalCredits - totalDebits;
 
-    pdf.text('Opening Balance: ₹' + openingBalance.toFixed(2), 20, yPosition);
+    pdf.text('Opening Balance: Rs ' + openingBalance.toFixed(2), 20, yPosition);
     yPosition += 6;
-    pdf.text('Total Credits: ₹' + totalCredits.toFixed(2), 20, yPosition);
+    pdf.text('Total Credits: Rs ' + totalCredits.toFixed(2), 20, yPosition);
     yPosition += 6;
-    pdf.text('Total Debits: ₹' + totalDebits.toFixed(2), 20, yPosition);
+    pdf.text('Total Debits: Rs ' + totalDebits.toFixed(2), 20, yPosition);
     yPosition += 6;
-    pdf.text('Closing Balance: ₹' + closingBalance.toFixed(2), 20, yPosition);
+    pdf.text('Closing Balance: Rs ' + closingBalance.toFixed(2), 20, yPosition);
 
     // Transactions table with more columns
     yPosition += 15;
@@ -257,11 +264,11 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Date', 20, yPosition);
-    pdf.text('Time', 45, yPosition);
+    pdf.text('Time', 40, yPosition);
     pdf.text('Description', 60, yPosition);
-    pdf.text('Reference', 120, yPosition);
-    pdf.text('Debit', 160, yPosition);
-    pdf.text('Credit', 180, yPosition);
+    pdf.text('Reference', 100, yPosition);
+    pdf.text('Debit', 155, yPosition, { align: 'right' });
+    pdf.text('Credit', 185, yPosition, { align: 'right' });
 
     // Header line
     pdf.setDrawColor(108, 117, 125);
@@ -277,21 +284,29 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
             yPosition = 20;
         }
 
-        const date = new Date(transaction.date).toLocaleDateString();
-        const time = new Date(transaction.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const description = (transaction.description || 'Transaction').substring(0, 25);
-        const reference = transaction.id || 'N/A';
-        const debit = transaction.type === 'debit' ? '₹' + parseFloat(transaction.amount).toFixed(2) : '';
-        const credit = transaction.type === 'credit' ? '₹' + parseFloat(transaction.amount).toFixed(2) : '';
+        // Use createdAt if available, fallback to date
+        const rawDate = transaction.createdAt || transaction.date;
+        let formattedDate = 'N/A';
+        let formattedTime = 'N/A';
+        if (rawDate) {
+            const d = new Date(rawDate);
+            formattedDate = isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+            formattedTime = isNaN(d.getTime()) ? 'N/A' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
 
-        pdf.text(date, 20, yPosition);
-        pdf.text(time, 45, yPosition);
-        pdf.text(description, 60, yPosition);
-        pdf.text(reference, 120, yPosition);
-        pdf.text(debit, 160, yPosition);
-        pdf.text(credit, 180, yPosition);
+    const description = (transaction.description || 'Transaction').substring(0, 25);
+    const reference = (transaction.id || 'N/A').toString().substring(0, 18); // Truncate for fit
+    const debit = transaction.type === 'debit' ? 'Rs ' + parseFloat(transaction.amount).toFixed(2) : '';
+    const credit = transaction.type === 'credit' ? 'Rs ' + parseFloat(transaction.amount).toFixed(2) : '';
 
-        yPosition += 6;
+    pdf.text(formattedDate, 20, yPosition);
+    pdf.text(formattedTime, 40, yPosition);
+    pdf.text(description, 60, yPosition);
+    pdf.text(reference, 100, yPosition);
+    pdf.text(debit, 155, yPosition, { align: 'right' });
+    pdf.text(credit, 185, yPosition, { align: 'right' });
+
+        yPosition += 8;
     });
 
     // Footer

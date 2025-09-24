@@ -5,10 +5,11 @@ const connectDB = async () => {
     const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/bank_management_system';
 
     try {
-        // Connect to MongoDB. If you need specific mongoose options, add them here.
-        const conn = await mongoose.connect(mongoURI);
+        // Connect to MongoDB with explicit dbName for clarity
+        const conn = await mongoose.connect(mongoURI, { dbName: 'bank_management_system' });
 
         console.log(`MongoDB Connected: ${conn.connection.host}`);
+        console.log(`MongoDB Database: ${conn.connection.name}`);
         if (!process.env.MONGODB_URI) {
             console.warn('Warning: MONGODB_URI not set. Connected to local fallback:', mongoURI);
         }

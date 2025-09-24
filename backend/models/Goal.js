@@ -157,7 +157,7 @@ goalSchema.methods.addContribution = function (amount, note = '') {
 
     // Add note about contribution
     this.notes.push({
-        content: `Added ₹${amount.toLocaleString('en-IN')} ${note ? '- ' + note : ''}`,
+        content: `Added Rs${amount.toLocaleString('en-IN')} ${note ? '- ' + note : ''}`,
         type: 'contribution'
     });
 
@@ -172,7 +172,7 @@ goalSchema.methods.checkMilestones = function () {
             milestone.completedDate = new Date();
 
             this.notes.push({
-                content: `Milestone achieved: ${milestone.name} (₹${milestone.amount.toLocaleString('en-IN')})`,
+                content: `Milestone achieved: ${milestone.name} (Rs${milestone.amount.toLocaleString('en-IN')})`,
                 type: 'milestone'
             });
         }

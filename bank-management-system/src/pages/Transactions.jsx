@@ -115,14 +115,15 @@ const Transactions = ({ user, onUserUpdate }) => {
   const handleDownloadMiniStatement = async () => {
     try {
       const filteredTransactions = transactions.filter(transaction => {
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = new Date(transaction.createdAt || transaction.date);
         return transactionDate >= statementPeriod.startDate && transactionDate <= statementPeriod.endDate;
       });
 
+      const userIdStr = (user.id || user._id || '').toString();
       await generateMiniStatementPDF(
         filteredTransactions,
         user,
-        `ACC${user.id.toString().padStart(6, '0')}`,
+        `ACC${userIdStr.padStart(6, '0')}`,
         statementPeriod.startDate,
         statementPeriod.endDate
       );
@@ -137,7 +138,7 @@ const Transactions = ({ user, onUserUpdate }) => {
   const handleDownloadAccountStatement = async () => {
     try {
       const filteredTransactions = transactions.filter(transaction => {
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = new Date(transaction.createdAt || transaction.date);
         return transactionDate >= statementPeriod.startDate && transactionDate <= statementPeriod.endDate;
       });
 
