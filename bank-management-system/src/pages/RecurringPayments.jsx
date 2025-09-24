@@ -1,7 +1,6 @@
-import { Calendar, Plus, Repeat, Trash2, User } from 'lucide-react';
+import { Plus, Repeat, Trash2, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
-import CustomCalendar from '../components/UI/CustomCalendar';
 import { getNonAdminUsers } from '../utils/auth';
 
 const RecurringPayments = ({ user }) => {
@@ -12,43 +11,30 @@ const RecurringPayments = ({ user }) => {
   const [formData, setFormData] = useState({
     recipientId: '',
     amount: '',
-    frequency: 'monthly', // daily, weekly, monthly, yearly
+    frequency: 'monthly',
     description: '',
-    nextPaymentDate: '',
-    endDate: ''
   });
 
-  // Safe notification functions
   const safeShowError = (message) => {
-    if (showError) {
-      showError(message);
-    } else {
-      console.error('Recurring payment error:', message);
-    }
+    if (showError) showError(message);
+    else console.error('Recurring payment error:', message);
   };
 
   const safeShowSuccess = (message) => {
-    if (showSuccess) {
-      showSuccess(message);
-    } else {
-      console.log('Recurring payment success:', message);
-    }
+    if (showSuccess) showSuccess(message);
+    else console.log('Recurring payment success:', message);
   };
 
-  // Get user ID safely
-  const getUserId = useCallback(() => user?._id || user?.id || '', [user]);
-
-  // Get user balance safely
+  const getUserId = useCallback(() => user?._id || '', [user]);
   const getUserBalance = useCallback(() => user?.balance || 0, [user]);
 
   const loadUsers = useCallback(async () => {
     try {
       const allUsers = await getNonAdminUsers();
       const userId = getUserId();
-      setUsers(allUsers.filter(u => (u._id !== userId && u.id !== userId)));
+      setUsers(allUsers.filter((u) => u._id !== userId));
     } catch (error) {
       console.error('Error loading users:', error);
-      // Silently handle the error - this is expected for non-admin users
       setUsers([]);
     }
   }, [getUserId]);
@@ -80,15 +66,9 @@ const RecurringPayments = ({ user }) => {
       return;
     }
 
-    const recipient = users.find(u => u._id === formData.recipientId || u.id === formData.recipientId);
+    const recipient = users.find((u) => u._id === formData.recipientId);
     if (!recipient) {
       safeShowError('Recipient not found');
-      return;
-    }
-
-    const nextPayment = new Date(formData.nextPaymentDate);
-    if (nextPayment <= new Date()) {
-      safeShowError('Next payment date must be in the future');
       return;
     }
 
@@ -100,17 +80,13 @@ const RecurringPayments = ({ user }) => {
       amount: amount,
       frequency: formData.frequency,
       description: formData.description || 'Recurring payment',
-      nextPaymentDate: formData.nextPaymentDate,
-      endDate: formData.endDate || null,
       status: 'active',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     const updatedPayments = [...payments, newPayment];
     setPayments(updatedPayments);
-    const userId = getUserId();
-    localStorage.setItem(`recurring_payments_${userId}`, JSON.stringify(updatedPayments));
-
+    localStorage.setItem(`recurring_payments_${getUserId()}`, JSON.stringify(updatedPayments));
     safeShowSuccess('Recurring payment created successfully!');
 
     setFormData({
@@ -118,42 +94,35 @@ const RecurringPayments = ({ user }) => {
       amount: '',
       frequency: 'monthly',
       description: '',
-      nextPaymentDate: '',
-      endDate: ''
     });
     setShowAddForm(false);
   };
 
   const deletePayment = (paymentId) => {
-    const updatedPayments = payments.filter(p => p.id !== paymentId);
+    const updatedPayments = payments.filter((p) => p.id !== paymentId);
     setPayments(updatedPayments);
-    localStorage.setItem(`recurring_payments_${user._id}`, JSON.stringify(updatedPayments));
+    localStorage.setItem(`recurring_payments_${getUserId()}`, JSON.stringify(updatedPayments));
     safeShowSuccess('Recurring payment deleted successfully!');
   };
 
   const togglePaymentStatus = (paymentId) => {
-    const updatedPayments = payments.map(payment =>
+    const updatedPayments = payments.map((payment) =>
       payment.id === paymentId
         ? { ...payment, status: payment.status === 'active' ? 'paused' : 'active' }
         : payment
     );
     setPayments(updatedPayments);
-    localStorage.setItem(`recurring_payments_${user._id}`, JSON.stringify(updatedPayments));
+    localStorage.setItem(`recurring_payments_${getUserId()}`, JSON.stringify(updatedPayments));
+    safeShowSuccess(
+      `Recurring payment ${updatedPayments.find((p) => p.id === paymentId).status === 'active' ? 'resumed' : 'paused'} successfully!`
+    );
   };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: 'INR',
     }).format(amount);
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
   };
 
   const getFrequencyLabel = (frequency) => {
@@ -161,7 +130,7 @@ const RecurringPayments = ({ user }) => {
       daily: 'Daily',
       weekly: 'Weekly',
       monthly: 'Monthly',
-      yearly: 'Yearly'
+      yearly: 'Yearly',
     };
     return labels[frequency] || frequency;
   };
@@ -191,10 +160,10 @@ const RecurringPayments = ({ user }) => {
         <div className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <div className="stat-value">{payments.filter(p => p.status === 'active').length}</div>
+              <div className="stat-value">{payments.filter((p) => p.status === 'active').length}</div>
               <div className="stat-label">Active Payments</div>
             </div>
-            <Calendar size={32} style={{ color: '#28a745' }} />
+            <User size={32} style={{ color: '#ffc107' }} />
           </div>
         </div>
 
@@ -202,8 +171,20 @@ const RecurringPayments = ({ user }) => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div className="stat-value">{formatCurrency(
-                payments.filter(p => p.status === 'active')
-                  .reduce((sum, p) => sum + p.amount, 0)
+                payments.filter((p) => p.status === 'active').reduce((sum, p) => {
+                  switch (p.frequency) {
+                    case 'daily':
+                      return sum + p.amount * 30;
+                    case 'weekly':
+                      return sum + p.amount * 4;
+                    case 'monthly':
+                      return sum + p.amount;
+                    case 'yearly':
+                      return sum + p.amount / 12;
+                    default:
+                      return sum + p.amount;
+                  }
+                }, 0)
               )}</div>
               <div className="stat-label">Monthly Total</div>
             </div>
@@ -228,8 +209,9 @@ const RecurringPayments = ({ user }) => {
           <h3 style={{ marginBottom: '1.5rem' }}>Add Recurring Payment</h3>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Recipient</label>
+              <label htmlFor="recipientId" className="form-label">Recipient</label>
               <select
+                id="recipientId"
                 name="recipientId"
                 className="form-input"
                 value={formData.recipientId}
@@ -237,15 +219,18 @@ const RecurringPayments = ({ user }) => {
                 required
               >
                 <option value="">Select recipient</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.phone})</option>
+                {users.map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.name}{u.phone ? ` (${u.phone})` : ''}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Amount</label>
+              <label htmlFor="amount" className="form-label">Amount</label>
               <input
+                id="amount"
                 type="number"
                 name="amount"
                 step="0.01"
@@ -258,8 +243,9 @@ const RecurringPayments = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Frequency</label>
+              <label htmlFor="frequency" className="form-label">Frequency</label>
               <select
+                id="frequency"
                 name="frequency"
                 className="form-input"
                 value={formData.frequency}
@@ -274,28 +260,9 @@ const RecurringPayments = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Next Payment Date</label>
-              <CustomCalendar
-                value={formData.nextPaymentDate ? new Date(formData.nextPaymentDate) : null}
-                onChange={(date) => setFormData({ ...formData, nextPaymentDate: date ? date.toISOString().split('T')[0] : '' })}
-                placeholder="Select next payment date"
-                minDate={new Date()}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">End Date (Optional)</label>
-              <CustomCalendar
-                value={formData.endDate ? new Date(formData.endDate) : null}
-                onChange={(date) => setFormData({ ...formData, endDate: date ? date.toISOString().split('T')[0] : '' })}
-                placeholder="Select end date"
-                minDate={formData.nextPaymentDate ? new Date(formData.nextPaymentDate) : new Date()}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Description</label>
+              <label htmlFor="description" className="form-label">Description</label>
               <input
+                id="description"
                 type="text"
                 name="description"
                 className="form-input"
@@ -349,8 +316,7 @@ const RecurringPayments = ({ user }) => {
                       To: {payment.recipientName} ({payment.recipientPhone})
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {getFrequencyLabel(payment.frequency)} • Next: {formatDate(payment.nextPaymentDate)}
-                      {payment.endDate && ` • Ends: ${formatDate(payment.endDate)}`}
+                      {getFrequencyLabel(payment.frequency)}
                     </div>
                     <div style={{
                       fontSize: '0.75rem',
@@ -379,6 +345,7 @@ const RecurringPayments = ({ user }) => {
                         cursor: 'pointer',
                         fontSize: '0.8rem'
                       }}
+                      aria-label={payment.status === 'active' ? 'Pause payment' : 'Resume payment'}
                     >
                       {payment.status === 'active' ? 'Pause' : 'Resume'}
                     </button>
@@ -393,6 +360,7 @@ const RecurringPayments = ({ user }) => {
                         cursor: 'pointer',
                         fontSize: '0.8rem'
                       }}
+                      aria-label="Delete payment"
                     >
                       <Trash2 size={14} />
                     </button>
