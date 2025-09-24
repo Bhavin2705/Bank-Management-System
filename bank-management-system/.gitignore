@@ -32,3 +32,12 @@ coverage/
 # Vite specific
 .vite
 .vite-cache/
+
+
+.venv/
+README.md
+SUPPORT_SYSTEM_DOCUMENTATION.md
+bank-management-system.zip
+fix_user_data.js
+setup.bat
+setup.sh
