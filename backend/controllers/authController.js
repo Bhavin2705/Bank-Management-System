@@ -155,6 +155,21 @@ const login = async (req, res) => {
             user = users;
         }
 
+        // If user was deleted, return specific error
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been deleted by admin.'
+            });
+        }
+        // If user is blocked (suspended or inactive), return specific error
+        if (user.status === 'suspended' || user.status === 'inactive') {
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been blocked by admin.'
+            });
+        }
+
         if (!user || !(await user.comparePassword(password))) {
             return res.status(401).json({
                 success: false,
@@ -238,6 +253,21 @@ const loginWithAccount = async (req, res) => {
 
         // Find the specific user account
         const user = await User.findById(accountId).select('+password');
+
+        // If user was deleted, return specific error
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been deleted by admin.'
+            });
+        }
+        // If user is blocked (suspended or inactive), return specific error
+        if (user.status === 'suspended' || user.status === 'inactive') {
+            return res.status(403).json({
+                success: false,
+                error: 'Your account has been blocked by admin.'
+            });
+        }
 
         if (!user || !(await user.comparePassword(password))) {
             return res.status(401).json({

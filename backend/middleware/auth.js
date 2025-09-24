@@ -39,9 +39,14 @@ const protect = async (req, res, next) => {
                     error: 'No user found with this token'
                 });
             }
-            // Attach full user document and a stable string id for handlers
+            // Blocked/suspended/inactive users cannot access protected routes
+            if (user.status === 'suspended' || user.status === 'inactive') {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Your account has been blocked by admin.'
+                });
+            }
             req.user = user;
-            // Mongoose documents expose `id` as a string, but ensure a consistent field
             req.userId = user._id ? user._id.toString() : undefined;
             next();
         } catch (error) {
