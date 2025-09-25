@@ -10,10 +10,9 @@ const userSchema = new mongoose.Schema({
         maxlength: [50, 'Name cannot be more than 50 characters'],
         validate: {
             validator: function (v) {
-                // Only allow letters, spaces, hyphens, and apostrophes
-                return /^[a-zA-Z\s'-]+$/.test(v);
+                 return /^[A-Za-z ]+$/.test(v);
             },
-            message: 'Name can only contain letters, spaces, hyphens, and apostrophes'
+              message: 'Name can only contain alphabets and spaces'
         }
     },
     email: {

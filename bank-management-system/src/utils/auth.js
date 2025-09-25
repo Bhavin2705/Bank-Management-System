@@ -17,11 +17,11 @@ export const login = async (identifier, password) => {
     const response = await api.auth.login({ identifier, password });
 
     if (response.success) {
-  // Store both token and refresh token
-  localStorage.setItem(TOKEN_KEY, response.data.token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
+      // Store both token and refresh token
+      localStorage.setItem(TOKEN_KEY, response.data.token);
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
 
-  return { success: true, user: response.data.user };
+      return { success: true, user: response.data.user };
     }
 
     return { success: false, error: 'Login failed' };
@@ -47,11 +47,11 @@ export const loginWithAccount = async (identifier, password, accountId) => {
     const response = await api.auth.loginWithAccount({ identifier, password, accountId });
 
     if (response.success) {
-  // Store both token and refresh token
-  localStorage.setItem(TOKEN_KEY, response.data.token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
+      // Store both token and refresh token
+      localStorage.setItem(TOKEN_KEY, response.data.token);
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
 
-  return { success: true, user: response.data.user };
+      return { success: true, user: response.data.user };
     }
 
     return { success: false, error: 'Login failed' };
@@ -65,11 +65,11 @@ export const register = async (userData) => {
     const response = await api.auth.register(userData);
 
     if (response.success) {
-  // Store both token and refresh token
-  localStorage.setItem(TOKEN_KEY, response.data.token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
+      // Store both token and refresh token
+      localStorage.setItem(TOKEN_KEY, response.data.token);
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
 
-  return { success: true, user: response.data.user };
+      return { success: true, user: response.data.user };
     }
 
     return { success: false, error: 'Registration failed' };
@@ -89,8 +89,8 @@ export const logout = async () => {
     console.warn('Logout API error:', error);
   } finally {
     // Always clear local storage
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   }
 };
 
@@ -107,9 +107,9 @@ export const updateUserBalance = async (userId, newBalance) => {
       throw new Error('User not found or unauthorized');
     }
 
-  // Do not update localStorage for user balance. Always fetch from backend for accuracy.
-  // Optionally, trigger a UI refresh or refetch user data from backend here.
-  return { ...currentUser, balance: newBalance };
+    // Do not update localStorage for user balance. Always fetch from backend for accuracy.
+    // Optionally, trigger a UI refresh or refetch user data from backend here.
+    return { ...currentUser, balance: newBalance };
   } catch (error) {
     console.error('Error updating user balance:', error);
     throw error;

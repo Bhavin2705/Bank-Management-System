@@ -1,7 +1,7 @@
 import { Download, FileText, Printer, Receipt, TrendingDown, TrendingUp } from 'lucide-react';
-import { getTransactions } from '../utils/transactions';
-import { generateMiniStatementPDF } from '../utils/pdfGenerator';
 import { useEffect, useState } from 'react';
+import { generateMiniStatementPDF } from '../utils/pdfGenerator';
+import { getTransactions } from '../utils/transactions';
 
 const MiniStatement = ({ user }) => {
     const [transactions, setTransactions] = useState([]);

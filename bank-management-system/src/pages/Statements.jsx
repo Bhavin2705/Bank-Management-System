@@ -1,7 +1,7 @@
 import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp } from 'lucide-react'
-import { getTransactions } from '../utils/transactions'
 import { useEffect, useState } from 'react'
 import CustomCalendar from '../components/UI/CustomCalendar'
+import { getTransactions } from '../utils/transactions'
 
 const Statements = ({ user }) => {
   const [transactions, setTransactions] = useState([])

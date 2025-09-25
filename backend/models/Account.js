@@ -19,7 +19,14 @@ const accountSchema = new mongoose.Schema({
     accountName: {
         type: String,
         required: [true, 'Account name is required'],
-        maxlength: [50, 'Account name cannot be more than 50 characters']
+        maxlength: [50, 'Account name cannot be more than 50 characters'],
+        validate: {
+            validator: function (v) {
+                // Only allow letters, numbers, and spaces
+                return /^[A-Za-z0-9 ]+$/.test(v);
+            },
+            message: 'Account name must not contain special characters.'
+        }
     },
     balance: {
         type: Number,

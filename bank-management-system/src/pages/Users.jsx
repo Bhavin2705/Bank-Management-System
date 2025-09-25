@@ -1,9 +1,8 @@
 import { DollarSign, User as UserIcon, Users as UsersIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { getAllUsers } from '../utils/auth';
-import api from '../utils/api';
+import { Fragment, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Fragment } from 'react';
+import api from '../utils/api';
+import { getAllUsers } from '../utils/auth';
 
 const Modal = ({ open, title, message, confirmText, cancelText, onConfirm, onCancel }) => {
   if (!open) return null;

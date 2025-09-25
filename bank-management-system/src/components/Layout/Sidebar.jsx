@@ -22,7 +22,6 @@ import {
   Target,
   TrendingUp,
   User,
-  UserCog,
   Users
 } from 'lucide-react';
 import { useState } from 'react';
@@ -42,7 +41,7 @@ const Sidebar = ({
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
     { id: 'transactions', label: 'Transactions', icon: CreditCard, path: '/transactions' },
     { id: 'transfer', label: 'Transfer Money', icon: ArrowRightLeft, path: '/transfer' },
-  // Removed Account Management from sidebar
+    // Removed Account Management from sidebar
     { id: 'deposit-withdraw', label: 'Deposit & Withdraw', icon: ArrowUpCircle, path: '/deposit-withdraw' },
     { id: 'cards', label: 'My Cards', icon: CreditCard, path: '/cards' },
     { id: 'recurring', label: 'Recurring Payments', icon: Repeat, path: '/recurring' },

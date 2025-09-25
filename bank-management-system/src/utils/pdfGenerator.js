@@ -116,7 +116,7 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
 
         const description = transaction.description || 'Transaction';
         const type = transaction.type ? (transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)) : 'N/A';
-    const amount = transaction.amount ? ('Rs ' + parseFloat(transaction.amount).toFixed(2)) : 'Rs 0.00';
+        const amount = transaction.amount ? ('Rs ' + parseFloat(transaction.amount).toFixed(2)) : 'Rs 0.00';
 
         pdf.text(formattedDate, 20, yPosition);
         pdf.text(description.substring(0, 30), 50, yPosition);
@@ -294,17 +294,17 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
             formattedTime = isNaN(d.getTime()) ? 'N/A' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-    const description = (transaction.description || 'Transaction').substring(0, 25);
-    const reference = (transaction.id || 'N/A').toString().substring(0, 18); // Truncate for fit
-    const debit = transaction.type === 'debit' ? 'Rs ' + parseFloat(transaction.amount).toFixed(2) : '';
-    const credit = transaction.type === 'credit' ? 'Rs ' + parseFloat(transaction.amount).toFixed(2) : '';
+        const description = (transaction.description || 'Transaction').substring(0, 25);
+        const reference = (transaction.id || 'N/A').toString().substring(0, 18); // Truncate for fit
+        const debit = transaction.type === 'debit' ? 'Rs ' + parseFloat(transaction.amount).toFixed(2) : '';
+        const credit = transaction.type === 'credit' ? 'Rs ' + parseFloat(transaction.amount).toFixed(2) : '';
 
-    pdf.text(formattedDate, 20, yPosition);
-    pdf.text(formattedTime, 40, yPosition);
-    pdf.text(description, 60, yPosition);
-    pdf.text(reference, 100, yPosition);
-    pdf.text(debit, 155, yPosition, { align: 'right' });
-    pdf.text(credit, 185, yPosition, { align: 'right' });
+        pdf.text(formattedDate, 20, yPosition);
+        pdf.text(formattedTime, 40, yPosition);
+        pdf.text(description, 60, yPosition);
+        pdf.text(reference, 100, yPosition);
+        pdf.text(debit, 155, yPosition, { align: 'right' });
+        pdf.text(credit, 185, yPosition, { align: 'right' });
 
         yPosition += 8;
     });

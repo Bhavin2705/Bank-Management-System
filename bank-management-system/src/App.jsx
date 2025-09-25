@@ -36,7 +36,6 @@ import './styles/index.css';
 import { checkBackendHealth } from './utils/api';
 import {
   canAccessAdminFeatures,
-  getCurrentUser,
   initializeUsers,
   logout,
   refreshUserData
@@ -78,20 +77,20 @@ function App() {
           new Promise((_, reject) => setTimeout(() => reject(new Error('Init timeout')), 3000))
         ]);
       } catch { }
-        // Always fetch user from backend using token after refresh
-        const refreshedUser = await Promise.race([
-          refreshUserData(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Refresh timeout')), 5000))
-        ]);
-        if (refreshedUser) {
-          setUser(refreshedUser);
-          setSessionExpired(false);
-        } else {
-          // If token is missing or invalid, redirect to login and clear user state
-          setUser(null);
-          setAuthMode('login');
-          setSessionExpired(true);
-        }
+      // Always fetch user from backend using token after refresh
+      const refreshedUser = await Promise.race([
+        refreshUserData(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Refresh timeout')), 5000))
+      ]);
+      if (refreshedUser) {
+        setUser(refreshedUser);
+        setSessionExpired(false);
+      } else {
+        // If token is missing or invalid, redirect to login and clear user state
+        setUser(null);
+        setAuthMode('login');
+        setSessionExpired(true);
+      }
       const savedTheme = localStorage.getItem('bank_theme');
       if (savedTheme === 'dark') {
         setDarkMode(true);

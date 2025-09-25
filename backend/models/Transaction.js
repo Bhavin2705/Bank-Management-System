@@ -57,10 +57,10 @@ const transactionSchema = new mongoose.Schema({
     recipientAccount: String,
     recipientName: String,
     recipientBank: {
-    bankName: String,
-    ifscCode: String,
-    branchName: String
-    // IFSC code is now optional, no validation
+        bankName: String,
+        ifscCode: String,
+        branchName: String
+        // IFSC code is now optional, no validation
     },
 
     // For bill payments
