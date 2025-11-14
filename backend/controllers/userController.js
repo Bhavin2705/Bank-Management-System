@@ -497,6 +497,69 @@ const getTransferRecipients = async (req, res) => {
     }
 };
 
+// @desc    Get client-side persisted data for current user
+// @route   GET /api/users/me/client-data
+// @access  Private
+const getClientData = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('clientData');
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        res.status(200).json({ success: true, data: user.clientData || {} });
+    } catch (error) {
+        console.error('Error getting client data:', error);
+        res.status(500).json({ success: false, error: 'Server error getting client data' });
+    }
+};
+
+// @desc    Update client-side persisted data for current user (partial merge)
+// @route   PUT /api/users/me/client-data
+// @access  Private
+const updateClientData = async (req, res) => {
+    try {
+        const updates = req.body || {};
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+        user.clientData = user.clientData || {};
+
+        // Merge allowed sections only (defensive)
+        const allowed = ['securityQuestions', 'loginHistory', 'recurringPayments', 'investments', 'goals', 'exchangeCache'];
+        for (const key of Object.keys(updates)) {
+            if (allowed.includes(key)) {
+                // If array sections, replace whole array; if object, shallow merge
+                if (Array.isArray(updates[key])) {
+                    user.clientData[key] = updates[key];
+                } else if (typeof updates[key] === 'object') {
+                    user.clientData[key] = { ...(user.clientData[key] || {}), ...updates[key] };
+                } else {
+                    user.clientData[key] = updates[key];
+                }
+            }
+        }
+
+        // Optionally store token info
+        if (updates.token && typeof updates.token === 'object') {
+            user.tokens = user.tokens || [];
+            const { token, expiryTimestampMs } = updates.token;
+            if (token) {
+                user.tokens.push({ token, expiryTimestampMs: Number(expiryTimestampMs) || Date.now() + 1000 * 60 * 60 * 24 });
+                // Trim tokens array to reasonable length
+                if (user.tokens.length > 20) user.tokens = user.tokens.slice(-20);
+            }
+        }
+
+        await user.save();
+
+        // Do not return stored tokens back to the client
+        const safeClientData = user.clientData || {};
+        res.status(200).json({ success: true, data: safeClientData });
+    } catch (error) {
+        console.error('Error updating client data:', error);
+        res.status(500).json({ success: false, error: 'Server error updating client data' });
+    }
+};
+
 module.exports = {
     getUsers,
     getUser,
@@ -510,5 +573,7 @@ module.exports = {
     checkEmailExists,
     checkPhoneExists,
     getTransferRecipients,
-    getBankMetrics
+    getBankMetrics,
+    getClientData,
+    updateClientData
 };

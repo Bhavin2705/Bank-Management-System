@@ -12,6 +12,7 @@ const {
     checkEmailExists,
     checkPhoneExists,
     getTransferRecipients
+    , getClientData, updateClientData
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
@@ -30,6 +31,10 @@ router.get('/check-phone', checkPhoneExists);
 
 // All routes below require authentication
 router.use(protect);
+
+// Client data endpoints for the authenticated user
+router.get('/me/client-data', getClientData);
+router.put('/me/client-data', updateClientData);
 
 // Route for getting transfer recipients (authenticated users only)
 router.get('/transfer-recipients', getTransferRecipients);

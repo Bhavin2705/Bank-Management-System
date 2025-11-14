@@ -42,6 +42,7 @@ const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
 const banksRoutes = require('./routes/banks');
 const cardRoutes = require('./routes/cards');
+const exchangeRoutes = require('./routes/exchange');
 
 // Initialize Express app
 const app = express();
@@ -89,6 +90,7 @@ app.use('/api/transactions', transactionRoutes);
 // Branch routes removed (Branch Locator feature removed)
 app.use('/api/banks', banksRoutes);
 app.use('/api/cards', cardRoutes);
+app.use('/api/exchange', exchangeRoutes);
 
 // Socket.io middleware for authentication
 io.use((socket, next) => {

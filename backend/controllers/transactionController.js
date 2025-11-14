@@ -54,6 +54,12 @@ const getTransactions = async (req, res) => {
     }
 };
 
+// Helper to avoid floating point precision issues: round to 2 decimals (paise)
+const roundTwo = (v) => {
+    if (typeof v !== 'number') v = Number(v) || 0;
+    return Math.round((v + Number.EPSILON) * 100) / 100;
+};
+
 // @desc    Get single transaction
 // @route   GET /api/transactions/:id
 // @access  Private
@@ -101,19 +107,21 @@ const createTransaction = async (req, res) => {
 
         // Get current user balance
         const user = await User.findById(req.user._id);
-        let newBalance = user.balance;
+        // Ensure amounts are numbers and round to 2 decimals to avoid fp issues
+        const numericAmount = roundTwo(Number(amount));
+        let newBalance = roundTwo(Number(user.balance));
 
         // Calculate new balance
         if (type === 'credit') {
-            newBalance += amount;
+            newBalance = roundTwo(newBalance + numericAmount);
         } else if (type === 'debit') {
-            if (user.balance < amount) {
+            if (newBalance < numericAmount) {
                 return res.status(400).json({
                     success: false,
                     error: 'Insufficient balance'
                 });
             }
-            newBalance -= amount;
+            newBalance = roundTwo(newBalance - numericAmount);
         }
 
         // Ensure there is always a description (Mongoose requires it)
@@ -124,7 +132,7 @@ const createTransaction = async (req, res) => {
         const transaction = await Transaction.create({
             userId: req.user._id,
             type,
-            amount,
+            amount: numericAmount,
             balance: newBalance,
             description: finalDescription,
             category: finalCategory,
@@ -396,15 +404,16 @@ const validateTransferDetails = async (req, res) => {
         // Get sender balance
         const sender = await User.findById(req.user._id);
 
-        // Calculate fees
-        const processingFee = isInternalTransfer ? 0 : Math.max(10, amount * 0.005);
-        const totalDebit = amount + processingFee;
+        // Calculate fees (use rounded amount to avoid floating precision issues)
+        const amt = roundTwo(Number(amount));
+        const processingFee = roundTwo(isInternalTransfer ? 0 : Math.max(10, amt * 0.005));
+        const totalDebit = roundTwo(amt + processingFee);
 
         // Check if sender has sufficient balance
         const hasSufficientBalance = sender.balance >= totalDebit;
 
         const preview = {
-            transferAmount: amount,
+            transferAmount: amt,
             processingFee,
             totalDebit,
             transferType,
@@ -420,7 +429,7 @@ const validateTransferDetails = async (req, res) => {
             success: true,
             data: preview,
             message: hasSufficientBalance
-                ? `Transfer preview: Rs${amount.toLocaleString('en-IN')} transfer${processingFee > 0 ? ` + Rs${processingFee.toLocaleString('en-IN')} fee = Rs${totalDebit.toLocaleString('en-IN')} total` : ''}`
+                ? `Transfer preview: Rs${amt.toLocaleString('en-IN')} transfer${processingFee > 0 ? ` + Rs${processingFee.toLocaleString('en-IN')} fee = Rs${totalDebit.toLocaleString('en-IN')} total` : ''}`
                 : 'Insufficient balance for this transfer'
         });
     } catch (error) {
@@ -505,18 +514,20 @@ const transferMoney = async (req, res) => {
             });
         }
 
-        // Check sender balance
+        // Check sender balance (use rounded amount)
         const sender = await User.findById(req.user._id);
-        if (sender.balance < amount) {
+        const amt = roundTwo(Number(amount));
+        if (sender.balance < amt) {
             return res.status(400).json({
                 success: false,
                 error: 'Insufficient balance'
             });
         }
 
-        // For external transfers, add processing fee
-        const processingFee = isInternalTransfer ? 0 : Math.max(10, amount * 0.005); // Rs10 or 0.5% whichever is higher
-        const totalDebit = amount + processingFee;
+        // For external transfers, add processing fee (rounded)
+        const processingFeeRaw = isInternalTransfer ? 0 : Math.max(10, amt * 0.005);
+        const processingFee = roundTwo(processingFeeRaw);
+        const totalDebit = roundTwo(amt + processingFee);
 
         if (sender.balance < totalDebit) {
             return res.status(400).json({
@@ -525,8 +536,8 @@ const transferMoney = async (req, res) => {
             });
         }
 
-        // Calculate new balance
-        const senderNewBalance = sender.balance - totalDebit;
+        // Calculate new balance (rounded)
+        const senderNewBalance = roundTwo(Number(sender.balance) - totalDebit);
 
         // Update sender balance FIRST before creating transactions
         sender.balance = senderNewBalance;
@@ -537,7 +548,7 @@ const transferMoney = async (req, res) => {
             userId: req.user._id,
             type: 'debit',
             transferType,
-            amount: isInternalTransfer ? amount : totalDebit, // For external, include fee in amount
+            amount: isInternalTransfer ? amt : totalDebit, // For external, include fee in amount
             balance: senderNewBalance,
             description: isInternalTransfer
                 ? (description || `Transfer to ${recipient ? recipient.name : recipientAccount}`)

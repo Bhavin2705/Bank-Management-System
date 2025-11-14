@@ -80,13 +80,32 @@ const register = async (req, res) => {
 
         // Create initial deposit transaction if amount > 0
         if (initialDeposit && initialDeposit > 0) {
-            await Transaction.create({
-                userId: user._id,
-                type: 'credit',
-                amount: initialDeposit,
-                balance: initialDeposit,
-                description: 'Initial account deposit'
-            });
+            // Prevent accidental duplicate initial deposit creation (e.g. double submit).
+            // If a matching initial deposit transaction was created very recently for this user,
+            // skip creating another one.
+            try {
+                const recentDuplicate = await Transaction.findOne({
+                    userId: user._id,
+                    type: 'credit',
+                    amount: initialDeposit,
+                    description: 'Initial account deposit',
+                    createdAt: { $gte: new Date(Date.now() - 10 * 1000) } // 10 seconds window
+                });
+                if (!recentDuplicate) {
+                    await Transaction.create({
+                        userId: user._id,
+                        type: 'credit',
+                        amount: initialDeposit,
+                        balance: initialDeposit,
+                        description: 'Initial account deposit'
+                    });
+                } else {
+                    console.warn('Skipping duplicate initial deposit creation for user', user._id);
+                }
+            } catch (dupErr) {
+                console.error('Error checking/creating initial deposit transaction:', dupErr);
+                // Best-effort: do not block registration if this check fails, continue
+            }
         }
 
         // Generate tokens
