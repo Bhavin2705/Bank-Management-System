@@ -1,5 +1,6 @@
 import { Plus, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import clientData from '../utils/clientData';
 
 const Investments = ({ user }) => {
   const [investments, setInvestments] = useState([]);
@@ -12,15 +13,17 @@ const Investments = ({ user }) => {
   });
 
   useEffect(() => {
-    const savedInvestments = localStorage.getItem(`investments_${user.id}`);
-    if (savedInvestments) {
-      setInvestments(JSON.parse(savedInvestments));
-    }
+    let mounted = true;
+    clientData.getSection('investments').then((savedInvestments) => {
+      if (!mounted) return;
+      if (savedInvestments) setInvestments(Array.isArray(savedInvestments) ? savedInvestments : []);
+    }).catch(() => { });
+    return () => { mounted = false; };
   }, [user.id]);
 
   const saveInvestments = (newInvestments) => {
     setInvestments(newInvestments);
-    localStorage.setItem(`investments_${user.id}`, JSON.stringify(newInvestments));
+    clientData.setSection('investments', newInvestments).catch((err) => console.error('Save investments failed', err));
   };
 
   const handleSubmit = (e) => {

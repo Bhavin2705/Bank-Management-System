@@ -231,3 +231,9 @@ api.cards = {
     updateStatus: (id, data) => apiRequest(`/cards/${id}/status`, { method: 'PUT', body: JSON.stringify(data) })
 };
 
+// Client-side persisted data (replaces frontend localStorage usage)
+api.userData = {
+    getClientData: () => apiRequest('/users/me/client-data'),
+    updateClientData: (data) => apiRequest('/users/me/client-data', { method: 'PUT', body: JSON.stringify(data) })
+};
+

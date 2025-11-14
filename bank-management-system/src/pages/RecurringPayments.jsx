@@ -2,6 +2,7 @@ import { Plus, Repeat, Trash2, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import { getNonAdminUsers } from '../utils/auth';
+import clientData from '../utils/clientData';
 
 const RecurringPayments = ({ user }) => {
   const { showError, showSuccess } = useNotification();
@@ -41,8 +42,10 @@ const RecurringPayments = ({ user }) => {
 
   const loadPayments = useCallback(() => {
     const userId = getUserId();
-    const userPayments = JSON.parse(localStorage.getItem(`recurring_payments_${userId}`) || '[]');
-    setPayments(userPayments);
+    // Load from backend-persisted client data
+    clientData.getSection('recurringPayments').then((data) => {
+      setPayments(Array.isArray(data) ? data : []);
+    }).catch(() => setPayments([]));
   }, [getUserId]);
 
   useEffect(() => {
@@ -86,7 +89,8 @@ const RecurringPayments = ({ user }) => {
 
     const updatedPayments = [...payments, newPayment];
     setPayments(updatedPayments);
-    localStorage.setItem(`recurring_payments_${getUserId()}`, JSON.stringify(updatedPayments));
+    // Persist to backend
+    clientData.setSection('recurringPayments', updatedPayments).catch((err) => console.error('Save recurring payments failed', err));
     safeShowSuccess('Recurring payment created successfully!');
 
     setFormData({
@@ -101,7 +105,7 @@ const RecurringPayments = ({ user }) => {
   const deletePayment = (paymentId) => {
     const updatedPayments = payments.filter((p) => p.id !== paymentId);
     setPayments(updatedPayments);
-    localStorage.setItem(`recurring_payments_${getUserId()}`, JSON.stringify(updatedPayments));
+    clientData.setSection('recurringPayments', updatedPayments).catch((err) => console.error('Save recurring payments failed', err));
     safeShowSuccess('Recurring payment deleted successfully!');
   };
 
@@ -112,7 +116,7 @@ const RecurringPayments = ({ user }) => {
         : payment
     );
     setPayments(updatedPayments);
-    localStorage.setItem(`recurring_payments_${getUserId()}`, JSON.stringify(updatedPayments));
+    clientData.setSection('recurringPayments', updatedPayments).catch((err) => console.error('Save recurring payments failed', err));
     safeShowSuccess(
       `Recurring payment ${updatedPayments.find((p) => p.id === paymentId).status === 'active' ? 'resumed' : 'paused'} successfully!`
     );

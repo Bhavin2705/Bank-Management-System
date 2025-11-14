@@ -107,7 +107,13 @@ function App() {
         setUser(null);
         setSessionExpired(false);
       }
-      const savedTheme = localStorage.getItem('bank_theme');
+      const getCookie = (name) => {
+        if (typeof document === 'undefined') return null;
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : null;
+      };
+
+      const savedTheme = getCookie('bank_theme');
       if (savedTheme === 'dark') {
         setDarkMode(true);
         document.documentElement.setAttribute('data-theme', 'dark');
@@ -124,10 +130,10 @@ function App() {
     setDarkMode(newDarkMode);
     if (newDarkMode) {
       document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('bank_theme', 'dark');
+      document.cookie = `bank_theme=dark; path=/; max-age=${60 * 60 * 24 * 365}`;
     } else {
       document.documentElement.removeAttribute('data-theme');
-      localStorage.removeItem('bank_theme');
+      document.cookie = `bank_theme=; path=/; max-age=0`;
     }
   };
 
@@ -148,13 +154,12 @@ function App() {
   };
 
   const handleSessionExpired = () => {
-    // Clear tokens from localStorage
-    // Remove legacy localStorage token keys if present
+    // Attempt to remove any legacy client-side token cookies (non-httpOnly)
     try {
-      localStorage.removeItem('bank_auth_token');
-      localStorage.removeItem('bank_auth_refresh_token');
+      document.cookie = 'bank_auth_token=; path=/; max-age=0';
+      document.cookie = 'bank_auth_refresh_token=; path=/; max-age=0';
     } catch (e) {
-      // ignore (e.g., SSR or blocked storage)
+      // ignore
     }
     setUser(null);
     setSessionExpired(false);

@@ -761,6 +761,44 @@ select:focus {
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
 }
 
+/* Fix for password visibility toggle (eye) alignment */
+/* Ensure the absolute button used to toggle visibility is centered vertically */
+.form-group > div > button[type="button"],
+.form-group > div button[title*="Show"],
+.form-group > div button[title*="Hide"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  line-height: 0; /* prevents SVG baseline shift */
+}
+
+/* Ensure the parent relative container exists and the absolute button is vertically centered
+   Use !important to override inline styles where necessary (top/transform) so the icon stays centered */
+.form-group > div {
+  position: relative;
+}
+
+.form-group > div > button[type="button"] {
+  position: absolute !important;
+  right: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  height: auto !important;
+  min-height: 1.75rem;
+  width: 2.25rem;
+  padding: 0 !important;
+}
+
+.form-group > div > button[type="button"] svg {
+  display: block;
+  vertical-align: middle;
+}
+
+
 .form-input:focus {
   outline: none;
   border-color: var(--text-accent);

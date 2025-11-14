@@ -1,6 +1,7 @@
 import { Plus, Target, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CustomCalendar from '../components/UI/CustomCalendar';
+import clientData from '../utils/clientData';
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
 
 const Goals = ({ user }) => {
@@ -14,15 +15,17 @@ const Goals = ({ user }) => {
   });
 
   useEffect(() => {
-    const savedGoals = localStorage.getItem(`goals_${user.id}`);
-    if (savedGoals) {
-      setGoals(JSON.parse(savedGoals));
-    }
+    let mounted = true;
+    clientData.getSection('goals').then((savedGoals) => {
+      if (!mounted) return;
+      if (savedGoals) setGoals(Array.isArray(savedGoals) ? savedGoals : []);
+    }).catch(() => { });
+    return () => { mounted = false; };
   }, [user.id]);
 
   const saveGoals = (newGoals) => {
     setGoals(newGoals);
-    localStorage.setItem(`goals_${user.id}`, JSON.stringify(newGoals));
+    clientData.setSection('goals', newGoals).catch((err) => console.error('Save goals failed', err));
   };
 
   const handleSubmit = (e) => {

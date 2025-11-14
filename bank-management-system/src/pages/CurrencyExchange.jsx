@@ -1,5 +1,7 @@
 import { ArrowRightLeft, DollarSign, Euro, PoundSterling, RefreshCw, TrendingUp } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import clientData from '../utils/clientData';
+import debounce from '../utils/debounce';
 
 const CurrencyExchange = () => {
     const [exchangeRates, setExchangeRates] = useState({});
@@ -16,6 +18,8 @@ const CurrencyExchange = () => {
 
     const [result, setResult] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [refreshDisabled, setRefreshDisabled] = useState(false);
+    const MIN_REFRESH_INTERVAL = 10 * 1000; // 10 seconds between manual refreshes
 
     // Popular currencies for quick selection
     const popularCurrencies = [
@@ -42,38 +46,43 @@ const CurrencyExchange = () => {
 
             // Check cache first (valid for 1 hour)
             const cacheKey = `exchange_rates_${useLiveData ? 'live' : 'stable'}`;
-            const cachedData = localStorage.getItem(cacheKey);
-            const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
+            try {
+                const cached = await clientData.getSection('exchangeCache');
+                const cachedData = cached && cached.key === cacheKey ? cached.data : null;
+                const cacheTimestamp = cached && cached.timestamp ? Number(cached.timestamp) : 0;
 
-            if (cachedData && cacheTimestamp && !isRefresh) {
-                const cacheAge = Date.now() - parseInt(cacheTimestamp);
-                const cacheValidTime = useLiveData ? 5 * 60 * 1000 : 60 * 60 * 1000; // 5 min for live, 1 hour for stable
+                if (cachedData && cacheTimestamp && !isRefresh) {
+                    const cacheAge = Date.now() - Number(cacheTimestamp);
+                    const cacheValidTime = useLiveData ? 5 * 60 * 1000 : 60 * 60 * 1000; // 5 min for live, 1 hour for stable
 
-                if (cacheAge < cacheValidTime) {
-                    const parsedData = JSON.parse(cachedData);
-                    setExchangeRates(parsedData.rates);
-                    setLastUpdated(new Date(parsedData.timestamp));
-                    setLoading(false);
-                    setRefreshing(false);
-                    return;
+                    if (cacheAge < cacheValidTime) {
+                        setExchangeRates(cachedData.rates);
+                        setLastUpdated(new Date(cachedData.timestamp));
+                        setLoading(false);
+                        setRefreshing(false);
+                        return;
+                    }
                 }
+            } catch (e) {
+                // continue to fetch if client data fails
             }
 
             let rates;
 
             if (useLiveData) {
-                // Fetch live data from API
+                // Fetch live data from backend proxy which applies rate limiting and caching
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-                const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+                const response = await fetch('/api/exchange/rates', {
                     signal: controller.signal
                 });
 
                 clearTimeout(timeoutId);
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`Upstream error: ${response.status} ${text}`);
                 }
 
                 const data = await response.json();
@@ -81,7 +90,7 @@ const CurrencyExchange = () => {
                 if (data && data.rates) {
                     rates = data.rates;
                 } else {
-                    throw new Error('Invalid API response structure');
+                    throw new Error('Invalid proxy response structure');
                 }
             } else {
                 // Use stable mock data for consistent results
@@ -99,13 +108,16 @@ const CurrencyExchange = () => {
                 };
             }
 
-            // Cache the data
+            // Cache the data in backend clientData
             const cacheData = {
                 rates,
                 timestamp: Date.now()
             };
-            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+            try {
+                await clientData.setSection('exchangeCache', { key: cacheKey, timestamp: Date.now(), data: cacheData });
+            } catch (e) {
+                // non-fatal
+            }
 
             setExchangeRates(rates);
             setLastUpdated(new Date());
@@ -147,8 +159,11 @@ const CurrencyExchange = () => {
         }
     }, [useLiveData]);
 
+    // Debounce fetch to avoid rapid repeat calls
+    const debouncedFetchRef = useRef(debounce((isRefresh) => fetchExchangeRates(isRefresh), 300));
+
     useEffect(() => {
-        fetchExchangeRates();
+        debouncedFetchRef.current(false);
     }, [fetchExchangeRates]);
 
     useEffect(() => {
@@ -305,11 +320,8 @@ const CurrencyExchange = () => {
                             </label>
                             <button
                                 onClick={() => {
-                                    // Clear cache when switching modes
-                                    localStorage.removeItem('exchange_rates_live');
-                                    localStorage.removeItem('exchange_rates_live_timestamp');
-                                    localStorage.removeItem('exchange_rates_stable');
-                                    localStorage.removeItem('exchange_rates_stable_timestamp');
+                                    // Clear cache when switching modes (persisted on backend)
+                                    clientData.setSection('exchangeCache', { key: '', timestamp: 0, data: {} }).catch(() => { });
                                     setUseLiveData(!useLiveData);
                                 }}
                                 style={{
@@ -328,13 +340,19 @@ const CurrencyExchange = () => {
                             </button>
                         </div>
                         <button
-                            onClick={() => fetchExchangeRates(true)}
+                            onClick={() => {
+                                // prevent rapid manual refreshes
+                                if (refreshDisabled) return;
+                                fetchExchangeRates(true);
+                                setRefreshDisabled(true);
+                                setTimeout(() => setRefreshDisabled(false), MIN_REFRESH_INTERVAL);
+                            }}
                             className="btn btn-secondary"
-                            disabled={refreshing}
+                            disabled={refreshing || refreshDisabled}
                             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                         >
                             <RefreshCw size={16} className={refreshing ? 'rotating' : ''} />
-                            {refreshing ? 'Refreshing...' : 'Refresh Rates'}
+                            {refreshing ? 'Refreshing...' : (refreshDisabled ? 'Please wait...' : 'Refresh Rates')}
                         </button>
                     </div>
                 </div>

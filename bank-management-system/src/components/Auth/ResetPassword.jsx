@@ -196,7 +196,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-10 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -249,7 +249,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-10 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}

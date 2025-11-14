@@ -1,5 +1,6 @@
 import { Edit } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import clientData from '../utils/clientData';
 import { getTransactions } from '../utils/transactions';
 
 const Budget = ({ user }) => {
@@ -11,24 +12,24 @@ const Budget = ({ user }) => {
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
-    const savedBudgets = localStorage.getItem(`budgets_${user.id}`);
-    if (savedBudgets) {
-      setBudgets(JSON.parse(savedBudgets));
-    }
-
-    // Set default budgets if none exist
-    if (!savedBudgets || Object.keys(JSON.parse(savedBudgets)).length === 0) {
-      const defaultBudgets = {
-        food: 500,
-        transportation: 300,
-        entertainment: 200,
-        utilities: 200,
-        shopping: 300,
-        healthcare: 150
-      };
-      setBudgets(defaultBudgets);
-      localStorage.setItem(`budgets_${user.id}`, JSON.stringify(defaultBudgets));
-    }
+    let mounted = true;
+    clientData.getSection('budgets').then((savedBudgets) => {
+      if (!mounted) return;
+      if (savedBudgets && Object.keys(savedBudgets).length > 0) {
+        setBudgets(savedBudgets);
+      } else {
+        const defaultBudgets = {
+          food: 500,
+          transportation: 300,
+          entertainment: 200,
+          utilities: 200,
+          shopping: 300,
+          healthcare: 150
+        };
+        setBudgets(defaultBudgets);
+        clientData.setSection('budgets', defaultBudgets).catch(() => { });
+      }
+    }).catch(() => { });
 
     // Load transaction stats and transactions
     loadTransactions();
@@ -55,7 +56,7 @@ const Budget = ({ user }) => {
 
   const saveBudgets = (newBudgets) => {
     setBudgets(newBudgets);
-    localStorage.setItem(`budgets_${user.id}`, JSON.stringify(newBudgets));
+    clientData.setSection('budgets', newBudgets).catch((err) => console.error('Save budgets failed', err));
   };
 
   const handleSetBudget = () => {

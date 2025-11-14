@@ -30,13 +30,24 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     pdf.setFont('helvetica', 'normal');
     pdf.text('Mini Statement', 20, 30);
 
-    // Bank details
+    // Bank details (right column) - wrap long values to fit page
     pdf.setTextColor(...textColor);
     pdf.setFontSize(10);
-    pdf.text('Generated on: ' + new Date().toLocaleDateString(), 150, 15);
-    pdf.text('Account: ' + accountNumber, 150, 25);
-    pdf.text('Period: ' + startDate.toLocaleDateString() + ' - ' + endDate.toLocaleDateString(), 150, 35);
-    pdf.text('Currency: INR (Rs)', 150, 45);
+    const rightX = 150;
+    const rightMargin = 10;
+    const rightWidth = 210 - rightX - rightMargin; // PDF width 210mm
+
+    const genOnLines = pdf.splitTextToSize('Generated on: ' + new Date().toLocaleDateString(), rightWidth);
+    pdf.text(genOnLines, rightX, 15);
+
+    const accLines = pdf.splitTextToSize('Account: ' + accountNumber, rightWidth);
+    pdf.text(accLines, rightX, 25);
+
+    const periodLines = pdf.splitTextToSize('Period: ' + startDate.toLocaleDateString() + ' - ' + endDate.toLocaleDateString(), rightWidth);
+    pdf.text(periodLines, rightX, 35);
+
+    const currLines = pdf.splitTextToSize('Currency: INR (Rs)', rightWidth);
+    pdf.text(currLines, rightX, 45);
 
     // Customer details
     let yPosition = 50;
@@ -51,7 +62,12 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     yPosition += 6;
     pdf.text('Account Type: ' + (user?.accountType || 'Savings'), 20, yPosition);
     yPosition += 6;
-    pdf.text('Account Number: ' + accountNumber, 20, yPosition);
+    // Wrap account number if it's long to avoid clipping
+    const acctLabel = 'Account Number: ' + accountNumber;
+    const leftMargin = 20;
+    const availableWidth = 210 - leftMargin - 20; // keep 20mm right padding
+    const acctLines = pdf.splitTextToSize(acctLabel, availableWidth);
+    pdf.text(acctLines, leftMargin, yPosition);
 
     // Transaction summary
     yPosition += 15;
@@ -204,10 +220,21 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
 
     pdf.setTextColor(51, 51, 51);
     pdf.setFontSize(10);
-    pdf.text('Generated on: ' + new Date().toLocaleDateString(), 150, 20);
-    pdf.text('Account: ' + accountNumber, 150, 30);
-    pdf.text('Period: ' + startDate.toLocaleDateString() + ' - ' + endDate.toLocaleDateString(), 150, 40);
-    pdf.text('Currency: INR (Rs)', 150, 50);
+    const rightX2 = 150;
+    const rightMargin2 = 10;
+    const rightWidth2 = 210 - rightX2 - rightMargin2;
+
+    const genOnLines2 = pdf.splitTextToSize('Generated on: ' + new Date().toLocaleDateString(), rightWidth2);
+    pdf.text(genOnLines2, rightX2, 20);
+
+    const accLines2 = pdf.splitTextToSize('Account: ' + accountNumber, rightWidth2);
+    pdf.text(accLines2, rightX2, 30);
+
+    const periodLines2 = pdf.splitTextToSize('Period: ' + startDate.toLocaleDateString() + ' - ' + endDate.toLocaleDateString(), rightWidth2);
+    pdf.text(periodLines2, rightX2, 40);
+
+    const currLines2 = pdf.splitTextToSize('Currency: INR (Rs)', rightWidth2);
+    pdf.text(currLines2, rightX2, 50);
 
     // Customer and account details
     let yPosition = 60;

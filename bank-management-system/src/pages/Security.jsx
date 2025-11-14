@@ -2,6 +2,7 @@ import { Eye, EyeOff, Key, Lock, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import api from '../utils/api';
+import clientData from '../utils/clientData';
 
 const Security = ({ user }) => {
   const { showSuccess, showError } = useNotification();
@@ -32,6 +33,7 @@ const Security = ({ user }) => {
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [clientDataState, setClientDataState] = useState({});
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
@@ -125,13 +127,23 @@ const Security = ({ user }) => {
       return;
     }
 
-    localStorage.setItem(`security_questions_${user.id}`, JSON.stringify(securityQuestions));
-    showSuccess('Security questions updated successfully! 🛡️');
+    // Persist via backend instead of localStorage
+    clientData.setSection('securityQuestions', securityQuestions)
+      .then(() => showSuccess('Security questions updated successfully! 🛡️'))
+      .catch((err) => showError(err.message || 'Failed to save security questions'));
   };
 
+  useEffect(() => {
+    let mounted = true;
+    clientData.getClientData().then((data) => {
+      if (mounted) setClientDataState(data || {});
+    }).catch(() => { });
+    return () => { mounted = false; };
+  }, [user.id]);
+
   const getLoginHistory = () => {
-    const history = JSON.parse(localStorage.getItem(`login_history_${user.id}`) || '[]');
-    return history.slice(-10); // Last 10 logins
+    const history = clientDataState.loginHistory || [];
+    return history.slice(-10);
   };
 
   const formatDate = (dateString) => {
@@ -264,8 +276,7 @@ const Security = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'
@@ -292,8 +303,7 @@ const Security = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'
@@ -320,8 +330,7 @@ const Security = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'
@@ -392,8 +401,7 @@ const Security = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'
@@ -422,8 +430,7 @@ const Security = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'
@@ -452,8 +459,7 @@ const Security = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'

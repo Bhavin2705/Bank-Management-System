@@ -447,8 +447,7 @@ const Settings = ({ user, onUserUpdate }) => {
                     style={{
                       position: 'absolute',
                       right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
+                      top: '40px',
                       border: 'none',
                       background: 'none',
                       cursor: 'pointer',
@@ -480,8 +479,7 @@ const Settings = ({ user, onUserUpdate }) => {
                     style={{
                       position: 'absolute',
                       right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
+                      top: '40px',
                       border: 'none',
                       background: 'none',
                       cursor: 'pointer',
@@ -513,8 +511,7 @@ const Settings = ({ user, onUserUpdate }) => {
                     style={{
                       position: 'absolute',
                       right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
+                      top: '40px',
                       border: 'none',
                       background: 'none',
                       cursor: 'pointer',

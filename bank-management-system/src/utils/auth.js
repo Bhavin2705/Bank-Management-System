@@ -1,6 +1,7 @@
 // Authentication utilities using API
 
 import api from './api.js';
+import clientData from './clientData';
 
 export const AUTH_KEY = 'bank_auth_user';
 
@@ -15,6 +16,27 @@ export const login = async (identifier, password) => {
     const response = await api.auth.login({ identifier, password });
 
     if (response.success) {
+      // Persist token into backend user.tokens (also backend sets httpOnly cookie)
+      try {
+        const token = response.data && response.data.token;
+        if (token) {
+          // Try to decode exp claim from JWT payload
+          let expiryTimestampMs = Date.now() + 7 * 24 * 60 * 60 * 1000; // fallback 7 days
+          try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              if (payload && payload.exp) expiryTimestampMs = payload.exp * 1000;
+            }
+          } catch (e) {
+            // ignore decode errors
+          }
+          await clientData.setClientData({ token: { token, expiryTimestampMs } });
+        }
+      } catch (e) {
+        // non-fatal; token persistence is best-effort
+        console.warn('Failed to persist token to server:', e);
+      }
       return { success: true, user: response.data.user };
     }
 
@@ -41,6 +63,22 @@ export const loginWithAccount = async (identifier, password, accountId) => {
     const response = await api.auth.loginWithAccount({ identifier, password, accountId });
 
     if (response.success) {
+      try {
+        const token = response.data && response.data.token;
+        if (token) {
+          let expiryTimestampMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+          try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              if (payload && payload.exp) expiryTimestampMs = payload.exp * 1000;
+            }
+          } catch (e) { }
+          await clientData.setClientData({ token: { token, expiryTimestampMs } });
+        }
+      } catch (e) {
+        console.warn('Failed to persist token to server:', e);
+      }
       return { success: true, user: response.data.user };
     }
 
@@ -55,6 +93,22 @@ export const register = async (userData) => {
     const response = await api.auth.register(userData);
 
     if (response.success) {
+      try {
+        const token = response.data && response.data.token;
+        if (token) {
+          let expiryTimestampMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+          try {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              if (payload && payload.exp) expiryTimestampMs = payload.exp * 1000;
+            }
+          } catch (e) { }
+          await clientData.setClientData({ token: { token, expiryTimestampMs } });
+        }
+      } catch (e) {
+        console.warn('Failed to persist token to server:', e);
+      }
       return { success: true, user: response.data.user };
     }
 
@@ -74,10 +128,10 @@ export const logout = async () => {
   } catch (error) {
     console.warn('Logout API error:', error);
   } finally {
-    // Remove any legacy token entries from localStorage (cleanup)
+    // Remove any legacy non-httpOnly token cookies if present
     try {
-      localStorage.removeItem('bank_auth_token');
-      localStorage.removeItem('bank_auth_refresh_token');
+      document.cookie = 'bank_auth_token=; path=/; max-age=0';
+      document.cookie = 'bank_auth_refresh_token=; path=/; max-age=0';
     } catch (e) {
       // ignore
     }
@@ -114,8 +168,12 @@ export const refreshUserData = async () => {
       return response.data;
     }
   } catch (error) {
-    // If token is expired (401), try to refresh it
-    if (error.message && error.message.includes('Authentication required')) {
+    // If we received a 401-like error (token expired, invalid, or user not found), try to refresh it.
+    // The API may return different messages for 401; handle common cases.
+    const msg = (error && error.message) ? error.message : '';
+    const shouldTryRefresh = msg.includes('Authentication required') || msg.includes('No user found') || msg.includes('Not authorized') || msg.toLowerCase().includes('invalid refresh');
+
+    if (shouldTryRefresh) {
       try {
         // Attempt refresh via cookie-based refresh endpoint
         const refreshResponse = await api.auth.refreshToken();
@@ -136,6 +194,7 @@ export const refreshUserData = async () => {
         return null;
       }
     }
+
     // Other error, just return null
     return null;
   }

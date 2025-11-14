@@ -98,7 +98,7 @@ const Register = ({ onLogin, switchToLogin }) => {
       }, 500);
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [formData.phone, checkPhoneExists]);
+  }, [formData.phone]);
 
   const isFormValid = () => {
     return (
@@ -338,28 +338,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   </p>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Initial Deposit (Optional)</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-500">Rs</span>
-                  </div>
-                  <input
-                    type="number"
-                    name="initialDeposit"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
-                    value={formData.initialDeposit}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.01"
-                    placeholder="Enter initial deposit amount"
-                  />
-                </div>
-                <p className="mt-1 text-sm text-gray-500">
-                  You can start with Rs0 and deposit later, or make an initial deposit now.
-                </p>
-              </div>
+              {/* Duplicate initialDeposit input removed - kept the first occurrence earlier in the form */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <div className="relative">
@@ -379,7 +358,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -431,7 +410,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}

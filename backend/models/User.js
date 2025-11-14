@@ -10,9 +10,9 @@ const userSchema = new mongoose.Schema({
         maxlength: [50, 'Name cannot be more than 50 characters'],
         validate: {
             validator: function (v) {
-                 return /^[A-Za-z ]+$/.test(v);
+                return /^[A-Za-z ]+$/.test(v);
             },
-              message: 'Name can only contain alphabets and spaces'
+            message: 'Name can only contain alphabets and spaces'
         }
     },
     email: {
@@ -140,47 +140,47 @@ const userSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'suspended'],
         default: 'active'
     }
-        ,
-        // Client-side persistent data migrated from frontend localStorage
-        clientData: {
-            securityQuestions: {
-                type: Object,
-                default: {}
-            },
-            loginHistory: {
-                type: Array,
-                default: []
-            },
-            recurringPayments: {
-                type: Array,
-                default: []
-            },
-            budgets: {
-                type: Array,
-                default: []
-            },
-            investments: {
-                type: Array,
-                default: []
-            },
-            goals: {
-                type: Array,
-                default: []
-            },
-            exchangeCache: {
-                key: { type: String, default: '' },
-                timestamp: { type: Number, default: 0 }, // ms since epoch
-                data: { type: Object, default: {} }
-            }
+    ,
+    // Client-side persistent data migrated from frontend localStorage
+    clientData: {
+        securityQuestions: {
+            type: Object,
+            default: {}
         },
-        // Stored tokens (e.g., JWT issued to client) and their expiry timestamps
-        tokens: [
-            {
-                token: String,
-                expiryTimestampMs: Number,
-                createdAt: { type: Date, default: Date.now }
-            }
-        ]
+        loginHistory: {
+            type: Array,
+            default: []
+        },
+        recurringPayments: {
+            type: Array,
+            default: []
+        },
+        budgets: {
+            type: Array,
+            default: []
+        },
+        investments: {
+            type: Array,
+            default: []
+        },
+        goals: {
+            type: Array,
+            default: []
+        },
+        exchangeCache: {
+            key: { type: String, default: '' },
+            timestamp: { type: Number, default: 0 }, // ms since epoch
+            data: { type: Object, default: {} }
+        }
+    },
+    // Stored tokens (e.g., JWT issued to client) and their expiry timestamps
+    tokens: [
+        {
+            token: String,
+            expiryTimestampMs: Number,
+            createdAt: { type: Date, default: Date.now }
+        }
+    ]
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

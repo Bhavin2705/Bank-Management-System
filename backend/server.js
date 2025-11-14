@@ -11,6 +11,7 @@ const errorHandler = require('./middleware/errorHandler');
 const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
+const User = require('./models/User');
 
 // Load environment variables
 require('dotenv').config();
@@ -47,9 +48,18 @@ const exchangeRoutes = require('./routes/exchange');
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
+// Build Socket.IO allowed origins using FRONTEND_URL when provided
+const allowedSocketOrigins = [];
+if (process.env.FRONTEND_URL) {
+    // allow the configured frontend production origin
+    allowedSocketOrigins.push(process.env.FRONTEND_URL);
+}
+// keep common local dev origins for convenience
+allowedSocketOrigins.push('http://localhost:3000', 'http://localhost:5173');
+
 const io = socketIo(server, {
     cors: {
-        origin: ["http://localhost:3000", "http://localhost:5173"],
+        origin: allowedSocketOrigins,
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -93,25 +103,43 @@ app.use('/api/cards', cardRoutes);
 app.use('/api/exchange', exchangeRoutes);
 
 // Socket.io middleware for authentication
-io.use((socket, next) => {
-    // Accept token from either handshake auth (legacy) or cookie header (httpOnly cookies)
+io.use(async (socket, next) => {
+    // Accept token from handshake auth (preferred) or cookie header (httpOnly cookies)
     let token = socket.handshake.auth && socket.handshake.auth.token;
     if (!token && socket.handshake.headers && socket.handshake.headers.cookie) {
         const parsed = cookie.parse(socket.handshake.headers.cookie || '');
-        token = parsed.token || parsed.Token || parsed['access_token'] || parsed['refreshToken'];
+        // Only consider access token cookie names here (do not accept refresh tokens as auth)
+        token = parsed.token || parsed.Token || parsed['access_token'];
     }
 
     if (!token) {
-        return next(new Error('Authentication error'));
+        return next(new Error('Authentication error: token missing'));
     }
 
     try {
+        // Verify with access token secret
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret_change_me');
+
+        // Ensure token is an access token (not a refresh token)
+        if (!decoded || decoded.tokenType !== 'access' || !decoded.id) {
+            return next(new Error('Authentication error: invalid token type'));
+        }
+
+        // Attach minimal identity to socket and fetch full user info from DB
         socket.userId = decoded.id;
-        socket.user = decoded;
+
+        try {
+            const user = await User.findById(decoded.id).select('-password');
+            socket.user = user ? user.toObject() : { id: decoded.id };
+        } catch (dbErr) {
+            // If DB lookup fails, still attach decoded payload but warn
+            console.warn('Socket auth: failed to load user from DB', dbErr && dbErr.message);
+            socket.user = decoded;
+        }
+
         next();
     } catch (err) {
-        next(new Error('Authentication error'));
+        next(new Error('Authentication error: token invalid'));
     }
 });
 

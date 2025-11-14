@@ -288,8 +288,7 @@ const Cards = ({ user }) => {
                   style={{
                     position: 'absolute',
                     right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: '40px',
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer'

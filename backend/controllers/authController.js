@@ -11,13 +11,15 @@ const JWT_EXPIRE_DAYS = parseInt(process.env.JWT_EXPIRE_DAYS) || 7;
 const JWT_REFRESH_EXPIRE_DAYS = parseInt(process.env.JWT_REFRESH_EXPIRE_DAYS) || 30;
 
 const generateToken = (id) => {
-    return jwt.sign({ id }, JWT_SECRET, {
+    // Include a tokenType claim so code can distinguish access vs refresh tokens
+    return jwt.sign({ id, tokenType: 'access' }, JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRE || `${JWT_EXPIRE_DAYS}d`
     });
 };
 
 const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, JWT_REFRESH_SECRET, {
+    // Mark refresh tokens explicitly
+    return jwt.sign({ id, tokenType: 'refresh' }, JWT_REFRESH_SECRET, {
         expiresIn: process.env.JWT_REFRESH_EXPIRE || `${JWT_REFRESH_EXPIRE_DAYS}d`
     });
 };
@@ -723,6 +725,14 @@ const refreshToken = async (req, res) => {
         }
 
         const decoded = jwt.verify(tokenToVerify, JWT_REFRESH_SECRET);
+
+        // Ensure token is a refresh token
+        if (!decoded || decoded.tokenType !== 'refresh' || !decoded.id) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid refresh token'
+            });
+        }
 
         // Get user
         const user = await User.findById(decoded.id);
