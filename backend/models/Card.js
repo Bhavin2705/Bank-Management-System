@@ -43,10 +43,18 @@ const cardSchema = new mongoose.Schema({
         required: [true, 'Expiry year is required'],
         min: new Date().getFullYear()
     },
-    cvv: {
+    // Encrypted CVV storage (reversible) - store ciphertext, iv and auth tag
+    cvvEncrypted: {
         type: String,
-        required: [true, 'CVV is required'],
-        select: false // Don't include CVV in queries
+        select: false
+    },
+    cvvIv: {
+        type: String,
+        select: false
+    },
+    cvvTag: {
+        type: String,
+        select: false
     },
     pin: {
         type: String,
@@ -54,7 +62,7 @@ const cardSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'blocked', 'expired', 'lost'],
+        enum: ['active', 'inactive', 'blocked', 'expired', 'lost', 'closed'],
         default: 'active'
     },
     // Credit card specific fields
@@ -103,7 +111,6 @@ const cardSchema = new mongoose.Schema({
 // Indexes
 cardSchema.index({ userId: 1 });
 cardSchema.index({ accountId: 1 });
-cardSchema.index({ cardNumber: 1 });
 cardSchema.index({ status: 1 });
 
 // Virtual for masked card number
@@ -163,6 +170,59 @@ cardSchema.methods.validatePin = async function (pin) {
 // Instance method to set PIN
 cardSchema.methods.setPin = function (pin) {
     this.pin = crypto.createHash('sha256').update(pin).digest('hex');
+};
+
+// Helper to get encryption key (32 bytes). Prefer CVV_ENC_KEY env var (hex/base64), fallback to hash of JWT_SECRET
+function getCvvKey() {
+    const envKey = process.env.CVV_ENC_KEY;
+    if (envKey) {
+        try {
+            // try hex
+            if (/^[0-9a-fA-F]+$/.test(envKey) && envKey.length === 64) {
+                return Buffer.from(envKey, 'hex');
+            }
+            // try base64
+            return Buffer.from(envKey, 'base64');
+        } catch (e) {
+            // fallthrough
+        }
+    }
+    const secret = process.env.JWT_SECRET || 'dev-secret-key';
+    return crypto.createHash('sha256').update(secret).digest();
+}
+
+// Instance method to set CVV (encrypt before storing)
+cardSchema.methods.setCvv = function (cvv) {
+    const key = getCvvKey();
+    const iv = crypto.randomBytes(12); // 96-bit for GCM
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([cipher.update(String(cvv), 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    this.cvvEncrypted = encrypted.toString('hex');
+    this.cvvIv = iv.toString('hex');
+    this.cvvTag = tag.toString('hex');
+};
+
+// Instance method to decrypt and return plaintext CVV
+cardSchema.methods.getCvvPlain = function () {
+    if (!this.cvvEncrypted || !this.cvvIv || !this.cvvTag) return null;
+    try {
+        const key = getCvvKey();
+        const iv = Buffer.from(this.cvvIv, 'hex');
+        const tag = Buffer.from(this.cvvTag, 'hex');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(tag);
+        const decrypted = Buffer.concat([decipher.update(Buffer.from(this.cvvEncrypted, 'hex')), decipher.final()]);
+        return decrypted.toString('utf8');
+    } catch (e) {
+        return null;
+    }
+};
+
+// Instance method to validate CVV by decrypting and comparing
+cardSchema.methods.validateCvv = async function (cvv) {
+    const plain = this.getCvvPlain();
+    return plain === String(cvv);
 };
 
 // Instance method to check transaction limits

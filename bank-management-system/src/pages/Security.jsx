@@ -1,14 +1,17 @@
 import { Eye, EyeOff, Key, Lock, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import api from '../utils/api';
 
-const Security = ({ user, onUserUpdate }) => {
+const Security = ({ user }) => {
   const { showSuccess, showError } = useNotification();
   const [activeTab, setActiveTab] = useState('password');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCurrentPin, setShowCurrentPin] = useState(false);
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -19,6 +22,8 @@ const Security = ({ user, onUserUpdate }) => {
     newPin: '',
     confirmPin: ''
   });
+  const [cards, setCards] = useState([]);
+  const [selectedCardId, setSelectedCardId] = useState(null);
   const [securityQuestions, setSecurityQuestions] = useState({
     question1: '',
     answer1: '',
@@ -70,6 +75,18 @@ const Security = ({ user, onUserUpdate }) => {
     setError('');
     setMessage('');
 
+    if (!selectedCardId) {
+      showError('Please select a card to change its PIN.');
+      return;
+    }
+
+    // Prevent PIN changes on locked cards
+    const targetCard = cards.find((c) => String(c.id) === selectedCardId);
+    if (targetCard && targetCard.status === 'locked') {
+      showError('The selected card is locked. Unlock the card before changing its PIN.');
+      return;
+    }
+
     if (pinForm.newPin.length !== 4 || !/^\d+$/.test(pinForm.newPin)) {
       showError('PIN must be exactly 4 digits');
       return;
@@ -80,15 +97,22 @@ const Security = ({ user, onUserUpdate }) => {
       return;
     }
 
-    // Store PIN in localStorage (in real app, this would be encrypted)
-    localStorage.setItem(`user_pin_${user.id}`, pinForm.newPin);
-
-    showSuccess('PIN updated successfully! 🔑');
-    setPinForm({
-      currentPin: '',
-      newPin: '',
-      confirmPin: ''
-    });
+    // Call backend to update PIN securely
+    api.cards.updatePin(selectedCardId, { currentPin: pinForm.currentPin, newPin: pinForm.newPin })
+      .then((res) => {
+        if (res.success) {
+          showSuccess(res.message || 'PIN updated successfully for the selected card! 🔑');
+          setPinForm({ currentPin: '', newPin: '', confirmPin: '' });
+          // reload cards to reflect any status changes
+          loadCards();
+        } else {
+          showError(res.error || 'Failed to update PIN');
+        }
+      })
+      .catch((err) => {
+        console.error('Update PIN error:', err);
+        showError(err.message || 'Failed to update PIN');
+      });
   };
 
   const handleSecurityQuestions = (e) => {
@@ -121,6 +145,28 @@ const Security = ({ user, onUserUpdate }) => {
   };
 
   const loginHistory = getLoginHistory();
+
+  // Load user's cards so they can pick which card's PIN to change
+  const loadCards = () => {
+    api.cards.getAll()
+      .then((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          setCards(res.data);
+          if (res.data.length > 0 && !selectedCardId) setSelectedCardId(String(res.data[0].id));
+        } else {
+          setCards([]);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load cards:', err);
+        setCards([]);
+      });
+  };
+
+  useEffect(() => {
+    loadCards();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]);
 
   return (
     <div className="container">
@@ -167,60 +213,28 @@ const Security = ({ user, onUserUpdate }) => {
 
       <div className="card">
         <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '2rem' }}>
+          <div className="tab-buttons">
             <button
               onClick={() => setActiveTab('password')}
-              style={{
-                padding: '1rem',
-                border: 'none',
-                background: activeTab === 'password' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'password' ? 'white' : 'var(--text-primary)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
+              className={"tab-btn" + (activeTab === 'password' ? ' active' : '')}
             >
               Change Password
             </button>
             <button
               onClick={() => setActiveTab('pin')}
-              style={{
-                padding: '1rem',
-                border: 'none',
-                background: activeTab === 'pin' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'pin' ? 'white' : 'var(--text-primary)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
+              className={"tab-btn" + (activeTab === 'pin' ? ' active' : '')}
             >
               Change PIN
             </button>
             <button
               onClick={() => setActiveTab('security')}
-              style={{
-                padding: '1rem',
-                border: 'none',
-                background: activeTab === 'security' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'security' ? 'white' : 'var(--text-primary)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
+              className={"tab-btn" + (activeTab === 'security' ? ' active' : '')}
             >
               Security Questions
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              style={{
-                padding: '1rem',
-                border: 'none',
-                background: activeTab === 'history' ? 'var(--primary)' : 'transparent',
-                color: activeTab === 'history' ? 'white' : 'var(--text-primary)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '500'
-              }}
+              className={"tab-btn" + (activeTab === 'history' ? ' active' : '')}
             >
               Login History
             </button>
@@ -329,39 +343,126 @@ const Security = ({ user, onUserUpdate }) => {
             <h3 style={{ marginBottom: '1.5rem' }}>Change PIN</h3>
 
             <div className="form-group">
+              <label className="form-label">Select Card</label>
+              {cards.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No cards found. Add a card first.</div>
+              ) : (
+                <div className="card-selection">
+                  {cards.map((c, idx) => (
+                    <div
+                      key={c.id}
+                      className={"card-tile" + (String(c.id) === selectedCardId ? ' selected' : '')}
+                    >
+                      <div className="card-index">{idx + 1}</div>
+                      <div className="card-meta">
+                        <div className="card-name">{c.cardName}</div>
+                        <div className="card-last4">**** {c.cardNumber.slice(-4)}</div>
+                      </div>
+                      <div className="card-choose">
+                        <button
+                          type="button"
+                          className="choose-btn"
+                          onClick={() => setSelectedCardId(String(c.id))}
+                          disabled={c.status === 'locked'}
+                          title={c.status === 'locked' ? 'This card is locked and cannot be selected for PIN changes' : (String(c.id) === selectedCardId ? 'Selected' : 'Choose this card')}
+                        >
+                          {c.status === 'locked' ? 'Locked' : (String(c.id) === selectedCardId ? 'Chosen' : 'Choose')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Current PIN</label>
-              <input
-                type="password"
-                className="form-input"
-                value={pinForm.currentPin}
-                onChange={(e) => setPinForm({ ...pinForm, currentPin: e.target.value })}
-                maxLength="4"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showCurrentPin ? 'text' : 'password'}
+                  className="form-input"
+                  value={pinForm.currentPin}
+                  onChange={(e) => setPinForm({ ...pinForm, currentPin: e.target.value })}
+                  maxLength="4"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPin(!showCurrentPin)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer'
+                  }}
+                  title={showCurrentPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showCurrentPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">New PIN (4 digits)</label>
-              <input
-                type="password"
-                className="form-input"
-                value={pinForm.newPin}
-                onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value })}
-                maxLength="4"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showNewPin ? 'text' : 'password'}
+                  className="form-input"
+                  value={pinForm.newPin}
+                  onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value })}
+                  maxLength="4"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPin(!showNewPin)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer'
+                  }}
+                  title={showNewPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showNewPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">Confirm New PIN</label>
-              <input
-                type="password"
-                className="form-input"
-                value={pinForm.confirmPin}
-                onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value })}
-                maxLength="4"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showConfirmPin ? 'text' : 'password'}
+                  className="form-input"
+                  value={pinForm.confirmPin}
+                  onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value })}
+                  maxLength="4"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPin(!showConfirmPin)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer'
+                  }}
+                  title={showConfirmPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showConfirmPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary">

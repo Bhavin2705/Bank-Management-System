@@ -28,43 +28,7 @@ const CustomCalendar = ({
 
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (calendarRef.current && !calendarRef.current.contains(event.target) &&
-                inputRef.current && !inputRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    useEffect(() => {
-        if (value && !isTyping) {
-            const date = new Date(value);
-            if (!isNaN(date.getTime())) {
-                setCurrentMonth(new Date(date.getFullYear(), date.getMonth()));
-                setInputValue(formatDisplayValue(date, false)); // Don't use original format for external changes
-                setOriginalFormat(''); // Clear original format when value changes externally
-                if (showTime) {
-                    const hours = date.getHours();
-                    const minutes = date.getMinutes();
-                    const period = hours >= 12 ? 'PM' : 'AM';
-                    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-                    setSelectedTime({
-                        hours: displayHours.toString().padStart(2, '0'),
-                        minutes: minutes.toString().padStart(2, '0'),
-                        period
-                    });
-                }
-            }
-        } else if (!value && !isTyping) {
-            setInputValue('');
-            setOriginalFormat(''); // Clear original format when value is cleared
-        }
-    }, [value, showTime, isTyping]);
-
+    // Utility functions
     const getDaysInMonth = (date) => {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     };
@@ -74,9 +38,8 @@ const CustomCalendar = ({
     };
 
     const isDateDisabled = (date) => {
-        if (disabled) return true;
-        if (minDate && date < new Date(new Date(minDate).setHours(0, 0, 0, 0))) return true;
-        if (maxDate && date > new Date(new Date(maxDate).setHours(23, 59, 59, 999))) return true;
+        if (minDate && date < minDate) return true;
+        if (maxDate && date > maxDate) return true;
         return false;
     };
 
@@ -96,60 +59,29 @@ const CustomCalendar = ({
     };
 
     const handleDateSelect = (date) => {
-        if (isDateDisabled(date)) return;
-
-        // Create a new date at noon to avoid timezone issues
-        let finalDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
-
-        if (showTime) {
-            const hours24 = selectedTime.period === 'PM' && selectedTime.hours !== '12'
-                ? parseInt(selectedTime.hours) + 12
-                : selectedTime.period === 'AM' && selectedTime.hours === '12'
-                    ? 0
-                    : parseInt(selectedTime.hours);
-
-            finalDate.setHours(hours24, parseInt(selectedTime.minutes), 0, 0);
-        }
-
-        onChange(finalDate); // Pass Date object
-        setIsTyping(false);
-        setInputValue(formatDisplayValue(finalDate));
-        if (!showTime) {
-            setIsOpen(false);
-        }
-    };
-
-    const handleTimeChange = (type, value) => {
-        const newTime = { ...selectedTime, [type]: value };
-        setSelectedTime(newTime);
-
-        if (value && onChange && value) {
-            const currentDate = new Date(value);
-            if (!isNaN(currentDate.getTime())) {
-                const hours24 = newTime.period === 'PM' && newTime.hours !== '12'
-                    ? parseInt(newTime.hours) + 12
-                    : newTime.period === 'AM' && newTime.hours === '12'
-                        ? 0
-                        : parseInt(newTime.hours);
-
-                currentDate.setHours(hours24, parseInt(newTime.minutes), 0, 0);
-                onChange(currentDate);
-            }
-        }
+        const finalDate = showTime ? combineDateTime(date) : date;
+        onChange(finalDate);
+        // Update input display immediately and close calendar
+        setInputValue(formatDisplayValue(finalDate, false));
+        setIsOpen(false);
+        setCurrentMonth(new Date(date.getFullYear(), date.getMonth()));
     };
 
     const navigateMonth = (direction) => {
-        setCurrentMonth(prev => {
-            const newMonth = new Date(prev);
-            newMonth.setMonth(prev.getMonth() + direction);
-            return newMonth;
-        });
+        setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
     };
 
     const navigateToToday = () => {
         const today = new Date();
-        setCurrentMonth(new Date(today.getFullYear(), today.getMonth()));
+        setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
         handleDateSelect(today);
+    };
+
+    const handleTimeChange = (field, value) => {
+        setSelectedTime(prev => ({
+            ...prev,
+            [field]: value
+        }));
     };
 
     const formatDisplayValue = (dateValue = null, useOriginalFormat = true) => {
@@ -247,7 +179,7 @@ const CustomCalendar = ({
         // Try to parse the date as user types (only when input looks complete)
         if (newValue.trim()) {
             // Only attempt parsing when we have enough characters for a complete date
-            if (newValue.length >= 8 && newValue.match(/^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$|^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/)) {
+            if (newValue.length >= 8 && newValue.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$|^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/)) {
                 const parsedDate = parseInputValue(newValue.trim());
                 if (parsedDate && !isDateDisabled(parsedDate)) {
                     // Store the original format for later use
@@ -347,6 +279,13 @@ const CustomCalendar = ({
         }
     };
 
+    // Keep inputValue in sync when `value` prop changes from parent
+    useEffect(() => {
+        if (!isTyping) {
+            setInputValue(formatDisplayValue());
+        }
+    }, [value]);
+
     const renderCalendarDays = () => {
         const daysInMonth = getDaysInMonth(currentMonth);
         const firstDay = getFirstDayOfMonth(currentMonth);
@@ -422,7 +361,11 @@ const CustomCalendar = ({
                         onChange={handleInputChange}
                         onBlur={handleInputBlur}
                         onKeyDown={handleInputKeyDown}
-                        onFocus={() => setIsTyping(true)}
+                        onFocus={() => {
+                            setIsTyping(true);
+                            // Open calendar on focus for easier selection
+                            setIsOpen(true);
+                        }}
                         placeholder={placeholder}
                         disabled={disabled}
                         className="calendar-text-input"

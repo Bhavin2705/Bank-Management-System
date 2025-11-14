@@ -1,27 +1,27 @@
 import { Bell, Building2, Eye, EyeOff, Lock, Mail, MapPin, Phone, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import CustomCalendar from '../components/UI/CustomCalendar';
 import { api } from '../utils/api';
+import { toLocalYYYYMMDD } from '../utils/date';
 
 const Settings = ({ user, onUserUpdate }) => {
-  const { showSuccess, showError, showWarning } = useNotification();
+  const { showSuccess, showError } = useNotification();
   const [activeTab, setActiveTab] = useState('profile');
-  const [banks, setBanks] = useState([]);
+  // Bank is fixed to BankPro for this application
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user.name || '',
     email: user.email || '',
     phone: user.phone || '',
     address: user.profile?.address?.street || '',
-    dateOfBirth: user.profile?.dateOfBirth ? new Date(user.profile.dateOfBirth).toISOString().split('T')[0] : '',
+    dateOfBirth: user.profile?.dateOfBirth ? toLocalYYYYMMDD(new Date(user.profile.dateOfBirth)) : '',
     occupation: user.profile?.occupation || ''
   });
   const [bankData, setBankData] = useState({
-    bankName: user.bankDetails?.bankName || 'BankPro',
-    ifscCode: user.bankDetails?.ifscCode || 'BANK0001234',
-    branchName: user.bankDetails?.branchName || 'Main Branch',
-    selectedBank: user.bankDetails?.bankName === 'BankPro' ? 'bankpro' : ''
+    bankName: 'BankPro',
+    ifscCode: 'BANK0001234',
+    branchName: user.bankDetails?.branchName || ''
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -34,20 +34,7 @@ const Settings = ({ user, onUserUpdate }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const loadBanks = async () => {
-      try {
-        const result = await api.users.getBanks();
-        if (result.success) {
-          setBanks(result.data);
-        }
-      } catch (error) {
-        console.error('Error loading banks:', error);
-      }
-    };
-
-    loadBanks();
-  }, []);
+  // No bank list loading: Bank is fixed to BankPro for this site
 
   const handleFormKeyDown = (e) => {
     // Prevent form submission on Enter key press for all inputs except submit buttons
@@ -103,63 +90,16 @@ const Settings = ({ user, onUserUpdate }) => {
         showError(result.error || 'Failed to update profile');
       }
     } catch (error) {
+      console.error('Profile update error:', error);
       showError('Failed to update profile. Please try again.');
     }
 
     setLoading(false);
   };
 
-  const handleBankUpdate = async (e) => {
-    e.preventDefault();
-    setError('');
-    setMessage('');
-    setLoading(true);
+  // Bank updates are not allowed from the user settings (fixed to BankPro)
 
-    try {
-      // Get selected bank details
-      const selectedBankData = banks.find(bank => bank.id === bankData.selectedBank) || {
-        name: bankData.bankName,
-        ifscCode: bankData.ifscCode
-      };
-
-      const updateData = {
-        bankName: selectedBankData.name || bankData.bankName,
-        ifscCode: selectedBankData.ifscCode || bankData.ifscCode,
-        branchName: bankData.branchName
-      };
-
-      const result = await api.auth.updateDetails(updateData);
-
-      if (result.success) {
-        onUserUpdate(result.data);
-        showSuccess('Bank information updated successfully! 🏦');
-      } else {
-        showError(result.error || 'Failed to update bank information');
-      }
-    } catch (error) {
-      showError('Failed to update bank information. Please try again.');
-    }
-
-    setLoading(false);
-  };
-
-  const handleBankChange = (e) => {
-    const selectedBank = banks.find(bank => bank.id === e.target.value);
-    if (selectedBank) {
-      setBankData({
-        ...bankData,
-        selectedBank: e.target.value,
-        bankName: selectedBank.name,
-        ifscCode: selectedBank.ifscCode,
-        branchName: selectedBank.branchName || 'Main Branch'
-      });
-    } else {
-      setBankData({
-        ...bankData,
-        [e.target.name]: e.target.value
-      });
-    }
-  };
+  // No-op: branch name is not editable by users in this app
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -192,6 +132,7 @@ const Settings = ({ user, onUserUpdate }) => {
         showError(result.error || 'Failed to change password');
       }
     } catch (error) {
+      console.error('Password change error:', error);
       showError('Failed to change password. Please try again.');
     }
 
@@ -349,7 +290,7 @@ const Settings = ({ user, onUserUpdate }) => {
                     <CustomCalendar
                       value={profileData.dateOfBirth ? new Date(profileData.dateOfBirth) : null}
                       onChange={(date) => {
-                        setProfileData({ ...profileData, dateOfBirth: date ? date.toISOString().split('T')[0] : '' });
+                        setProfileData({ ...profileData, dateOfBirth: date ? toLocalYYYYMMDD(date) : '' });
                       }}
                       placeholder="Select date of birth (DD/MM/YYYY)"
                       maxDate={new Date()}
@@ -417,66 +358,34 @@ const Settings = ({ user, onUserUpdate }) => {
               Bank Information
             </h3>
 
-            <form onSubmit={handleBankUpdate} onKeyDown={handleFormKeyDown}>
+            <div onKeyDown={handleFormKeyDown}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Select Your Bank</label>
-                  <div className="custom-select-container">
-                    <select
-                      name="selectedBank"
-                      className="form-input custom-bank-select"
-                      value={bankData.selectedBank}
-                      onChange={handleBankChange}
-                      required
-                      style={{
-                        background: 'var(--bg-tertiary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--border-light)'
-                      }}
-                    >
-                      {banks.length > 0 ? (
-                        banks.map((bank) => (
-                          <option key={bank.id} value={bank.id}>
-                            {bank.logo} {bank.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="bankpro">🏦 BankPro</option>
-                      )}
-                    </select>
+                  <label className="form-label">Bank</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      name="bankName"
+                      className="form-input"
+                      value={bankData.bankName || user.bankDetails?.bankName || 'BankPro'}
+                      readOnly={true}
+                      style={{ background: 'var(--bg-tertiary)', marginRight: '0.5rem' }}
+                    />
+                    <input
+                      type="text"
+                      name="ifscCode"
+                      className="form-input"
+                      value={bankData.ifscCode || user.bankDetails?.ifscCode || ''}
+                      readOnly={true}
+                      style={{ background: 'var(--bg-tertiary)' }}
+                    />
                   </div>
                   <small style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                    Choose the bank where you hold your account
+                    Bank cannot be changed on this site. For bank account changes contact support.
                   </small>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Bank Name</label>
-                  <input
-                    type="text"
-                    name="bankName"
-                    className="form-input"
-                    value={bankData.bankName}
-                    onChange={handleBankChange}
-                    required
-                    readOnly
-                    style={{ background: 'var(--bg-tertiary)' }}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">IFSC Code</label>
-                  <input
-                    type="text"
-                    name="ifscCode"
-                    className="form-input"
-                    value={bankData.ifscCode}
-                    onChange={handleBankChange}
-                    required
-                    readOnly
-                    style={{ background: 'var(--bg-tertiary)' }}
-                  />
-                </div>
+                {/* Bank name and IFSC are fixed to BankPro and read-only */}
 
                 <div className="form-group">
                   <label className="form-label">Branch Name</label>
@@ -484,9 +393,10 @@ const Settings = ({ user, onUserUpdate }) => {
                     type="text"
                     name="branchName"
                     className="form-input"
-                    value={bankData.branchName}
-                    onChange={handleBankChange}
-                    placeholder="Enter branch name"
+                    value={bankData.branchName || user.bankDetails?.branchName || ''}
+                    readOnly={true}
+                    disabled={true}
+                    style={{ background: 'var(--bg-tertiary)' }}
                   />
                 </div>
               </div>
@@ -507,10 +417,7 @@ const Settings = ({ user, onUserUpdate }) => {
                 Make sure the details are accurate for successful transactions.
               </div>
 
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Bank Information'}
-              </button>
-            </form>
+            </div>
           </div>
         )}
 

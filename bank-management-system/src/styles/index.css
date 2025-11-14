@@ -1,16 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import './CustomCalendar.css';
-/* @import "tailwindcss"; */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --bg-secondary: white;
   --bg-tertiary: #f8f9fa;
+  /* primary color/gradient used by buttons and active tabs */
+  --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary-color: #667eea;
   --bg-hover: #f0f0f0;
   --text-primary: #333;
   --text-secondary: #6c757d;
   --text-accent: #667eea;
   --border-color: #e9ecef;
+  /* simple border color variable used in some inline styles */
+  --border: #e9ecef;
   --shadow: rgba(0, 0, 0, 0.1);
   --shadow-light: rgba(0, 0, 0, 0.08);
   --success: #28a745;
@@ -429,11 +437,49 @@ body {
   transition: all 0.3s ease;
 }
 
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar.collapsed .sidebar-brand {
+  font-size: 1rem;
+}
+
+.sidebar.collapsed .sidebar-nav-link span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-nav-link {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.sidebar.collapsed .sidebar-header .collapse-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
 .sidebar-header {
   text-align: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--sidebar-hover);
+  position: relative;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.collapse-btn:hover {
+  background: var(--sidebar-hover);
 }
 
 .sidebar-brand {
@@ -468,6 +514,54 @@ body {
   color: var(--text-accent);
 }
 
+/* Tabs used in settings/security page */
+.tab-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.tab-btn {
+  padding: 0.75rem 1rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.12);
+  border-color: transparent;
+}
+
+.tab-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.08);
+}
+
+/* Ensure logout button matches the sidebar nav link styling (removes default button chrome) */
+.sidebar .sidebar-nav-link.logout-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  background: transparent;
+  color: var(--sidebar-text);
+  border: none;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.sidebar .sidebar-nav-link.logout-btn:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-accent);
+}
+
 .main-content {
   flex: 1;
   margin-left: 280px;
@@ -477,10 +571,74 @@ body {
   transition: all 0.3s ease;
 }
 
+.sidebar.collapsed+.main-content {
+  margin-left: 80px;
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+/* Prevent content from overflowing card/container bounds and make dashboard responsive */
+.container,
+.main-content {
+  box-sizing: border-box;
+}
+
+/* Dashboard/grid: allow items to wrap and never overflow the viewport */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  /* reduced gap to make cards sit closer */
+  margin: 1rem 0;
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+}
+
+/* Ensure cards clip children that might overflow and respect padding */
+.card {
+  /* cards may contain positioned elements; allow visible overflow so tabs/headers are not clipped */
+  overflow: visible;
+  box-sizing: border-box;
+  padding: 1.5rem;
+  /* slightly larger top padding for form sections */
+}
+
+.stat-card,
+.statement-options,
+.transaction-list {
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 1rem;
+  /* compact padding for small cards */
+}
+
+/* Large numeric values: keep them visually big but prevent them from flowing outside the card */
+.stat-card .stat-value,
+.stat-card .stat-value * {
+  display: block;
+  max-width: 100%;
+  /* keep the value on a single line but scale it down if needed */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Slightly smaller stat font and clamp to avoid overflow */
+.stat-card .stat-value {
+  font-size: clamp(0.95rem, 1.6vw, 1.4rem);
+  line-height: 1.05;
+}
+
+/* Make sure icons and inline elements inside nav/cards don't push outside */
+.sidebar-nav-link svg,
+.card img,
+.stat-card svg {
+  max-width: 100%;
+  height: auto;
 }
 
 .card {
@@ -629,6 +787,77 @@ select:focus {
 .form-input select option:checked {
   background: var(--text-accent);
   color: white;
+}
+
+/* Card selection tiles for Security > Change PIN */
+.card-selection {
+  display: flex;
+  gap: 0.75rem;
+  /* stack tiles vertically so each tile takes full available width (like inputs) */
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.card-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-tile.selected {
+  border-color: var(--text-accent);
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.08);
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.06), rgba(118, 75, 162, 0.02));
+}
+
+.card-index {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.card-meta {
+  flex: 1;
+  min-width: 0;
+  /* allow text to truncate inside flex item */
+}
+
+.card-name {
+  font-weight: 600;
+}
+
+.card-last4 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.card-choose {
+  margin-left: auto;
+  /* push button to the far right */
+}
+
+.choose-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.choose-btn:hover {
+  background: var(--bg-hover);
 }
 
 /* Custom select dropdown styling */

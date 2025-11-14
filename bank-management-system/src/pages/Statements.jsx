@@ -1,44 +1,41 @@
 import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import CustomCalendar from '../components/UI/CustomCalendar'
+import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date'
 import { getTransactions } from '../utils/transactions'
 
 const Statements = ({ user }) => {
   const [transactions, setTransactions] = useState([])
   const [filteredTransactions, setFilteredTransactions] = useState([])
   const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: toLocalYYYYMMDD(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+    end: toLocalYYYYMMDD(new Date())
   })
   const [filterType, setFilterType] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('date-desc')
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const txs = await getTransactions({ userId: user.id || user._id })
-        setTransactions(Array.isArray(txs) ? txs : [])
-      } catch (error) {
-        setTransactions([])
-      }
+  // Parse transaction date robustly: prefer createdAt ISO, fallback to local YYYY-MM-DD stored in `date`
+  const parseTransactionDate = (transaction) => {
+    if (transaction.createdAt) return new Date(transaction.createdAt)
+    if (transaction.date && typeof transaction.date === 'string' && transaction.date.length === 10) {
+      return fromLocalYYYYMMDD(transaction.date)
     }
-    fetchTransactions()
-  }, [user])
-
-  useEffect(() => {
-    filterTransactions()
-  }, [transactions, dateRange, filterType, searchTerm, sortBy])
+    return new Date(transaction.date || transaction.createdAt)
+  }
 
   const filterTransactions = () => {
     let filtered = [...transactions]
 
     filtered = filtered.filter(transaction => {
-      const transactionDate = new Date(transaction.createdAt || transaction.date)
-      const startDate = new Date(dateRange.start)
-      const endDate = new Date(dateRange.end)
-      endDate.setHours(23, 59, 59, 999)
-      return transactionDate >= startDate && transactionDate <= endDate
+      const transactionDate = parseTransactionDate(transaction)
+      const startDate = dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null
+      const endDate = dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null
+      if (startDate && endDate) {
+        endDate.setHours(23, 59, 59, 999)
+        return transactionDate >= startDate && transactionDate <= endDate
+      }
+      return true
     })
 
     if (filterType !== 'all') {
@@ -78,6 +75,23 @@ const Statements = ({ user }) => {
 
     setFilteredTransactions(filtered)
   }
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const txs = await getTransactions({ userId: user.id || user._id })
+        setTransactions(Array.isArray(txs) ? txs : [])
+      } catch (error) {
+        console.error('Error loading transactions:', error);
+        setTransactions([])
+      }
+    }
+    fetchTransactions()
+  }, [user])
+
+  useEffect(() => {
+    filterTransactions()
+  }, [transactions, dateRange, filterType, searchTerm, sortBy])
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -126,14 +140,16 @@ const Statements = ({ user }) => {
   }
 
   const exportToCSV = () => {
+    // Debugging: print dateRange and counts to help diagnose empty exports
     if (!filteredTransactions.length) {
+      // Show a user-facing alert
       alert('No transactions to export for the selected period.');
       return;
     }
     const headers = ['Date', 'Type', 'Description', 'Amount', 'Balance'];
     const csvData = filteredTransactions.map(transaction => {
-      // Combine date and time in one field
-      const dateObj = new Date(transaction.createdAt);
+      // Combine date and time in one field (use robust parser)
+      const dateObj = parseTransactionDate(transaction) || new Date();
       const dateStr = dateObj.toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
       });
@@ -238,19 +254,19 @@ const Statements = ({ user }) => {
           </div>
           <div style={{ minWidth: '150px' }}>
             <CustomCalendar
-              value={dateRange.start ? new Date(dateRange.start) : null}
-              onChange={(date) => setDateRange({ ...dateRange, start: date ? date.toISOString().split('T')[0] : '' })}
+              value={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
+              onChange={(date) => setDateRange({ ...dateRange, start: date ? toLocalYYYYMMDD(date) : '' })}
               placeholder="Start date"
-              maxDate={dateRange.end ? new Date(dateRange.end) : null}
+              maxDate={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
             />
           </div>
           <span>to</span>
           <div style={{ minWidth: '150px' }}>
             <CustomCalendar
-              value={dateRange.end ? new Date(dateRange.end) : null}
-              onChange={(date) => setDateRange({ ...dateRange, end: date ? date.toISOString().split('T')[0] : '' })}
+              value={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
+              onChange={(date) => setDateRange({ ...dateRange, end: date ? toLocalYYYYMMDD(date) : '' })}
               placeholder="End date"
-              minDate={dateRange.start ? new Date(dateRange.start) : null}
+              minDate={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
             />
           </div>
         </div>

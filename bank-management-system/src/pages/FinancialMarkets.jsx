@@ -1,5 +1,5 @@
 import { Activity, BarChart3, DollarSign, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const FinancialMarkets = () => {
     const [marketData, setMarketData] = useState({});
@@ -8,7 +8,7 @@ const FinancialMarkets = () => {
     const [lastUpdated, setLastUpdated] = useState(null);
 
     // Major stock indices and commodities
-    const marketSymbols = [
+    const marketSymbols = useMemo(() => [
         { symbol: 'SPY', name: 'S&P 500', type: 'index' },
         { symbol: 'QQQ', name: 'Nasdaq 100', type: 'index' },
         { symbol: 'IWM', name: 'Russell 2000', type: 'index' },
@@ -18,7 +18,7 @@ const FinancialMarkets = () => {
         { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' },
         { symbol: 'TSLA', name: 'Tesla Inc.', type: 'stock' },
         { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock' }
-    ];
+    ], []);
 
     const fetchMarketData = useCallback(async () => {
         try {
@@ -89,7 +89,7 @@ const FinancialMarkets = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [marketSymbols]);
 
     useEffect(() => {
         fetchMarketData();

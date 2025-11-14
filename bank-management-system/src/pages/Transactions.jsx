@@ -24,10 +24,6 @@ const Transactions = ({ user, onUserUpdate }) => {
     category: 'food',
   });
 
-  useEffect(() => {
-    loadTransactions();
-  }, [user.id]);
-
   const loadTransactions = async () => {
     try {
       setLoading(true);
@@ -40,6 +36,10 @@ const Transactions = ({ user, onUserUpdate }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadTransactions();
+  }, [user.id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

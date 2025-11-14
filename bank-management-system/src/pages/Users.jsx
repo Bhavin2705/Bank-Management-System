@@ -24,9 +24,19 @@ const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ open: false });
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     loadUsers();
+    // Fetch current logged-in user to determine self
+    (async () => {
+      try {
+        const me = await api.auth.getMe();
+        if (me && me.success && me.data && me.data._id) setCurrentUserId(me.data._id);
+      } catch (e) {
+        // ignore - user may not be logged in
+      }
+    })();
   }, []);
 
   const loadUsers = async () => {
@@ -163,7 +173,7 @@ const Users = () => {
           ) : (
             users.map((user) => {
               const isAdmin = user.role === 'admin';
-              const isSelf = user.id === JSON.parse(localStorage.getItem('bank_auth_user'))?.id;
+              const isSelf = user._id === currentUserId || user.id === currentUserId;
               return (
                 <div key={user.id} className="transaction-item">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>

@@ -1,4 +1,4 @@
-import { ArrowDownCircle, ArrowUpCircle, Building, CreditCard, Minus, PiggyBank, Plus } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, CreditCard, Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import { api } from '../utils/api';
@@ -13,24 +13,6 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
     useEffect(() => {
         // Component is now simplified to use main account only
     }, [user]);
-
-    const accountTypes = [
-        {
-            id: 'savings',
-            name: 'Savings Account',
-            icon: PiggyBank
-        },
-        {
-            id: 'checking',
-            name: 'Checking Account',
-            icon: CreditCard
-        },
-        {
-            id: 'business',
-            name: 'Business Account',
-            icon: Building
-        }
-    ];
 
     const handleDeposit = async (e) => {
         e.preventDefault();

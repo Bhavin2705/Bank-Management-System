@@ -11,7 +11,6 @@ import { NotificationProvider } from './components/NotificationProvider';
 // ...existing code...
 import AdminSupport from './pages/AdminSupport';
 import Bills from './pages/Bills';
-import BranchLocator from './pages/BranchLocator';
 import Budget from './pages/Budget';
 import Calculator from './pages/Calculator';
 import Cards from './pages/Cards';
@@ -24,7 +23,6 @@ import Investments from './pages/Investments';
 import MiniStatement from './pages/MiniStatement';
 import Notifications from './pages/Notifications';
 import RecurringPayments from './pages/RecurringPayments';
-import Search from './pages/Search';
 import Security from './pages/Security';
 import Settings from './pages/Settings';
 import Statements from './pages/Statements';
@@ -43,7 +41,6 @@ import {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [authMode, setAuthMode] = useState('login');
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [error, setError] = useState(null);
@@ -58,6 +55,11 @@ function App() {
   const RegisterWrapper = () => {
     const navigate = useNavigate();
     return <Register onLogin={handleLogin} switchToLogin={() => navigate('/login')} />;
+  };
+
+  const ResetPasswordWrapper = () => {
+    const navigate = useNavigate();
+    return <ResetPassword onBack={() => navigate('/login')} onSuccess={() => navigate('/password-reset-success')} />;
   };
 
   useEffect(() => {
@@ -76,20 +78,34 @@ function App() {
           initializeUsers(),
           new Promise((_, reject) => setTimeout(() => reject(new Error('Init timeout')), 3000))
         ]);
-      } catch { }
-      // Always fetch user from backend using token after refresh
-      const refreshedUser = await Promise.race([
-        refreshUserData(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Refresh timeout')), 5000))
-      ]);
-      if (refreshedUser) {
-        setUser(refreshedUser);
-        setSessionExpired(false);
+      } catch (initError) {
+        console.warn('User initialization failed:', initError.message);
+      }
+      // Avoid calling refresh/secure endpoints when user is on auth-related pages
+      const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '/';
+      const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/password-reset-success'];
+      const isOnAuthPage = authPaths.some(p => pathname.startsWith(p));
+
+      if (!isOnAuthPage) {
+        // Only attempt refresh when not on an auth page
+        const refreshedUser = await Promise.race([
+          refreshUserData(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Refresh timeout')), 5000))
+        ]);
+        if (refreshedUser) {
+          setUser(refreshedUser);
+          setSessionExpired(false);
+        } else {
+          // If token is missing or invalid, clear user state.
+          // Only show "Session Expired" when there was an existing cookie-based session
+          setUser(null);
+          const tokenExists = typeof document !== 'undefined' && (document.cookie.includes('token=') || document.cookie.includes('refreshToken='));
+          setSessionExpired(!!tokenExists);
+        }
       } else {
-        // If token is missing or invalid, redirect to login and clear user state
+        // If user is on login/register pages, don't attempt to refresh tokens — treat as unauthenticated
         setUser(null);
-        setAuthMode('login');
-        setSessionExpired(true);
+        setSessionExpired(false);
       }
       const savedTheme = localStorage.getItem('bank_theme');
       if (savedTheme === 'dark') {
@@ -117,7 +133,6 @@ function App() {
 
   const handleLogin = (userData) => {
     setUser(userData);
-    setAuthMode('login');
     setError(null);
   };
 
@@ -134,10 +149,14 @@ function App() {
 
   const handleSessionExpired = () => {
     // Clear tokens from localStorage
-    localStorage.removeItem('bank_auth_token');
-    localStorage.removeItem('bank_auth_refresh_token');
+    // Remove legacy localStorage token keys if present
+    try {
+      localStorage.removeItem('bank_auth_token');
+      localStorage.removeItem('bank_auth_refresh_token');
+    } catch (e) {
+      // ignore (e.g., SSR or blocked storage)
+    }
     setUser(null);
-    setAuthMode('login');
     setSessionExpired(false);
     setError(null);
   };
@@ -201,7 +220,7 @@ function App() {
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginWrapper />} />
           <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterWrapper />} />
           <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
-          <Route path="/reset-password/:token" element={user ? <Navigate to="/dashboard" replace /> : <ResetPassword />} />
+          <Route path="/reset-password/:token" element={user ? <Navigate to="/dashboard" replace /> : <ResetPasswordWrapper />} />
           <Route path="/password-reset-success" element={user ? <Navigate to="/dashboard" replace /> : <PasswordResetSuccess />} />
 
           <Route path="/dashboard" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Dashboard user={user} /></main></div></ProtectedRoute>} />
@@ -218,10 +237,10 @@ function App() {
           <Route path="/financial-markets" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><FinancialMarkets /></main></div></ProtectedRoute>} />
 // ...existing code...
           <Route path="/bills" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Bills user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
-          <Route path="/branch-locator" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><BranchLocator user={user} /></main></div></ProtectedRoute>} />
+          {/* Branch Locator removed from routes */}
           <Route path="/goals" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Goals user={user} /></main></div></ProtectedRoute>} />
           <Route path="/budget" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Budget user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/search" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Search user={user} /></main></div></ProtectedRoute>} />
+          {/* Search page removed */}
           <Route path="/export" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Export user={user} /></main></div></ProtectedRoute>} />
           <Route path="/calculator" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Calculator /></main></div></ProtectedRoute>} />
           <Route path="/investments" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content fade-in"><Investments user={user} /></main></div></ProtectedRoute>} />

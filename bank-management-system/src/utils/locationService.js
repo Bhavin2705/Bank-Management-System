@@ -3,23 +3,6 @@
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org';
 
-// Test if Overpass API is available
-async function testOverpassAPI() {
-  try {
-    const testQuery = '[out:json][timeout:10]; node(50.745,7.17,50.75,7.18)["amenity"="bank"]; out;';
-    const response = await fetch(OVERPASS_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `data=${encodeURIComponent(testQuery)}`
-    });
-    if (!response.ok) throw new Error(`Overpass API test failed: ${response.status}`);
-    return true;
-  } catch (error) {
-    console.error('Overpass API test failed:', error);
-    return false;
-  }
-}
-
 class LocationService {
   constructor() {
     this.userLocation = null;
@@ -317,7 +300,7 @@ class LocationService {
     for (let i = 0; i < elements.length; i += batchSize) {
       const batch = elements.slice(i, i + batchSize);
 
-      const batchPromises = batch.map(async (element, index) => {
+      const batchPromises = batch.map(async (element) => {
         try {
           const lat = element.lat || element.center?.lat;
           const lng = element.lon || element.center?.lon;
@@ -446,7 +429,7 @@ class LocationService {
   }
 
   // Extract services from OpenStreetMap tags
-  getServicesFromTags(tags, type, bankName) {
+  getServicesFromTags(tags, type, _bankName) { // eslint-disable-line no-unused-vars
     const services = [];
 
     if (type === 'atm') {

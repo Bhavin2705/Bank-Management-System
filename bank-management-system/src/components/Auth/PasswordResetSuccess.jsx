@@ -1,6 +1,8 @@
 import { ArrowRight, CheckCircle, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const PasswordResetSuccess = ({ onBackToLogin }) => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Left side - Illustration/Info */}
@@ -63,7 +65,10 @@ const PasswordResetSuccess = ({ onBackToLogin }) => {
               </div>
 
               <button
-                onClick={onBackToLogin}
+                onClick={() => {
+                  if (typeof onBackToLogin === 'function') return onBackToLogin();
+                  navigate('/login');
+                }}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
               >
                 Continue to Login

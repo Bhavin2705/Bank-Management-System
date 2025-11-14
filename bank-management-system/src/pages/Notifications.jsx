@@ -4,10 +4,6 @@ import { useEffect, useState } from 'react';
 const Notifications = ({ user }) => {
   const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-    generateNotifications();
-  }, [user]);
-
   const generateNotifications = () => {
     const newNotifications = [];
 
@@ -36,6 +32,10 @@ const Notifications = ({ user }) => {
 
     setNotifications(newNotifications);
   };
+
+  useEffect(() => {
+    generateNotifications();
+  }, [user]);
 
   const markAsRead = (id) => {
     setNotifications(notifications.map(n =>

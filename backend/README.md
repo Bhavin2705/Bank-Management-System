@@ -1,6 +1,6 @@
-# Bank Management System - Backend API
+# BankPro - Backend API
 
-A comprehensive REST API for a banking management system built with Node.js, Express, and MongoDB.
+A comprehensive REST API for BankPro's banking management system built with Node.js, Express, and MongoDB.
 
 ## Features
 
@@ -244,13 +244,46 @@ NODE_ENV=production
 PORT=5000
 MONGODB_URI=mongodb://username:password@host:port/database
 JWT_SECRET=your_production_jwt_secret
+JWT_REFRESH_SECRET=your_production_refresh_secret
 JWT_EXPIRE=7d
+FRONTEND_URL=https://your-frontend-domain.vercel.app
 EMAIL_HOST=smtp.gmail.com
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password
 ```
 
-### PM2 Deployment
+### Render Deployment
+
+1. **Connect to Render**
+   - Go to [render.com](https://render.com) and sign up/login
+   - Connect your GitHub repository
+
+2. **Create Web Service**
+   - Click "New" → "Web Service"
+   - Select your repository
+   - Configure the service:
+     - **Name**: `bankpro-backend`
+     - **Runtime**: `Node`
+     - **Build Command**: `npm install`
+     - **Start Command**: `npm start`
+     - **Environment**: `Production`
+
+3. **Set Environment Variables**
+   In Render dashboard, go to your service → Environment → Add Environment Variable:
+   ```
+   NODE_ENV=production
+   PORT=5000
+   MONGODB_URI=your_mongodb_atlas_connection_string
+   JWT_SECRET=your_secure_jwt_secret
+   JWT_REFRESH_SECRET=your_secure_refresh_secret
+   FRONTEND_URL=https://your-frontend-domain.vercel.app
+   ```
+
+4. **Deploy**
+   - Render will automatically build and deploy your application
+   - Your API will be available at `https://your-service-name.onrender.com`
+
+### PM2 Deployment (Alternative)
 
 ```bash
 npm install -g pm2

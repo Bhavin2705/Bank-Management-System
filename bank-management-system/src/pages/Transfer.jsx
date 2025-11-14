@@ -288,7 +288,15 @@ const Transfer = ({ user, onUserUpdate }) => {
                   type="radio"
                   name="bankType"
                   checked={formData.recipientBank && formData.recipientBank.id !== 'bankpro'}
-                  onChange={() => setShowBankSelector(true)}
+                  onChange={() => {
+                    // Mark as external: set an empty recipientBank object so the radio state reflects external
+                    setFormData({
+                      ...formData,
+                      recipientBank: { id: '', name: '' },
+                      recipientName: ''
+                    });
+                    setShowBankSelector(true);
+                  }}
                 />
                 Other Bank (External)
               </label>

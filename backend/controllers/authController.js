@@ -1,27 +1,39 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 
-// Generate JWT Token
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me';
+const JWT_EXPIRE_DAYS = parseInt(process.env.JWT_EXPIRE_DAYS) || 7;
+const JWT_REFRESH_EXPIRE_DAYS = parseInt(process.env.JWT_REFRESH_EXPIRE_DAYS) || 30;
+
 const generateToken = (id) => {
-    if (!process.env.JWT_SECRET) {
-        console.error('JWT_SECRET is not set. Using temporary development secret. Set JWT_SECRET in production.');
-    }
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'dev_jwt_secret_change_me', {
-        expiresIn: process.env.JWT_EXPIRE || '7d',
+    return jwt.sign({ id }, JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE || `${JWT_EXPIRE_DAYS}d`
     });
 };
 
-// Generate Refresh Token
 const generateRefreshToken = (id) => {
-    if (!process.env.JWT_REFRESH_SECRET) {
-        console.error('JWT_REFRESH_SECRET is not set. Using temporary development secret. Set JWT_REFRESH_SECRET in production.');
-    }
-    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me', {
-        expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d',
+    return jwt.sign({ id }, JWT_REFRESH_SECRET, {
+        expiresIn: process.env.JWT_REFRESH_EXPIRE || `${JWT_REFRESH_EXPIRE_DAYS}d`
     });
+};
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+    maxAge: JWT_EXPIRE_DAYS * 24 * 60 * 60 * 1000
+};
+
+const refreshCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+    maxAge: JWT_REFRESH_EXPIRE_DAYS * 24 * 60 * 60 * 1000
 };
 
 // @desc    Register user
@@ -93,6 +105,9 @@ const register = async (req, res) => {
             bankDetails: user.bankDetails
         };
 
+        res.cookie('token', token, cookieOptions);
+        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+
         res.status(201).json({
             success: true,
             data: {
@@ -155,11 +170,11 @@ const login = async (req, res) => {
             user = users;
         }
 
-        // If user was deleted, return specific error
+        // If user was not found, return invalid credentials (DB recreation may remove accounts)
         if (!user) {
-            return res.status(403).json({
+            return res.status(401).json({
                 success: false,
-                error: 'Your account has been deleted by admin.'
+                error: 'Invalid credentials'
             });
         }
         // If user is blocked (suspended or inactive), return specific error
@@ -218,6 +233,12 @@ const login = async (req, res) => {
             preferences: user.preferences
         };
 
+        res.cookie('token', token, cookieOptions);
+        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+
+        res.cookie('token', token, cookieOptions);
+        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+
         res.status(200).json({
             success: true,
             data: {
@@ -254,11 +275,11 @@ const loginWithAccount = async (req, res) => {
         // Find the specific user account
         const user = await User.findById(accountId).select('+password');
 
-        // If user was deleted, return specific error
+        // If user was not found, return invalid credentials
         if (!user) {
-            return res.status(403).json({
+            return res.status(401).json({
                 success: false,
-                error: 'Your account has been deleted by admin.'
+                error: 'Invalid credentials'
             });
         }
         // If user is blocked (suspended or inactive), return specific error
@@ -354,6 +375,9 @@ const loginWithAccount = async (req, res) => {
 // @access  Private
 const logout = async (req, res) => {
     try {
+        res.clearCookie('token', cookieOptions);
+        res.clearCookie('refreshToken', refreshCookieOptions);
+
         res.status(200).json({
             success: true,
             data: {},
@@ -450,6 +474,7 @@ const updatePassword = async (req, res) => {
         await user.save();
 
         const token = generateToken(user._id);
+        res.cookie('token', token, cookieOptions);
 
         res.status(200).json({
             success: true,
@@ -469,34 +494,103 @@ const updatePassword = async (req, res) => {
 // @access  Public
 const forgotPassword = async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email });
+        const email = req.body.email;
+
+        // Find user by email. Don't reveal existence to the caller.
+        const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
+            // Respond with success to avoid email enumeration
+            return res.status(200).json({
+                success: true,
+                message: 'If an account with that email exists, a password reset link has been sent.'
             });
         }
 
-        // Get reset token
+        // Get reset token (raw) and set hashed token+expiry on user.security
         const resetToken = user.createPasswordResetToken();
-
         await user.save({ validateBeforeSave: false });
 
-        // Log user document after save for debugging
-        const updatedUser = await User.findOne({ email: req.body.email });
-        console.log('Forgot password debug:');
-        console.log('  email:', updatedUser.email);
-        console.log('  passwordResetToken:', updatedUser.security?.passwordResetToken);
-        console.log('  passwordResetExpires:', updatedUser.security?.passwordResetExpires);
+        // Build reset URL for the frontend
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const resetUrl = `${frontendUrl.replace(/\/$/, '')}/reset-password/${resetToken}`;
 
-        // In a real application, you would send an email here
-        // For now, we'll just return the token for testing purposes
-        res.status(200).json({
-            success: true,
-            data: resetToken,
-            message: 'Password reset token generated'
+        // Support both SMTP_* and legacy EMAIL_* env var names. Prefer SMTP_* when available.
+        const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
+        const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+        const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+        const smtpPortRaw = process.env.SMTP_PORT || process.env.EMAIL_PORT;
+        const smtpSecureFlag = (process.env.SMTP_SECURE || process.env.EMAIL_SECURE) === 'true';
+
+        const smtpConfigured = smtpHost && smtpUser && smtpPass;
+
+        if (!smtpConfigured && process.env.NODE_ENV === 'development') {
+            // In development, return token so developer can test the flow easily
+            console.warn('SMTP/EMAIL not configured. Returning reset token in development mode.');
+            return res.status(200).json({
+                success: true,
+                message: 'Password reset token generated (development only)',
+                data: resetToken
+            });
+        }
+
+        if (!smtpConfigured) {
+            // In production, do not proceed without SMTP/EMAIL
+            // Clear token fields to avoid leaving a valid token
+            user.security.passwordResetToken = undefined;
+            user.security.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+
+            console.error('SMTP/EMAIL configuration missing. Cannot send password reset email.');
+            return res.status(500).json({
+                success: false,
+                error: 'Password reset is temporarily unavailable. Please contact support.'
+            });
+        }
+
+        const transporter = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPortRaw ? parseInt(smtpPortRaw, 10) : 587,
+            secure: smtpSecureFlag,
+            auth: {
+                user: smtpUser,
+                pass: smtpPass
+            }
         });
+
+        const mailFrom = process.env.SMTP_FROM || process.env.EMAIL_FROM || `no-reply@${process.env.FRONTEND_URL ? new URL(process.env.FRONTEND_URL).host : 'localhost'}`;
+
+        const mailOptions = {
+            from: mailFrom,
+            to: user.email,
+            subject: 'BankPro Password Reset',
+            text: `You requested a password reset for your BankPro account. Click the link below to reset your password:\n\n${resetUrl}\n\nIf you did not request this, please ignore this email. This link will expire in 10 minutes.`,
+            html: `<p>You requested a password reset for your BankPro account.</p><p>Click the link below to reset your password (valid for 10 minutes):</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>`
+        };
+
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log('Password reset email sent:', {
+                messageId: info && info.messageId,
+                response: info && info.response
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: 'If an account with that email exists, a password reset link has been sent.'
+            });
+        } catch (sendErr) {
+            console.error('Error sending password reset email:', sendErr && sendErr.message ? sendErr.message : sendErr);
+            // Clear token fields to avoid leaving a valid token
+            user.security.passwordResetToken = undefined;
+            user.security.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to send password reset email. Please try again later.'
+            });
+        }
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -547,6 +641,7 @@ const resetPassword = async (req, res) => {
         await user.save();
 
         const token = generateToken(user._id);
+        res.cookie('token', token, cookieOptions);
 
         res.status(200).json({
             success: true,
@@ -562,22 +657,53 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// @desc    Verify reset password token (no password change)
+// @route   GET /api/auth/resetpassword/:resettoken
+// @access  Public
+const verifyResetToken = async (req, res) => {
+    try {
+        const rawToken = req.params.resettoken;
+        const resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(rawToken)
+            .digest('hex');
+
+        const user = await User.findOne({ 'security.passwordResetToken': resetPasswordToken });
+
+        if (!user) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired password reset token' });
+        }
+
+        if (!user.security?.passwordResetExpires || user.security.passwordResetExpires < Date.now()) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired password reset token' });
+        }
+
+        // Token is valid - return success and email (do not reveal more)
+        return res.status(200).json({ success: true, data: { email: user.email } });
+    } catch (error) {
+        console.error('Error verifying reset token:', error);
+        return res.status(500).json({ success: false, error: 'Server error verifying token' });
+    }
+};
+
 // @desc    Refresh token
 // @route   POST /api/auth/refresh
 // @access  Public
 const refreshToken = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
+        // Accept refresh token from request body or httpOnly cookie
+        const refreshTokenFromBody = req.body && req.body.refreshToken;
+        const refreshTokenFromCookie = req.cookies && req.cookies.refreshToken;
+        const tokenToVerify = refreshTokenFromBody || refreshTokenFromCookie;
 
-        if (!refreshToken) {
+        if (!tokenToVerify) {
             return res.status(401).json({
                 success: false,
                 error: 'Refresh token is required'
             });
         }
 
-        // Verify refresh token
-        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const decoded = jwt.verify(tokenToVerify, JWT_REFRESH_SECRET);
 
         // Get user
         const user = await User.findById(decoded.id);
@@ -589,8 +715,8 @@ const refreshToken = async (req, res) => {
             });
         }
 
-        // Generate new access token
         const token = generateToken(user._id);
+        res.cookie('token', token, cookieOptions);
 
         res.status(200).json({
             success: true,
@@ -614,5 +740,6 @@ module.exports = {
     updatePassword,
     forgotPassword,
     resetPassword,
-    refreshToken
+    refreshToken,
+    verifyResetToken
 };

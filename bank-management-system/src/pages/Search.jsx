@@ -7,7 +7,6 @@ const Search = ({ user }) => {
   const [filterType, setFilterType] = useState('all');
   const [results, setResults] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadTransactions();
@@ -15,14 +14,11 @@ const Search = ({ user }) => {
 
   const loadTransactions = async () => {
     try {
-      setLoading(true);
       const transactions = await getTransactions();
       setAllTransactions(transactions);
     } catch (error) {
       console.error('Error loading transactions:', error);
       setAllTransactions([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,7 +67,7 @@ const Search = ({ user }) => {
       </div>
 
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'center' }}>
           <div className="form-group">
             <label className="form-label">Search Description</label>
             <input

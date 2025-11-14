@@ -1,6 +1,6 @@
 import { Edit } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { getTransactions, getTransactionStats } from '../utils/transactions';
+import { getTransactions } from '../utils/transactions';
 
 const Budget = ({ user }) => {
   const [budgets, setBudgets] = useState({});
@@ -8,12 +8,6 @@ const Budget = ({ user }) => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
 
-  const [stats, setStats] = useState({
-    totalTransactions: 0,
-    monthlyIncome: 0,
-    monthlyExpenses: 0,
-    recentTransactions: []
-  });
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
@@ -37,18 +31,8 @@ const Budget = ({ user }) => {
     }
 
     // Load transaction stats and transactions
-    loadTransactionStats();
     loadTransactions();
   }, [user.id]);
-
-  const loadTransactionStats = async () => {
-    try {
-      const transactionStats = await getTransactionStats();
-      setStats(transactionStats);
-    } catch (error) {
-      console.error('Error loading transaction stats:', error);
-    }
-  };
 
   const loadTransactions = async () => {
     try {
@@ -59,8 +43,6 @@ const Budget = ({ user }) => {
       setTransactions([]);
     }
   };
-
-  const currentMonthExpenses = stats.monthlyExpenses;
 
   const categories = [
     { name: 'food', label: 'Food & Dining', color: '#FF6B6B' },

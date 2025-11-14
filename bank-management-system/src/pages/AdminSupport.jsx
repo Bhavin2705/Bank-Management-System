@@ -1,7 +1,7 @@
 import { Bot, MessageCircle, Send, User, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useNotification } from '../components/NotificationProvider';
 import io from 'socket.io-client';
+import { useNotification } from '../components/NotificationProvider';
 
 const AdminSupport = ({ user }) => {
   const { showError, showSuccess } = useNotification();
@@ -19,14 +19,9 @@ const AdminSupport = ({ user }) => {
       return;
     }
 
-    const token = localStorage.getItem('bank_auth_token');
-    if (!token) {
-      showError('Please login to access admin support');
-      return;
-    }
-
+    // Rely on cookie-based auth for sockets. Server will read httpOnly cookies.
     const newSocket = io('http://localhost:5000', {
-      auth: { token },
+      withCredentials: true,
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true
@@ -50,9 +45,9 @@ const AdminSupport = ({ user }) => {
         timestamp: new Date(message.timestamp),
         isRead: false
       }]);
-      
+
       setActiveUsers(prev => new Set([...prev, message.userId]));
-      
+
       // Auto-select first user if none selected
       setSelectedUserId(current => current || message.userId);
     });
@@ -145,7 +140,7 @@ const AdminSupport = ({ user }) => {
             <MessageCircle size={18} style={{ color: '#667eea' }} />
             Active Conversations ({activeUsers.size})
           </h3>
-          
+
           {activeUsers.size === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
               <MessageCircle size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
@@ -158,7 +153,7 @@ const AdminSupport = ({ user }) => {
                 const userMsgs = getMessagesForUser(userId);
                 const lastMessage = userMsgs[userMsgs.length - 1];
                 const unreadCount = userMsgs.filter(msg => !msg.isRead && !msg.isAdminResponse).length;
-                
+
                 return (
                   <div
                     key={userId}
@@ -278,10 +273,10 @@ const AdminSupport = ({ user }) => {
               </div>
             </>
           ) : (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               height: '500px',
               flexDirection: 'column',
               color: 'var(--text-secondary)'

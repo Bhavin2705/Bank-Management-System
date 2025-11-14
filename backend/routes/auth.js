@@ -9,7 +9,8 @@ const {
     updatePassword,
     forgotPassword,
     resetPassword,
-    refreshToken
+    refreshToken,
+    verifyResetToken
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const {
@@ -29,6 +30,7 @@ router.post('/login', authLimiter, validateUserLogin, login);
 router.post('/login-account', authLimiter, validateUserLogin, loginWithAccount);
 router.post('/forgotpassword', passwordResetLimiter, validatePasswordReset, forgotPassword);
 router.put('/resetpassword/:resettoken', validatePasswordResetToken, resetPassword);
+router.get('/resetpassword/:resettoken', verifyResetToken);
 router.post('/refresh', refreshToken);
 
 // Protected routes

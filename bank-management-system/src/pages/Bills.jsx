@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import CustomCalendar from '../components/UI/CustomCalendar';
 import { getCurrentUser, updateUserBalance } from '../utils/auth';
+import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
 import { addTransaction, getTransactions } from '../utils/transactions';
 
 const Bills = ({ user, onUserUpdate }) => {
@@ -163,8 +164,8 @@ const Bills = ({ user, onUserUpdate }) => {
               <div className="form-group">
                 <label className="form-label">Due Date</label>
                 <CustomCalendar
-                  value={formData.dueDate ? new Date(formData.dueDate) : null}
-                  onChange={(date) => setFormData({ ...formData, dueDate: date ? date.toISOString().split('T')[0] : '' })}
+                  value={formData.dueDate ? fromLocalYYYYMMDD(formData.dueDate) : null}
+                  onChange={(date) => setFormData({ ...formData, dueDate: date ? toLocalYYYYMMDD(date) : '' })}
                   placeholder="Select due date"
                   minDate={new Date()}
                 />

@@ -23,7 +23,6 @@ const Login = ({ onLogin, switchToRegister }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [showAccountSelection, setShowAccountSelection] = useState(false);
   const [availableAccounts, setAvailableAccounts] = useState([]);
-  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -57,7 +56,8 @@ const Login = ({ onLogin, switchToRegister }) => {
       } else {
         setError(result.error || 'Invalid email or password');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Login error:', err);
       setError('Login failed. Please try again.');
     }
 
@@ -77,7 +77,8 @@ const Login = ({ onLogin, switchToRegister }) => {
       } else {
         setError(result.error || 'Login failed');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Account selection error:', err);
       setError('Login failed. Please try again.');
     }
 
@@ -87,7 +88,6 @@ const Login = ({ onLogin, switchToRegister }) => {
   const handleBackToLogin = () => {
     setShowAccountSelection(false);
     setAvailableAccounts([]);
-    setSelectedAccountId('');
     setShowForgotPassword(false);
     setShowResetPassword(false);
     setShowResetSuccess(false);

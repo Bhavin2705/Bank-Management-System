@@ -4,18 +4,18 @@ import {
   BarChart3,
   Bell,
   Calculator,
+  // ChevronLeft,
+  // ChevronRight,
   CreditCard,
   DollarSign,
   Download,
   FileText,
   Home,
   LogOut,
-  MapPin,
   Moon,
   PieChart,
   Receipt,
   Repeat,
-  Search,
   Settings,
   Shield,
   Sun,
@@ -34,8 +34,8 @@ const Sidebar = ({
   darkMode,
   toggleDarkMode
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
@@ -50,12 +50,12 @@ const Sidebar = ({
     { id: 'mini-statement', label: 'Mini Statement', icon: Receipt, path: '/mini-statement' },
     { id: 'currency-exchange', label: 'Currency Exchange', icon: DollarSign, path: '/currency-exchange' },
     { id: 'financial-markets', label: 'Financial Markets', icon: BarChart3, path: '/financial-markets' },
-    { id: 'branch-locator', label: 'Branch Locator', icon: MapPin, path: '/branch-locator' },
+    // Branch Locator removed per project scope (single-bank enforced)
     // ...existing code...
     { id: 'bills', label: 'Bill Payments', icon: FileText, path: '/bills' },
     { id: 'goals', label: 'Savings Goals', icon: Target, path: '/goals' },
     { id: 'budget', label: 'Budget', icon: PieChart, path: '/budget' },
-    { id: 'search', label: 'Search', icon: Search, path: '/search' },
+    // Search page removed
     { id: 'export', label: 'Export', icon: Download, path: '/export' },
     { id: 'calculator', label: 'Loan Calculator', icon: Calculator, path: '/calculator' },
     { id: 'investments', label: 'Investments', icon: TrendingUp, path: '/investments' },
@@ -73,6 +73,7 @@ const Sidebar = ({
       <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">🏦 BankPro</div>
+          {/* collapse button removed per user request */}
         </div>
 
         <nav>
@@ -85,6 +86,7 @@ const Sidebar = ({
                   <Link
                     to={item.path}
                     className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
+                    title={isCollapsed ? item.label : ''}
                   >
                     <Icon size={20} />
                     {!isCollapsed && <span>{item.label}</span>}
@@ -114,8 +116,8 @@ const Sidebar = ({
 
           <button
             onClick={onLogout}
-            className="sidebar-nav-link"
-            style={{ width: '100%', marginTop: '0.5rem', color: 'white' }}
+            className="sidebar-nav-link logout-btn"
+            title={isCollapsed ? 'Logout' : ''}
           >
             <LogOut size={20} />
             {!isCollapsed && <span>Logout</span>}

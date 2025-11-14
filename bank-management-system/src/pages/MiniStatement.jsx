@@ -14,6 +14,7 @@ const MiniStatement = ({ user }) => {
                 const txs = await getTransactions({ userId: user.id || user._id });
                 setTransactions(Array.isArray(txs) ? txs : []);
             } catch (error) {
+                console.error('Error loading transactions:', error);
                 setTransactions([]);
             }
         };

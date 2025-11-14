@@ -13,9 +13,7 @@ const Register = ({ onLogin, switchToLogin }) => {
     password: '',
     confirmPassword: '',
     initialDeposit: '',
-    selectedBank: 'bankpro',
   });
-  const [banks, setBanks] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,23 +28,6 @@ const Register = ({ onLogin, switchToLogin }) => {
   useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
-  }, []);
-
-  useEffect(() => {
-    const loadBanks = async () => {
-      try {
-        const result = await api.users.getBanks();
-        if (result.success) {
-          setBanks(result.data);
-        } else {
-          setError('Failed to load banks. Please try again.');
-        }
-      } catch (error) {
-        setError('Failed to load banks. Please try again.');
-      }
-    };
-
-    loadBanks();
   }, []);
 
   useEffect(() => {
@@ -70,7 +51,8 @@ const Register = ({ onLogin, switchToLogin }) => {
     try {
       const response = await api.users.checkEmail(email);
       setEmailExists(response.exists);
-    } catch (error) {
+    } catch (err) {
+      console.error('Email check error:', err);
       setError('Failed to verify email. Please try again.');
     } finally {
       setEmailCheckInProgress(false);
@@ -92,7 +74,8 @@ const Register = ({ onLogin, switchToLogin }) => {
           setError('');
         }
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Phone check error:', err);
       setError('Failed to verify phone number. Please try again.');
     } finally {
       setPhoneCheckInProgress(false);
@@ -115,7 +98,7 @@ const Register = ({ onLogin, switchToLogin }) => {
       }, 500);
       return () => clearTimeout(delayDebounceFn);
     }
-  }, [formData.phone]);
+  }, [formData.phone, checkPhoneExists]);
 
   const isFormValid = () => {
     return (
@@ -169,23 +152,12 @@ const Register = ({ onLogin, switchToLogin }) => {
     }
 
     try {
-      const selectedBankData = banks.find((bank) => bank.id === formData.selectedBank) || {
-        id: 'bankpro',
-        name: 'BankPro',
-        ifscCode: 'BANK0001234',
-      };
-
       const result = await register({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
         initialDeposit: parseFloat(formData.initialDeposit) || 0,
-        bankDetails: {
-          bankName: selectedBankData.name,
-          ifscCode: selectedBankData.ifscCode,
-          branchName: 'Main Branch',
-        },
       });
 
       if (result.success) {
@@ -194,7 +166,8 @@ const Register = ({ onLogin, switchToLogin }) => {
       } else {
         setError(result.error);
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Registration error:', err);
       setError('Registration failed. Please try again.');
     }
 
@@ -366,50 +339,25 @@ const Register = ({ onLogin, switchToLogin }) => {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Building2 size={16} className="mr-1" />
-                  Select Your Bank
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Initial Deposit (Optional)</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building2 size={18} className="text-gray-400" />
+                    <span className="text-gray-500">Rs</span>
                   </div>
-                  <select
-                    name="selectedBank"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 appearance-none"
+                  <input
+                    type="number"
+                    name="initialDeposit"
+                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     style={{ backgroundColor: '#ffffff', color: '#111827' }}
-                    value={formData.selectedBank}
+                    value={formData.initialDeposit}
                     onChange={handleChange}
-                    required
-                  >
-                    {banks.length > 0 ? (
-                      banks.map((bank) => (
-                        <option key={bank.id} value={bank.id}>
-                          {bank.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="bankpro">BankPro</option>
-                    )}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg
-                      className="h-5 w-5 text-gray-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter initial deposit amount"
+                  />
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Choose the bank where you hold your account. This will be used for transfers and transactions.
+                  You can start with Rs0 and deposit later, or make an initial deposit now.
                 </p>
               </div>
               <div>

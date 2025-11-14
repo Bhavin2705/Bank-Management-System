@@ -1,30 +1,29 @@
 // API Configuration and Base Service
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Helper function to get auth token
-const getAuthToken = () => {
-    return localStorage.getItem('bank_auth_token');
-};
+// Cookies are used for auth (httpOnly cookies set by backend). Do not read tokens from localStorage.
 
 // Helper function to handle API responses
 const handleResponse = async (response, isLoginRequest = false, isGetMeRequest = false) => {
-    const data = await response.json();
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (e) {
+        // no JSON body
+    }
 
     if (!response.ok) {
+        // Prefer server-provided error message when available
+        const serverMessage = data && data.error ? data.error : null;
+
         // Handle unauthorized access
         if (response.status === 401) {
-            // Don't clear auth data for login failures or getMe requests (handled by auth logic)
-            if (!isLoginRequest && !isGetMeRequest) {
-                // Clear auth data but don't redirect - let React handle routing
-                localStorage.removeItem('bank_auth_token');
-                localStorage.removeItem('bank_auth_refresh_token');
-                localStorage.removeItem('bank_auth_user');
-                // Instead of redirecting, throw error to be handled by components
-                throw new Error('Authentication required');
-            }
+            // For login attempts, return explicit 'Invalid credentials' when server doesn't provide a message
+            const message = serverMessage || (isLoginRequest ? 'Invalid credentials' : 'Authentication required');
+            throw new Error(message);
         }
 
-        throw new Error(data.error || `Request failed with status ${response.status}`);
+        throw new Error(serverMessage || `Request failed with status ${response.status}`);
     }
 
     return data;
@@ -33,14 +32,14 @@ const handleResponse = async (response, isLoginRequest = false, isGetMeRequest =
 // Generic API request function
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
-    const token = getAuthToken();
-
     const defaultOptions = {
         headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` })
+            'Content-Type': 'application/json'
         }
     };
+
+    // Ensure cookies are sent for cross-origin requests (backend sets httpOnly cookies)
+    defaultOptions.credentials = 'include';
 
     const config = { ...defaultOptions, ...options };
 
@@ -51,8 +50,9 @@ const apiRequest = async (endpoint, options = {}) => {
 
     try {
         // Create a timeout promise
+        // Increase timeout to allow server-side email sending to complete
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), 5000); // 5 second timeout
+            setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
         });
 
         // Race between fetch and timeout
@@ -66,7 +66,10 @@ const apiRequest = async (endpoint, options = {}) => {
         const isGetMeRequest = endpoint === '/auth/me';
         return await handleResponse(response, isLoginRequest, isGetMeRequest);
     } catch (error) {
-        console.error('API Request Error:', error);
+        // Only log API request errors during development to avoid noisy console output in production
+        if (import.meta.env && import.meta.env.DEV) {
+            console.error('API Request Error:', error);
+        }
         throw error;
     }
 };
@@ -125,9 +128,8 @@ export const api = {
             body: JSON.stringify(passwordData)
         }),
 
-        refreshToken: (refreshToken) => apiRequest('/auth/refresh', {
-            method: 'POST',
-            body: JSON.stringify({ refreshToken })
+        refreshToken: () => apiRequest('/auth/refresh', {
+            method: 'POST'
         }),
 
         forgotPassword: (emailData) => apiRequest('/auth/forgotpassword', {
@@ -139,6 +141,10 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify(passwordData)
         })
+        ,
+        verifyResetToken: (resetToken) => apiRequest(`/auth/resetpassword/${resetToken}`, {
+            method: 'GET'
+        }),
     },
 
     // Transactions
@@ -216,3 +222,12 @@ export const api = {
 };
 
 export default api;
+
+// Cards API
+api.cards = {
+    getAll: () => apiRequest('/cards'),
+    create: (cardData) => apiRequest('/cards', { method: 'POST', body: JSON.stringify(cardData) }),
+    updatePin: (id, data) => apiRequest(`/cards/${id}/pin`, { method: 'PUT', body: JSON.stringify(data) }),
+    updateStatus: (id, data) => apiRequest(`/cards/${id}/status`, { method: 'PUT', body: JSON.stringify(data) })
+};
+

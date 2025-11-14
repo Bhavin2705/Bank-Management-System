@@ -4,6 +4,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const cors = require('./middleware/cors');
+const cookieParser = require('cookie-parser');
+const cookie = require('cookie');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const http = require('http');
@@ -14,18 +16,21 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // Quick environment sanity checks (development-friendly)
-const requiredEnv = ['NODE_ENV'];
+const requiredEnv = ['MONGODB_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
 if (process.env.NODE_ENV === 'development') {
-    // Provide developer-friendly defaults for JWT secrets to avoid runtime crashes during local development.
-    process.env.JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
-    process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me';
-}
-
-// Warn if essential env vars are missing in non-development environments.
-if (process.env.NODE_ENV !== 'development') {
+    // In development, provide helpful warnings for missing env vars
     const missing = requiredEnv.filter(e => !process.env[e]);
     if (missing.length) {
         console.warn('Warning: Missing environment variables:', missing.join(', '));
+        console.warn('Please check your .env file and ensure all required variables are set.');
+    }
+} else {
+    // In production, require all essential env vars
+    const missing = requiredEnv.filter(e => !process.env[e]);
+    if (missing.length) {
+        console.error('Error: Missing required environment variables:', missing.join(', '));
+        console.error('Please set all required environment variables before running in production.');
+        process.exit(1);
     }
 }
 // Connect to database
@@ -35,8 +40,8 @@ connectDB();
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
-const branchRoutes = require('./routes/branches');
 const banksRoutes = require('./routes/banks');
+const cardRoutes = require('./routes/cards');
 
 // Initialize Express app
 const app = express();
@@ -54,6 +59,8 @@ app.use(helmet()); // Set security headers
 app.use(mongoSanitize()); // Data sanitization against NoSQL injection
 app.use(xss()); // Data sanitization against XSS
 app.use(hpp()); // Prevent HTTP Parameter Pollution
+// Parse cookies
+app.use(cookieParser());
 
 // CORS
 app.use(cors);
@@ -79,18 +86,25 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
-app.use('/api/branches', branchRoutes);
+// Branch routes removed (Branch Locator feature removed)
 app.use('/api/banks', banksRoutes);
+app.use('/api/cards', cardRoutes);
 
 // Socket.io middleware for authentication
 io.use((socket, next) => {
-    const token = socket.handshake.auth.token;
+    // Accept token from either handshake auth (legacy) or cookie header (httpOnly cookies)
+    let token = socket.handshake.auth && socket.handshake.auth.token;
+    if (!token && socket.handshake.headers && socket.handshake.headers.cookie) {
+        const parsed = cookie.parse(socket.handshake.headers.cookie || '');
+        token = parsed.token || parsed.Token || parsed['access_token'] || parsed['refreshToken'];
+    }
+
     if (!token) {
         return next(new Error('Authentication error'));
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret_change_me');
         socket.userId = decoded.id;
         socket.user = decoded;
         next();

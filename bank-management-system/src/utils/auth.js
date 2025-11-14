@@ -3,8 +3,6 @@
 import api from './api.js';
 
 export const AUTH_KEY = 'bank_auth_user';
-export const TOKEN_KEY = 'bank_auth_token';
-export const REFRESH_TOKEN_KEY = 'bank_auth_refresh_token';
 
 // Initialize - no longer needed with API
 export const initializeUsers = () => {
@@ -17,10 +15,6 @@ export const login = async (identifier, password) => {
     const response = await api.auth.login({ identifier, password });
 
     if (response.success) {
-      // Store both token and refresh token
-      localStorage.setItem(TOKEN_KEY, response.data.token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
-
       return { success: true, user: response.data.user };
     }
 
@@ -47,10 +41,6 @@ export const loginWithAccount = async (identifier, password, accountId) => {
     const response = await api.auth.loginWithAccount({ identifier, password, accountId });
 
     if (response.success) {
-      // Store both token and refresh token
-      localStorage.setItem(TOKEN_KEY, response.data.token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
-
       return { success: true, user: response.data.user };
     }
 
@@ -65,10 +55,6 @@ export const register = async (userData) => {
     const response = await api.auth.register(userData);
 
     if (response.success) {
-      // Store both token and refresh token
-      localStorage.setItem(TOKEN_KEY, response.data.token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refreshToken);
-
       return { success: true, user: response.data.user };
     }
 
@@ -88,9 +74,13 @@ export const logout = async () => {
   } catch (error) {
     console.warn('Logout API error:', error);
   } finally {
-    // Always clear local storage
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    // Remove any legacy token entries from localStorage (cleanup)
+    try {
+      localStorage.removeItem('bank_auth_token');
+      localStorage.removeItem('bank_auth_refresh_token');
+    } catch (e) {
+      // ignore
+    }
   }
 };
 
@@ -127,33 +117,22 @@ export const refreshUserData = async () => {
     // If token is expired (401), try to refresh it
     if (error.message && error.message.includes('Authentication required')) {
       try {
-        const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-        if (refreshToken) {
-          const refreshResponse = await api.auth.refreshToken(refreshToken);
-          if (refreshResponse.success) {
-            // Store new token
-            localStorage.setItem(TOKEN_KEY, refreshResponse.data.token);
-            // Retry getMe with new token
-            const retryResponse = await api.auth.getMe();
-            if (retryResponse.success) {
-              return retryResponse.data;
-            }
-          } else {
-            // Refresh failed, clear tokens and force logout
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem(REFRESH_TOKEN_KEY);
-            return null;
-          }
-        } else {
-          // No refresh token, clear tokens and force logout
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(REFRESH_TOKEN_KEY);
+        // Attempt refresh via cookie-based refresh endpoint
+        const refreshResponse = await api.auth.refreshToken();
+        if (refreshResponse && refreshResponse.success) {
+          // Retry getMe after refresh
+          const retryResponse = await api.auth.getMe();
+          if (retryResponse.success) return retryResponse.data;
           return null;
         }
+        // Refresh failed - client should treat as logged out
+        return null;
       } catch (refreshError) {
-        // Refresh failed, clear tokens and force logout
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
+        // Only surface token refresh errors in development -- 401/refresh failures are expected when not authenticated
+        if (import.meta.env && import.meta.env.DEV) {
+          console.error('Token refresh error:', refreshError);
+        }
+        // Refresh failed, clear tokens and force logout (no client-side tokens when using httpOnly cookies)
         return null;
       }
     }

@@ -1,26 +1,38 @@
 import { CreditCard, Eye, EyeOff, Lock, Plus, Unlock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
+import api from '../utils/api';
 
 const Cards = ({ user }) => {
   const { showError } = useNotification();
   const [cards, setCards] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [visibleCards, setVisibleCards] = useState(new Set());
+  const [visibleCvvs, setVisibleCvvs] = useState(new Set());
   const [formData, setFormData] = useState({
     cardType: 'debit',
     cardName: '',
     pin: ''
   });
+  const [showPin, setShowPin] = useState(false);
+  const [oneTimeCvv, setOneTimeCvv] = useState(null);
+  const [showCvvModal, setShowCvvModal] = useState(false);
+  const [modal, setModal] = useState({ open: false });
+
+  const loadCards = () => {
+    api.cards.getAll()
+      .then((res) => {
+        if (res && res.success) setCards(res.data || []);
+      })
+      .catch((err) => {
+        console.error('Error loading cards:', err);
+        setCards([]);
+      });
+  };
 
   useEffect(() => {
     loadCards();
   }, [user.id]);
-
-  const loadCards = () => {
-    const userCards = JSON.parse(localStorage.getItem(`cards_${user.id}`) || '[]');
-    setCards(userCards);
-  };
 
   const generateCardNumber = () => {
     const prefix = Math.floor(Math.random() * 4) + 1; // 1-4 for different card types
@@ -37,6 +49,11 @@ const Cards = ({ user }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!formData.cardName || formData.cardName.trim().length === 0) {
+      showError('Card name is required');
+      return;
+    }
+
     if (formData.pin.length !== 4 || !/^\d+$/.test(formData.pin)) {
       showError('PIN must be exactly 4 digits');
       return;
@@ -45,21 +62,34 @@ const Cards = ({ user }) => {
     const newCard = {
       id: Date.now().toString(),
       cardNumber: generateCardNumber(),
-      cardName: formData.cardName || user.name,
+      cardName: formData.cardName,
       expiryDate: generateExpiryDate(),
       cardType: formData.cardType,
+      cardBrand: formData.cardType === 'debit' ? 'visa' : 'mastercard',
       pin: formData.pin,
-      status: 'active',
-      balance: user.balance,
-      createdAt: new Date().toISOString()
+      status: 'active'
     };
 
-    const updatedCards = [...cards, newCard];
-    setCards(updatedCards);
-    localStorage.setItem(`cards_${user.id}`, JSON.stringify(updatedCards));
-
-    setFormData({ cardType: 'debit', cardName: '', pin: '' });
-    setShowAddForm(false);
+    api.cards.create(newCard)
+      .then((result) => {
+        if (result.success) {
+          // reload cards
+          loadCards();
+          setFormData({ cardType: 'debit', cardName: '', pin: '' });
+          setShowAddForm(false);
+          // show one-time CVV if provided by server
+          if (result.oneTimeCvv) {
+            setOneTimeCvv(result.oneTimeCvv);
+            setShowCvvModal(true);
+          }
+        } else {
+          showError(result.error || 'Failed to create card');
+        }
+      })
+      .catch((err) => {
+        console.error('Create card error:', err);
+        showError(err.message || 'Create card failed');
+      });
   };
 
   const toggleCardVisibility = (cardId) => {
@@ -72,14 +102,62 @@ const Cards = ({ user }) => {
     setVisibleCards(newVisible);
   };
 
+  const toggleCvvVisibility = (cardId) => {
+    const newVisible = new Set(visibleCvvs);
+    if (newVisible.has(cardId)) {
+      newVisible.delete(cardId);
+    } else {
+      newVisible.add(cardId);
+    }
+    setVisibleCvvs(newVisible);
+  };
+
   const toggleCardLock = (cardId) => {
-    const updatedCards = cards.map(card =>
-      card.id === cardId
-        ? { ...card, status: card.status === 'active' ? 'locked' : 'active' }
-        : card
-    );
-    setCards(updatedCards);
-    localStorage.setItem(`cards_${user.id}`, JSON.stringify(updatedCards));
+    const card = cards.find(c => c.id === cardId);
+    if (!card) return;
+    const newStatus = card.status === 'active' ? 'locked' : 'active';
+    api.cards.updateStatus(cardId, { status: newStatus })
+      .then((res) => {
+        if (res.success) loadCards();
+      })
+      .catch((err) => {
+        console.error('Toggle lock error:', err);
+        showError(err.message || 'Failed to update card status');
+      });
+  };
+
+  const closeCard = (cardId, cardNumber) => {
+    const last4 = cardNumber ? String(cardNumber).slice(-4) : '----';
+    setModal({
+      open: true,
+      cardId,
+      title: 'Close Card',
+      message: `Are you sure you want to close the card ending with ${last4}? This will remove it from your cards list.`,
+      confirmText: 'Close',
+      cancelText: 'Cancel'
+    });
+  };
+
+  const handleModalConfirm = async () => {
+    if (!modal.cardId) return setModal({ open: false });
+    try {
+      const res = await api.cards.updateStatus(modal.cardId, { status: 'closed' });
+      if (res.success) {
+        setModal({ open: false });
+        await loadCards();
+      } else {
+        showError(res.error || 'Failed to close card');
+        setModal({ open: false });
+      }
+    } catch (err) {
+      console.error('Close card error:', err);
+      showError(err.message || 'Failed to close card');
+      setModal({ open: false });
+    }
+  };
+
+  const handleModalCancel = () => {
+    setModal({ open: false });
   };
 
   const formatCardNumber = (number) => {
@@ -179,7 +257,7 @@ const Cards = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Card Name (Optional)</label>
+              <label className="form-label">Card Name</label>
               <input
                 type="text"
                 name="cardName"
@@ -187,21 +265,40 @@ const Cards = ({ user }) => {
                 value={formData.cardName}
                 onChange={(e) => setFormData({ ...formData, cardName: e.target.value })}
                 placeholder="Enter card name"
+                required
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">4-Digit PIN</label>
-              <input
-                type="password"
-                name="pin"
-                className="form-input"
-                value={formData.pin}
-                onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
-                placeholder="Enter 4-digit PIN"
-                maxLength="4"
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  name="pin"
+                  className="form-input"
+                  value={formData.pin}
+                  onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                  placeholder="Enter 4-digit PIN"
+                  maxLength="4"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer'
+                  }}
+                  title={showPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary">
@@ -258,12 +355,24 @@ const Cards = ({ user }) => {
                       }
                     </div>
 
-                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)', alignItems: 'center' }}>
                       <span>Expires: {card.expiryDate}</span>
                       <span>Status: <span style={{
                         color: card.status === 'active' ? '#28a745' : '#dc3545',
                         fontWeight: '500'
                       }}>{card.status}</span></span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>CVV:
+                        <strong style={{ letterSpacing: '2px' }}>{visibleCvvs.has(card.id) ? (card.cvv || '---') : '• • •'}</strong>
+                        <button
+                          onClick={() => toggleCvvVisibility(card.id)}
+                          style={{
+                            border: 'none', background: 'none', padding: 6, marginLeft: 4, cursor: 'pointer'
+                          }}
+                          title={visibleCvvs.has(card.id) ? 'Hide CVV' : 'Show CVV'}
+                        >
+                          {visibleCvvs.has(card.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </span>
                     </div>
                   </div>
 
@@ -296,6 +405,20 @@ const Cards = ({ user }) => {
                     >
                       {card.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
                     </button>
+                    <button
+                      onClick={() => closeCard(card.id, card.cardNumber)}
+                      style={{
+                        padding: '0.5rem',
+                        border: 'none',
+                        borderRadius: '4px',
+                        background: '#6c757d',
+                        color: 'white',
+                        cursor: 'pointer'
+                      }}
+                      title="Close card"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               </div>
@@ -303,6 +426,34 @@ const Cards = ({ user }) => {
           </div>
         )}
       </div>
+      {/* One-time CVV modal */}
+      {showCvvModal && (
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowCvvModal(false)}>
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: 8, minWidth: 300 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '.5rem' }}>Card created</h3>
+            <p style={{ marginBottom: '1rem' }}>This is the one-time CVV. It will not be shown again.</p>
+            <div style={{ fontSize: '1.5rem', letterSpacing: '4px', fontWeight: 700, textAlign: 'center', marginBottom: '1rem' }}>{oneTimeCvv}</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn" onClick={() => { navigator.clipboard?.writeText(oneTimeCvv || ''); setShowCvvModal(false); }}>Copy</button>
+              <button className="btn btn-primary" onClick={() => setShowCvvModal(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm modal for close card */}
+      {modal.open && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: 24, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
+            <h3 style={{ marginBottom: 12 }}>{modal.title}</h3>
+            <div style={{ marginBottom: 18 }}>{modal.message}</div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button onClick={handleModalCancel} style={{ background: '#e9ecef', color: '#333', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}>{modal.cancelText || 'Cancel'}</button>
+              <button onClick={handleModalConfirm} style={{ background: '#dc3545', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}>{modal.confirmText || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

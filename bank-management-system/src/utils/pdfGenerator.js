@@ -100,7 +100,7 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     yPosition += 8;
     pdf.setFont('helvetica', 'normal');
 
-    transactions.slice(0, 10).forEach((transaction, index) => {
+    transactions.slice(0, 10).forEach((transaction) => {
         if (yPosition > 270) {
             pdf.addPage();
             yPosition = 20;
@@ -278,7 +278,7 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     yPosition += 8;
     pdf.setFont('helvetica', 'normal');
 
-    transactions.forEach((transaction, index) => {
+    transactions.forEach((transaction) => {
         if (yPosition > 270) {
             pdf.addPage();
             yPosition = 20;

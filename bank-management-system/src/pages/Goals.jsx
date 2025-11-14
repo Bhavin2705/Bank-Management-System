@@ -1,6 +1,7 @@
 import { Plus, Target, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CustomCalendar from '../components/UI/CustomCalendar';
+import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
 
 const Goals = ({ user }) => {
   const [goals, setGoals] = useState([]);
@@ -136,8 +137,8 @@ const Goals = ({ user }) => {
               <div className="form-group">
                 <label className="form-label">Target Date</label>
                 <CustomCalendar
-                  value={formData.targetDate ? new Date(formData.targetDate) : null}
-                  onChange={(date) => setFormData({ ...formData, targetDate: date ? date.toISOString().split('T')[0] : '' })}
+                  value={formData.targetDate ? fromLocalYYYYMMDD(formData.targetDate) : null}
+                  onChange={(date) => setFormData({ ...formData, targetDate: date ? toLocalYYYYMMDD(date) : '' })}
                   placeholder="Select target date"
                   minDate={new Date()}
                 />

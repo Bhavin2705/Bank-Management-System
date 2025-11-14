@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowRight, Mail, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../utils/api';
 
 const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
@@ -7,6 +8,8 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showDemoNote, setShowDemoNote] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,10 +20,18 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
       const response = await api.auth.forgotPassword({ email });
 
       if (response.success) {
-        setIsSubmitted(true);
-        // In a real app, you wouldn't expose the token, but for demo purposes
-        // we'll pass it to show the reset form
-        onResetTokenGenerated(response.data, email);
+        // If backend returned a token (development/demo), pass it to parent to show reset UI
+        if (response.data) {
+          if (typeof onResetTokenGenerated === 'function') {
+            onResetTokenGenerated(response.data, email);
+          }
+          // show demo note only when a token was returned
+          setShowDemoNote(true);
+        } else {
+          // Normal flow: no token returned, just show the generic submitted screen
+          setIsSubmitted(true);
+          setShowDemoNote(false);
+        }
       } else {
         setError(response.error || 'Failed to send reset instructions');
       }
@@ -87,15 +98,20 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
                   Please check your inbox and follow the link to reset your password.
                 </p>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                  <p className="text-blue-800 text-sm">
-                    <strong>Note:</strong> For demo purposes, the reset token has been generated.
-                    In a real application, this would be sent to your email.
-                  </p>
-                </div>
+                {showDemoNote && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p className="text-blue-800 text-sm">
+                      <strong>Note:</strong> For demo purposes, the reset token has been generated.
+                      In a real application, this would be sent to your email.
+                    </p>
+                  </div>
+                )}
 
                 <button
-                  onClick={onBack}
+                  onClick={() => {
+                    if (typeof onBack === 'function') return onBack();
+                    navigate('/login');
+                  }}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
                 >
                   <ArrowLeft size={18} className="mr-2" />

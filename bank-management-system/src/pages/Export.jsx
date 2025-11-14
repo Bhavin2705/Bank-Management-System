@@ -1,6 +1,7 @@
 import { Download, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CustomCalendar from '../components/UI/CustomCalendar';
+import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
 import { getTransactions } from '../utils/transactions';
 
 const Export = ({ user }) => {
@@ -10,37 +11,52 @@ const Export = ({ user }) => {
   });
   const [format, setFormat] = useState('csv');
   const [allTransactions, setAllTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTransactions();
-  }, [user.id]);
+    // Only load transactions when we have a valid user object (avoid accessing undefined.id)
+    if (user && (user.id || user._id)) {
+      loadTransactions();
+    } else {
+      // Clear transactions if user is not available
+      setAllTransactions([]);
+    }
+  }, [user]);
+
+  // Robust parser for transaction dates (prefer createdAt ISO, fallback to local YYYY-MM-DD stored in `date`)
+  const parseTransactionDate = (t) => {
+    if (!t) return null;
+    if (t.createdAt) return new Date(t.createdAt);
+    if (t.date && typeof t.date === 'string' && t.date.length === 10) return fromLocalYYYYMMDD(t.date);
+    return t.date ? new Date(t.date) : null;
+  }
 
   const loadTransactions = async () => {
     try {
-      setLoading(true);
       const transactions = await getTransactions();
       setAllTransactions(transactions);
     } catch (error) {
       console.error('Error loading transactions:', error);
       setAllTransactions([]);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleExport = () => {
+    // (debug logs removed) — export will run normally
+
     let filteredTransactions = allTransactions;
 
     if (dateRange.start && dateRange.end) {
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
+      const startDate = fromLocalYYYYMMDD(dateRange.start);
+      const endDate = fromLocalYYYYMMDD(dateRange.end);
+      endDate.setHours(23, 59, 59, 999);
 
       filteredTransactions = allTransactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        return transactionDate >= startDate && transactionDate <= endDate;
+        const transactionDate = parseTransactionDate(t);
+        return transactionDate && transactionDate >= startDate && transactionDate <= endDate;
       });
     }
+
+    // (debug logs removed)
 
     if (format === 'csv') {
       exportToCSV(filteredTransactions);
@@ -50,19 +66,24 @@ const Export = ({ user }) => {
   };
 
   const exportToCSV = (transactions) => {
-    const headers = ['Date', 'Description', 'Type', 'Amount', 'Balance'];
-    const csvContent = [
-      headers.join(','),
-      ...transactions.map(t => [
-        new Date(t.date).toLocaleDateString(),
-        `"${t.description}"`,
-        t.type,
-        t.amount,
-        '' // Balance would need to be calculated
-      ].join(','))
-    ].join('\n');
+    if (!transactions || !transactions.length) {
+      alert('No transactions to export.');
+      return;
+    }
 
-    downloadFile(csvContent, 'transactions.csv', 'text/csv');
+    const headers = ['Date', 'Description', 'Type', 'Amount', 'Balance'];
+    const rows = transactions.map(t => {
+      const d = parseTransactionDate(t) || new Date();
+      const dateStr = d.toLocaleDateString('en-GB'); // DD/MM/YYYY style
+      const desc = (t.description || '').replace(/"/g, '""');
+      const type = t.type || '';
+      const amount = typeof t.amount === 'number' ? t.amount : '';
+      const balance = typeof t.balance === 'number' ? t.balance : '';
+      return [`"${dateStr}"`, `"${desc}"`, `"${type}"`, `"${amount}"`, `"${balance}"`].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    downloadFile(csvContent, `transactions_${dateRange.start || 'all'}.csv`, 'text/csv');
   };
 
   const exportToJSON = (transactions) => {
@@ -110,20 +131,20 @@ const Export = ({ user }) => {
           <div className="form-group">
             <label className="form-label">Start Date</label>
             <CustomCalendar
-              value={dateRange.start ? new Date(dateRange.start) : null}
-              onChange={(date) => setDateRange({ ...dateRange, start: date ? date.toISOString().split('T')[0] : '' })}
+              value={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
+              onChange={(date) => setDateRange({ ...dateRange, start: date ? toLocalYYYYMMDD(date) : '' })}
               placeholder="Select start date"
-              maxDate={dateRange.end ? new Date(dateRange.end) : null}
+              maxDate={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">End Date</label>
             <CustomCalendar
-              value={dateRange.end ? new Date(dateRange.end) : null}
-              onChange={(date) => setDateRange({ ...dateRange, end: date ? date.toISOString().split('T')[0] : '' })}
+              value={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
+              onChange={(date) => setDateRange({ ...dateRange, end: date ? toLocalYYYYMMDD(date) : '' })}
               placeholder="Select end date"
-              minDate={dateRange.start ? new Date(dateRange.start) : null}
+              minDate={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
             />
           </div>
 

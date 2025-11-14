@@ -111,7 +111,7 @@ export const transferMoney = async (transferData) => {
 };
 
 // Legacy function for backward compatibility
-export const getTransactionsSync = (userId = null) => {
+export const getTransactionsSync = () => {
   // This function is deprecated, use getTransactions() instead
   console.warn('getTransactionsSync is deprecated, use getTransactions() instead');
   return [];

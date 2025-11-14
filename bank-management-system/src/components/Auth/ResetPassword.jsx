@@ -1,8 +1,12 @@
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../utils/api';
 
 const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
+  const params = useParams();
+  const navigate = useNavigate();
+  const tokenFromUrl = params.token || resetToken;
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: ''
@@ -49,7 +53,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
     }
 
     try {
-      const response = await api.auth.resetPassword(resetToken, {
+      const response = await api.auth.resetPassword(tokenFromUrl, {
         password: formData.password
       });
 
@@ -90,6 +94,29 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
     if (passwordStrength <= 3) return 'Medium';
     return 'Strong';
   };
+
+  useEffect(() => {
+    const verify = async () => {
+      if (!tokenFromUrl) {
+        // No token - redirect to forgot password
+        navigate('/forgot-password', { replace: true });
+        return;
+      }
+
+      try {
+        const res = await api.auth.verifyResetToken(tokenFromUrl);
+        if (res && res.success) {
+          // ok - continue and show email
+        } else {
+          navigate('/forgot-password', { replace: true });
+        }
+      } catch (err) {
+        navigate('/forgot-password', { replace: true });
+      }
+    };
+    verify();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
