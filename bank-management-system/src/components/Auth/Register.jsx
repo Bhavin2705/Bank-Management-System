@@ -410,7 +410,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-[25%] text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}

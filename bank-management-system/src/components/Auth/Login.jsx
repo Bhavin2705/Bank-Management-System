@@ -278,7 +278,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-10 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-[25%] text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
