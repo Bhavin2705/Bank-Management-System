@@ -5,47 +5,21 @@ const {
     updateUser,
     deleteUser,
     getUserStats,
-    getUserByAccountNumber,
     getBanks,
-    updateUserRole,
-    updateUserStatus,
-    checkEmailExists,
-    checkPhoneExists,
-    getTransferRecipients
-    , getClientData, updateClientData
+    getBankMetrics
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
-const { apiLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-// Public route for banks list (must be before protect middleware)
 router.get('/banks', getBanks);
 
-// Public route to check if email exists
-router.get('/check-email', checkEmailExists);
-
-// Public route to check if phone exists
-router.get('/check-phone', checkPhoneExists);
-
-// All routes below require authentication
 router.use(protect);
 
-// Client data endpoints for the authenticated user
-router.get('/me/client-data', getClientData);
-router.put('/me/client-data', updateClientData);
-
-// Route for getting transfer recipients (authenticated users only)
-router.get('/transfer-recipients', getTransferRecipients);
-
-// Admin only routes
 router.get('/stats', authorize('admin'), getUserStats);
-router.get('/account/:accountNumber', authorize('admin'), getUserByAccountNumber);
-router.put('/:id/role', authorize('admin'), validateObjectId, updateUserRole);
-router.put('/:id/status', authorize('admin'), validateObjectId, updateUserStatus);
+router.get('/bank-metrics', authorize('admin'), getBankMetrics);
 
-// General user routes (admin can access all, users can access their own)
 router.get('/', authorize('admin'), validatePagination, getUsers);
 router.get('/:id', validateObjectId, getUser);
 router.put('/:id', validateObjectId, updateUser);

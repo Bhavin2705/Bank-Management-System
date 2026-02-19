@@ -203,7 +203,9 @@ export const api = {
 
         getStats: () => apiRequest('/users/stats'),
 
-        getBanks: () => apiRequest('/users/banks'),
+        getBanks: () => apiRequest('/banks', {
+            method: 'GET'
+        }),
 
         updateRole: (id, roleData) => apiRequest(`/users/${id}/role`, {
             method: 'PUT',
@@ -236,4 +238,14 @@ api.userData = {
     getClientData: () => apiRequest('/users/me/client-data'),
     updateClientData: (data) => apiRequest('/users/me/client-data', { method: 'PUT', body: JSON.stringify(data) })
 };
+
+// Bank management methods
+api.addBank = (bankData) => apiRequest('/banks', {
+    method: 'POST',
+    body: JSON.stringify(bankData),
+});
+
+api.deleteBank = (id) => apiRequest(`/banks/${id}`, {
+    method: 'DELETE',
+});
 

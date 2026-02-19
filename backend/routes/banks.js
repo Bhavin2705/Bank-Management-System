@@ -1,11 +1,10 @@
 const express = require('express');
-const { getBanks } = require('../controllers/userController');
+const { getBanks, addBank, deleteBank } = require('../controllers/bankController');
 
 const router = express.Router();
 
-// @desc    Get list of popular banks
-// @route   GET /api/banks
-// @access  Public
 router.get('/', getBanks);
+router.post('/', addBank);
+router.delete('/:id', deleteBank);
 
 module.exports = router;

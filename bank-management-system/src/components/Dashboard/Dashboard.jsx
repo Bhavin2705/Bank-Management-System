@@ -13,6 +13,12 @@ const Dashboard = ({ user }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (user) {
+      // Debug: log user object to check createdAt and other fields
+      // Remove this after debugging
+      // eslint-disable-next-line no-console
+      console.log('Dashboard user object:', user);
+    }
     const fetchStats = async () => {
       try {
         setLoading(true);
@@ -48,17 +54,26 @@ const Dashboard = ({ user }) => {
     });
   };
 
+
+  // Use firstLogin flag from backend for accurate onboarding
+  const isNewUser = (() => {
+    if (user && user.firstLogin) {
+      return true;
+    }
+    return false;
+  })();
+
   return (
     <div className="container">
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-          Welcome back, {user?.name}!
+          {isNewUser ? 'Welcome' : 'Welcome back'}, {user?.name}!
         </h1>
         <p style={{ color: 'var(--text-secondary)' }}>
           Account: {user?.accountNumber}
         </p>
 
-        {user?.balance === 0 && (
+        {isNewUser && (
           <div style={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',

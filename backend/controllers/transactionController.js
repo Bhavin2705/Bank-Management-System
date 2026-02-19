@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
-const { getBankById, validateIFSC } = require('../utils/banks');
 
 // @desc    Get all transactions for a user
 // @route   GET /api/transactions

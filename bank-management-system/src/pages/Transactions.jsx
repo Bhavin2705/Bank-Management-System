@@ -1,294 +1,429 @@
-import { Activity, ArrowDownLeft, ArrowUpRight, Calendar, Download, FileText, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+// src/pages/Transactions.jsx
+import {
+  Activity,
+  ArrowDownCircle,
+  ArrowDownLeft,
+  ArrowRightLeft,
+  ArrowUpCircle,
+  ArrowUpRight,
+  CreditCard,
+  Plus,
+  Users,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
-import CustomCalendar from '../components/UI/CustomCalendar';
-import { generateAccountStatementPDF, generateMiniStatementPDF } from '../utils/pdfGenerator';
-import { addTransaction, getTransactions } from '../utils/transactions';
+import { api } from '../utils/api';
+import { getNonAdminUsers } from '../utils/auth';
+import { addTransaction, getTransactions } from '../utils/transactions'; // keep if still used, otherwise remove
 
-const Transactions = ({ user, onUserUpdate }) => {
+export default function Transactions({ user, onUserUpdate }) {
   const { showError, showSuccess } = useNotification();
+
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [showStatementOptions, setShowStatementOptions] = useState(false);
-  const [statementPeriod, setStatementPeriod] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-    endDate: new Date()
-  });
+  const [activeTab, setActiveTab] = useState('all');           // main tabs
+  const [showActionForm, setShowActionForm] = useState(false);
+  const [actionType, setActionType] = useState('deposit');     // deposit / withdraw / transfer
+
+  // ── Generic transaction form state ──────────────────────────────────────
   const [formData, setFormData] = useState({
-    type: 'debit',
     amount: '',
     description: '',
-    // Default to a sensible category so the select has a value when the form is shown
-    category: 'food',
+    category: 'other', // only used for debit/withdraw
   });
 
-  const loadTransactions = async () => {
+  // ── Transfer-specific state ─────────────────────────────────────────────
+  const [transferData, setTransferData] = useState({
+    transferMethod: 'phone',
+    recipientPhone: '',
+    recipientAccount: '',
+    recipientName: '',
+    recipientBank: { id: 'bankpro', name: 'BankPro' },
+    description: '',
+  });
+  const [banks, setBanks] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [showBankSelector, setShowBankSelector] = useState(false);
+
+  const isSubmitting = false; // can add per-action loading later
+
+  // ── Load data ───────────────────────────────────────────────────────────
+  const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const userTransactions = await getTransactions(user.id);
-      setTransactions(userTransactions);
-    } catch (error) {
+      const txs = await getTransactions(user.id);
+      setTransactions(txs || []);
+    } catch (err) {
       showError('Failed to load transactions');
-      console.error('Error loading transactions:', error);
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user.id, showError]);
 
   useEffect(() => {
     loadTransactions();
-  }, [user.id]);
+  }, [loadTransactions]);
 
+  useEffect(() => {
+    // Load banks for external transfers
+    const loadBanks = async () => {
+      try {
+        const res = await api.users.getBanks();
+        if (res?.success) setBanks(res.data || []);
+      } catch (error) {
+        showError('Failed to load banks');
+        console.error(error);
+      }
+    };
+    loadBanks();
+  }, []);
+
+  useEffect(() => {
+    // Load possible internal recipients (optional UX)
+    const loadRecipients = async () => {
+      try {
+        const recipients = await getNonAdminUsers();
+        if (Array.isArray(recipients)) {
+          const myId = user._id || user.id;
+          setUsers(recipients.filter(u => (u._id || u.id) !== myId));
+        }
+      } catch { }
+    };
+    if (user) loadRecipients();
+  }, [user]);
+
+  // ── Common submit handler ───────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (actionType === 'transfer') {
+      await handleTransfer();
+    } else {
+      await handleDepositOrWithdraw();
+    }
+  };
+
+  const handleDepositOrWithdraw = async () => {
     const amount = parseFloat(formData.amount);
-    if (!formData.type || !formData.description || isNaN(amount) || amount <= 0) {
-      showError('Please fill in all required fields with valid values.');
+    if (isNaN(amount) || amount <= 0) {
+      showError('Please enter a valid amount greater than 0');
       return;
     }
-    if (formData.type === 'debit' && (!formData.category || formData.category === '')) {
-      showError('Please select a category for withdrawals.');
-      return;
-    }
-    if (formData.type === 'debit' && amount > user.balance) {
-      showError('Insufficient balance for this transaction');
+
+    const isDeposit = actionType === 'deposit';
+
+    if (!isDeposit && amount > user.balance) {
+      showError('Insufficient balance');
       return;
     }
 
     try {
-      setSubmitting(true);
-
-      const transaction = {
-        type: formData.type,
-        amount: amount,
-        description: formData.description || `${formData.type === 'credit' ? 'Deposit' : 'Withdrawal'}`,
-        category: formData.type === 'debit' ? formData.category : undefined
+      const payload = {
+        type: isDeposit ? 'credit' : 'debit',
+        amount,
+        description: formData.description.trim() || (isDeposit ? 'Cash Deposit' : 'Cash Withdrawal'),
+        category: isDeposit ? 'deposit' : (formData.category || 'withdrawal'),
       };
 
-      const result = await addTransaction(transaction);
+      // You can keep using addTransaction or switch to api.transactions.create
+      const result = await addTransaction(payload); // or api.transactions.create(payload)
 
-      // addTransaction returns the created transaction object (or throws). Treat a truthy result as success.
-      if (result) {
-        showSuccess('Transaction added successfully!');
+      if (!result) throw new Error('No result returned');
 
-        // Update user balance in parent component
-        const newBalance = formData.type === 'credit'
-          ? user.balance + amount
-          : user.balance - amount;
+      showSuccess(isDeposit ? 'Deposit successful!' : 'Withdrawal successful!');
 
-        onUserUpdate({ ...user, balance: newBalance });
-        await loadTransactions();
-        setShowForm(false);
-        // Reset form to defaults (category back to default)
-        setFormData({ type: 'debit', amount: '', description: '', category: 'food' });
-      } else {
-        showError('Failed to add transaction');
-      }
-    } catch (error) {
-      showError('Failed to add transaction. Please try again.');
-      console.error('Error adding transaction:', error);
-    } finally {
-      setSubmitting(false);
+      const newBalance = isDeposit
+        ? user.balance + amount
+        : user.balance - amount;
+
+      onUserUpdate({ ...user, balance: newBalance });
+      await loadTransactions();
+
+      resetForms();
+    } catch (err) {
+      showError('Operation failed. Please try again.');
+      console.error(err);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
+  const handleTransfer = async () => {
+    const amount = parseFloat(transferData.amount || formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      showError('Please enter a valid amount');
+      return;
+    }
+    if (amount > user.balance) {
+      showError('Insufficient balance');
+      return;
+    }
+
+    const isExternal = transferData.recipientBank?.id !== 'bankpro';
+
+    if (isExternal && !transferData.recipientName) {
+      showError('Recipient name is required for external transfers');
+      return;
+    }
+
+    let payload = {
+      amount,
+      description: (transferData.description || formData.description).trim() || 'Money transfer',
+    };
+
+    if (transferData.transferMethod === 'phone') {
+      if (!transferData.recipientPhone || !/^\d{10}$/.test(transferData.recipientPhone)) {
+        showError('Enter a valid 10-digit phone number');
+        return;
+      }
+      payload.recipientPhone = transferData.recipientPhone;
+    } else {
+      if (!transferData.recipientAccount) {
+        showError('Enter a valid account number');
+        return;
+      }
+      payload.recipientAccount = transferData.recipientAccount;
+    }
+
+    if (isExternal) {
+      payload.recipientName = transferData.recipientName;
+      payload.recipientBank = {
+        bankName: transferData.recipientBank.name,
+        branchName: transferData.recipientBank.branchName || '',
+      };
+    }
+
+    try {
+      const result = await api.transactions.transfer(payload);
+
+      if (!result?.success) throw new Error(result?.error || 'Transfer failed');
+
+      showSuccess(result.data?.message || 'Transfer completed!');
+
+      const fee = result.data?.processingFee || 0;
+      const newBalance = user.balance - amount - fee;
+      onUserUpdate({ ...user, balance: newBalance });
+
+      await loadTransactions();
+      resetForms();
+    } catch (err) {
+      showError('Transfer failed. Please try again.');
+      console.error(err);
+    }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const resetForms = () => {
+    setShowActionForm(false);
+    setFormData({ amount: '', description: '', category: 'other' });
+    setTransferData({
+      transferMethod: 'phone',
+      recipientPhone: '',
+      recipientAccount: '',
+      recipientName: '',
+      recipientBank: { id: 'bankpro', name: 'BankPro' },
+      description: '',
+    });
+    setShowBankSelector(false);
+  };
+
+  const formatCurrency = (amt) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amt || 0);
+
+  const formatDate = (str) => {
+    if (!str) return '—';
+    return new Date(str).toLocaleString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
-  const handleDownloadMiniStatement = async () => {
-    try {
-      const filteredTransactions = transactions.filter(transaction => {
-        const transactionDate = new Date(transaction.createdAt || transaction.date);
-        return transactionDate >= statementPeriod.startDate && transactionDate <= statementPeriod.endDate;
-      });
-
-      const userIdStr = (user.id || user._id || '').toString();
-      await generateMiniStatementPDF(
-        filteredTransactions,
-        user,
-        `ACC${userIdStr.padStart(6, '0')}`,
-        statementPeriod.startDate,
-        statementPeriod.endDate
-      );
-
-      showSuccess('Mini statement downloaded successfully!');
-    } catch (error) {
-      console.error('Error generating mini statement:', error);
-      showError('Failed to generate mini statement. Please try again.');
-    }
-  };
-
-  const handleDownloadAccountStatement = async () => {
-    try {
-      const filteredTransactions = transactions.filter(transaction => {
-        const transactionDate = new Date(transaction.createdAt || transaction.date);
-        return transactionDate >= statementPeriod.startDate && transactionDate <= statementPeriod.endDate;
-      });
-
-      await generateAccountStatementPDF(
-        filteredTransactions,
-        user,
-        `ACC${user.id.toString().padStart(6, '0')}`,
-        statementPeriod.startDate,
-        statementPeriod.endDate
-      );
-
-      showSuccess('Account statement downloaded successfully!');
-    } catch (error) {
-      console.error('Error generating account statement:', error);
-      showError('Failed to generate account statement. Please try again.');
-    }
-  };
+  // Filter & sort transactions
+  const visibleTxs = transactions
+    .filter((tx) => {
+      if (activeTab === 'all') return true;
+      if (activeTab === 'deposit') return tx.type === 'credit';
+      if (activeTab === 'withdraw') return tx.type === 'debit' && tx.category !== 'transfer';
+      if (activeTab === 'transfer') return tx.category === 'transfer' || tx.description?.toLowerCase().includes('transfer');
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700' }}>Transactions</h1>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button
-            onClick={() => setShowStatementOptions(!showStatementOptions)}
-            className="btn btn-secondary"
-          >
-            <Download size={16} />
-            Download Statement
-          </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="btn btn-primary"
-          >
-            <Plus size={16} />
-            New Transaction
-          </button>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Transactions & Transfers</h1>
+
+        <button
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-md hover:shadow-lg focus:outline-none"
+          onClick={() => setShowActionForm(true)}
+        >
+          <Plus size={18} /> New Action
+        </button>
+      </div>
+
+      {/* Balance Card */}
+      <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="text-2xl font-bold">{formatCurrency(user.balance)}</div>
+            <div className="text-gray-500">Available Balance</div>
+          </div>
+          <CreditCard size={40} className="text-blue-500" />
         </div>
       </div>
 
-      {showStatementOptions && (
-        <div className="statement-options">
-          <h3>
-            <FileText size={18} />
-            Download Statement
-          </h3>
+      {/* Tabs */}
+      <div className="border-b border-gray-300 mb-6">
+        <div className="flex gap-8">
+          {['all', 'deposit', 'withdraw', 'transfer'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`py-2 text-sm font-medium focus:outline-none ${
+                activeTab === tab
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-blue-600'
+              }`}
+            >
+              {tab === 'all' ? 'All' :
+                tab === 'deposit' ? 'Deposits' :
+                  tab === 'withdraw' ? 'Withdrawals' : 'Transfers'}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="statement-period-selector">
-            <div className="form-group">
-              <label className="form-label">Start Date</label>
-              <CustomCalendar
-                value={statementPeriod.startDate}
-                onChange={(date) => setStatementPeriod({
-                  ...statementPeriod,
-                  startDate: date || new Date()
-                })}
-                placeholder="Select start date"
-                maxDate={statementPeriod.endDate}
-              />
+      {/* Transaction List */}
+      {loading ? (
+        <div className="text-center py-16 text-gray-500">Loading...</div>
+      ) : visibleTxs.length === 0 ? (
+        <div className="text-center py-16 text-gray-500">
+          <Activity size={64} className="opacity-40 mb-4 mx-auto" />
+          <p>No transactions found in this category.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {visibleTxs.map((tx) => (
+            <div
+              key={tx._id || tx.id}
+              className="flex items-center gap-4 p-4 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow"
+            >
+              <div
+                className={`p-2 rounded-full ${
+                  tx.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
+                }`}
+              >
+                {tx.type === 'credit' ? (
+                  <ArrowDownLeft className="text-green-600" />
+                ) : (
+                  <ArrowUpRight className="text-red-600" />
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="font-medium text-gray-800">{tx.description || 'Transaction'}</div>
+                <div className="text-sm text-gray-500">
+                  {formatDate(tx.createdAt || tx.date)}
+                  {tx.category && ` • ${tx.category}`}
+                </div>
+              </div>
+              <div
+                className={`font-semibold ${
+                  tx.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                }`}
+              >
+                {tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}
+              </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">End Date</label>
-              <CustomCalendar
-                value={statementPeriod.endDate}
-                onChange={(date) => setStatementPeriod({
-                  ...statementPeriod,
-                  endDate: date || new Date()
-                })}
-                placeholder="Select end date"
-                minDate={statementPeriod.startDate}
-              />
-            </div>
-          </div>
-
-          <div className="statement-buttons">
-            <button
-              onClick={handleDownloadMiniStatement}
-              className="btn btn-primary"
-              disabled={transactions.length === 0}
-            >
-              <FileText size={16} />
-              Mini Statement (PDF)
-            </button>
-            <button
-              onClick={handleDownloadAccountStatement}
-              className="btn btn-secondary"
-              disabled={transactions.length === 0}
-            >
-              <Calendar size={16} />
-              Full Statement (PDF)
-            </button>
-            <button
-              onClick={() => setShowStatementOptions(false)}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-
-          <div className="statement-info">
-            <p>• Mini Statement: Summary with recent transactions</p>
-            <p>• Full Statement: Detailed transaction history with balances</p>
-          </div>
+          ))}
         </div>
       )}
 
-      {showForm && (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Add New Transaction</h3>
+      {/* ── Action Form (Deposit / Withdraw / Transfer) ────────────────────── */}
+      {showActionForm && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
+          <div className="card" style={{ width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2>New Transaction</h2>
+              <button onClick={resetForms} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
+                ×
+              </button>
+            </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              <div className="form-group">
-                <label className="form-label">Type</label>
-                <select
-                  className="form-input"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            {/* Mini tabs inside form */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              {['deposit', 'withdraw', 'transfer'].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setActionType(type)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: actionType === type ? 'var(--primary)' : 'transparent',
+                    color: actionType === type ? 'white' : 'var(--text-primary)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
                 >
-                  <option value="debit">Withdrawal</option>
-                  <option value="credit">Deposit</option>
-                </select>
-              </div>
+                  {type === 'deposit' && <ArrowUpCircle size={18} />}
+                  {type === 'withdraw' && <ArrowDownCircle size={18} />}
+                  {type === 'transfer' && <ArrowRightLeft size={18} />}
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
+            </div>
 
+            <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label className="form-label">Amount</label>
+                <label className="form-label">Amount (₹)</label>
                 <input
                   type="number"
                   step="0.01"
-                  className="form-input"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  min="1"
                   required
+                  className="form-input"
+                  value={actionType === 'transfer' ? transferData.amount : formData.amount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (actionType === 'transfer') {
+                      setTransferData({ ...transferData, amount: val });
+                    } else {
+                      setFormData({ ...formData, amount: val });
+                    }
+                  }}
                   placeholder="0.00"
                 />
               </div>
 
+              {/* Common description */}
               <div className="form-group">
-                <label className="form-label">Description</label>
+                <label className="form-label">Description (optional)</label>
                 <input
                   type="text"
                   className="form-input"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Transaction description"
+                  value={actionType === 'transfer' ? transferData.description : formData.description}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (actionType === 'transfer') {
+                      setTransferData({ ...transferData, description: val });
+                    } else {
+                      setFormData({ ...formData, description: val });
+                    }
+                  }}
+                  placeholder="Purpose of transaction"
                 />
               </div>
 
-              {formData.type === 'debit' && (
+              {/* Deposit / Withdraw extra fields */}
+              {actionType !== 'transfer' && actionType === 'withdraw' && (
                 <div className="form-group">
                   <label className="form-label">Category</label>
                   <select
@@ -298,88 +433,146 @@ const Transactions = ({ user, onUserUpdate }) => {
                   >
                     <option value="food">Food & Dining</option>
                     <option value="transportation">Transportation</option>
-                    <option value="entertainment">Entertainment</option>
                     <option value="utilities">Utilities</option>
                     <option value="shopping">Shopping</option>
-                    <option value="healthcare">Healthcare</option>
-                    <option value="salary">Salary</option>
-                    <option value="transfer">Transfer</option>
+                    <option value="withdrawal">Cash Withdrawal</option>
                     <option value="other">Other</option>
                   </select>
                 </div>
               )}
-            </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Adding Transaction...' : 'Add Transaction'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="btn btn-secondary"
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+              {/* Transfer-specific fields */}
+              {actionType === 'transfer' && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Transfer Method</label>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="radio"
+                          checked={transferData.transferMethod === 'phone'}
+                          onChange={() => setTransferData({ ...transferData, transferMethod: 'phone' })}
+                        />
+                        Phone
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="radio"
+                          checked={transferData.transferMethod === 'account'}
+                          onChange={() => setTransferData({ ...transferData, transferMethod: 'account' })}
+                        />
+                        Account
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Recipient Bank</label>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="radio"
+                          checked={transferData.recipientBank.id === 'bankpro'}
+                          onChange={() => {
+                            setTransferData({
+                              ...transferData,
+                              recipientBank: { id: 'bankpro', name: 'BankPro' },
+                            });
+                            setShowBankSelector(false);
+                          }}
+                        />
+                        BankPro
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input
+                          type="radio"
+                          checked={transferData.recipientBank.id !== 'bankpro'}
+                          onChange={() => {
+                            setTransferData({
+                              ...transferData,
+                              recipientBank: { id: '', name: '' },
+                              recipientName: '',
+                            });
+                            setShowBankSelector(true);
+                          }}
+                        />
+                        Other Bank
+                      </label>
+                    </div>
+
+                    {showBankSelector && (
+                      <select
+                        className="form-input"
+                        style={{ marginTop: '0.75rem' }}
+                        value={transferData.recipientBank.id}
+                        onChange={(e) => {
+                          const bank = banks.find(b => b.id === e.target.value) || { id: e.target.value, name: '' };
+                          setTransferData({ ...transferData, recipientBank: bank });
+                        }}
+                      >
+                        <option value="">Select bank</option>
+                        {banks.map(b => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  {transferData.recipientBank.id !== 'bankpro' && (
+                    <div className="form-group">
+                      <label className="form-label">Recipient Name</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={transferData.recipientName}
+                        onChange={e => setTransferData({ ...transferData, recipientName: e.target.value })}
+                        placeholder="Full name"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  {transferData.transferMethod === 'phone' ? (
+                    <div className="form-group">
+                      <label className="form-label">Phone Number</label>
+                      <input
+                        type="tel"
+                        className="form-input"
+                        value={transferData.recipientPhone}
+                        onChange={e => setTransferData({ ...transferData, recipientPhone: e.target.value })}
+                        placeholder="9876543210"
+                        pattern="\d{10}"
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">Account Number</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={transferData.recipientAccount}
+                        onChange={e => setTransferData({ ...transferData, recipientAccount: e.target.value })}
+                        placeholder="Enter account number"
+                        required
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? 'Processing...' : `Confirm ${actionType.charAt(0).toUpperCase() + actionType.slice(1)}`}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={resetForms}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-
-      <div className="card">
-        <h3 style={{ marginBottom: '1.5rem' }}>Transaction History</h3>
-
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#6c757d' }}>
-            <div>Loading transactions...</div>
-          </div>
-        ) : transactions.length > 0 ? (
-          <div className="transaction-list">
-            {transactions.map((transaction) => (
-              <div key={transaction.id} className="transaction-item">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                  <div style={{
-                    padding: '8px',
-                    borderRadius: '8px',
-                    background: transaction.type === 'credit' ? '#d4edda' : '#f8d7da'
-                  }}>
-                    {transaction.type === 'credit' ?
-                      <ArrowDownLeft size={16} style={{ color: '#28a745' }} /> :
-                      <ArrowUpRight size={16} style={{ color: '#dc3545' }} />
-                    }
-                  </div>
-
-                  <div>
-                    <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
-                      {transaction.description}
-                    </div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {transaction.date ? formatDate(transaction.date) : ''}
-                      {transaction.type === 'debit' && transaction.category ? ` • ${transaction.category}` : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{
-                  fontWeight: '600',
-                  fontSize: '1.1rem',
-                  color: transaction.type === 'credit' ? '#28a745' : '#dc3545'
-                }}>
-                  {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '3rem', color: '#6c757d' }}>
-            <Activity size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <p>No transactions found</p>
-          </div>
-        )}
-      </div>
     </div>
   );
-};
-
-export default Transactions;
+}

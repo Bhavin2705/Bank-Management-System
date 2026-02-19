@@ -15,7 +15,7 @@
   --bg-hover: #f0f0f0;
   --text-primary: #333;
   --text-secondary: #6c757d;
-  --text-accent: #667eea;
+  --text-accent: #f97316; /* switched to orange-500 for text-only change */
   --border-color: #e9ecef;
   /* simple border color variable used in some inline styles */
   --border: #e9ecef;
@@ -152,11 +152,24 @@
 }
 
 .text-blue-100 {
-  color: #dbeafe;
+  color: #ffedd5; /* mapped to orange-100 */
 }
 
 .text-blue-200 {
-  color: #bfdbfe;
+  color: #fed7aa; /* mapped to orange-200 */
+}
+
+/* map commonly used blue text utility classes to orange shades for text-only change */
+.text-blue-500 {
+  color: #f97316; /* orange-500 */
+}
+
+.text-blue-600 {
+  color: #ea580c; /* orange-600 */
+}
+
+.text-blue-800 {
+  color: #c2410c; /* orange-800 */
 }
 
 .text-red-700 {
@@ -319,7 +332,7 @@
   --bg-hover: #4a5f7a;
   --text-primary: #ecf0f1;
   --text-secondary: #bdc3c7;
-  --text-accent: #3498db;
+  --text-accent: #f97316; /* dark theme text accent switched to orange-500 */
   --border-color: #52708a;
   --border-light: #7f8c8d;
   --shadow: rgba(0, 0, 0, 0.3);

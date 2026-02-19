@@ -139,6 +139,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['active', 'inactive', 'suspended'],
         default: 'active'
+    },
+    firstLogin: {
+        type: Boolean,
+        default: true
     }
     ,
     // Client-side persistent data migrated from frontend localStorage
@@ -222,10 +226,11 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 // Instance method to generate account number
 userSchema.methods.generateAccountNumber = function () {
-    // A more robust way to generate a unique account number
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substr(2, 5);
-    const accountNumber = 'ACC-' + timestamp + random.toUpperCase();
+    // Always generate a unique 11-digit numeric account number
+    // Use current timestamp (last 6 digits) + 5 random digits
+    const ts = Date.now().toString().slice(-6); // last 6 digits of ms timestamp
+    const rand = Math.floor(10000 + Math.random() * 90000).toString(); // 5 random digits
+    const accountNumber = ts + rand;
     this.accountNumber = accountNumber;
     return accountNumber;
 };

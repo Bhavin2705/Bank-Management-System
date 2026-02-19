@@ -1,4 +1,5 @@
-import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp } from 'lucide-react'
+import { Calendar, Download, FileText, Filter, TrendingDown, TrendingUp, Printer, Receipt } from 'lucide-react'
+import { generateAccountStatementPDF, generateMiniStatementPDF } from '../utils/pdfGenerator';
 import { useEffect, useState } from 'react'
 import CustomCalendar from '../components/UI/CustomCalendar'
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date'
@@ -7,6 +8,116 @@ import { getTransactions } from '../utils/transactions'
 const Statements = ({ user }) => {
   const [transactions, setTransactions] = useState([])
   const [filteredTransactions, setFilteredTransactions] = useState([])
+  const [miniStatement, setMiniStatement] = useState(null)
+    // Mini Statement logic: last 10 transactions summary
+    useEffect(() => {
+      if (!transactions.length) return;
+      const recentTransactions = [...transactions]
+        .sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp))
+        .slice(0, 10);
+      const credits = recentTransactions.filter(t => t.type === 'credit').length;
+      const debits = recentTransactions.filter(t => t.type === 'debit').length;
+      const totalCredits = recentTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0);
+      const totalDebits = recentTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0);
+      setMiniStatement({
+        accountHolder: user.name,
+        accountNumber: user.accountNumber || '****1234',
+        generatedAt: new Date().toISOString(),
+        period: {
+          from: recentTransactions.length > 0 ? (recentTransactions[recentTransactions.length - 1].createdAt || recentTransactions[recentTransactions.length - 1].timestamp) : new Date().toISOString(),
+          to: recentTransactions.length > 0 ? (recentTransactions[0].createdAt || recentTransactions[0].timestamp) : new Date().toISOString()
+        },
+        summary: {
+          totalTransactions: recentTransactions.length,
+          credits,
+          debits,
+          totalCredits,
+          totalDebits,
+          netChange: totalCredits - totalDebits
+        },
+        transactions: recentTransactions
+      });
+    }, [transactions, user]);
+    // Mini Statement actions
+    const printMiniStatement = () => {
+      if (!miniStatement) return;
+      const printWindow = window.open('', '_blank');
+      const statementHTML = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Mini Statement - ${miniStatement.accountHolder}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+              .account-info { margin-bottom: 20px; }
+              .summary { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+              .transaction { border-bottom: 1px solid #eee; padding: 10px 0; }
+              .transaction:last-child { border-bottom: none; }
+              .credit { color: #28a745; font-weight: bold; }
+              .debit { color: #dc3545; font-weight: bold; }
+              .total { font-weight: bold; font-size: 1.1em; }
+              @media print { body { margin: 0; } }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>🏦 BankPro</h1>
+              <h2>Mini Statement</h2>
+            </div>
+            <div class="account-info">
+              <p><strong>Account Holder:</strong> ${miniStatement.accountHolder}</p>
+              <p><strong>Account Number:</strong> ${miniStatement.accountNumber}</p>
+              <p><strong>Generated:</strong> ${formatDate(miniStatement.generatedAt)}</p>
+              <p><strong>Period:</strong> ${formatDate(miniStatement.period.from)} - ${formatDate(miniStatement.period.to)}</p>
+            </div>
+            <div class="summary">
+              <h3>Summary</h3>
+              <p><strong>Total Transactions:</strong> ${miniStatement.summary.totalTransactions}</p>
+              <p><strong>Credits:</strong> ${miniStatement.summary.credits} (${formatCurrency(miniStatement.summary.totalCredits)})</p>
+              <p><strong>Debits:</strong> ${miniStatement.summary.debits} (${formatCurrency(miniStatement.summary.totalDebits)})</p>
+              <p class="total"><strong>Net Change:</strong>
+                <span class="${miniStatement.summary.netChange >= 0 ? 'credit' : 'debit'}">
+                  ${formatCurrency(miniStatement.summary.netChange)}
+                </span>
+              </p>
+            </div>
+            <h3>Recent Transactions</h3>
+            ${miniStatement.transactions.map(transaction => `
+              <div class="transaction">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-weight: 500;">${transaction.description}</div>
+                    <div style="font-size: 0.9em; color: #666;">${formatDate(transaction.createdAt || transaction.timestamp)}</div>
+                  </div>
+                  <div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
+                    ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+            <div style="margin-top: 30px; text-align: center; font-size: 0.8em; color: #666;">
+              <p>This is a computer-generated statement and does not require a signature.</p>
+              <p>For any queries, please contact customer support.</p>
+            </div>
+          </body>
+        </html>
+      `;
+      printWindow.document.write(statementHTML);
+      printWindow.document.close();
+      printWindow.print();
+    };
+
+    const downloadMiniStatement = async () => {
+      if (!miniStatement) return;
+      await generateMiniStatementPDF(
+        miniStatement.transactions,
+        { name: miniStatement.accountHolder, accountType: 'Savings' },
+        miniStatement.accountNumber,
+        new Date(miniStatement.period.from),
+        new Date(miniStatement.period.to)
+      );
+    };
   const [dateRange, setDateRange] = useState({
     start: toLocalYYYYMMDD(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
     end: toLocalYYYYMMDD(new Date())
@@ -190,6 +301,7 @@ const Statements = ({ user }) => {
 
   return (
     <div className="container">
+      {/* Mini Statement Section */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
           Account Statements
@@ -197,6 +309,81 @@ const Statements = ({ user }) => {
         <p style={{ color: 'var(--text-secondary)' }}>
           View and download your transaction history and account statements
         </p>
+      </div>
+
+      {/* Mini Statement Card */}
+      <div className="card" style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Receipt size={20} /> Mini Statement</h3>
+          <div>
+            <button onClick={printMiniStatement} className="btn btn-secondary" style={{ marginRight: '1rem' }}><Printer size={16} style={{ marginRight: '0.5rem' }} />Print</button>
+            <button onClick={downloadMiniStatement} className="btn btn-secondary"><Download size={16} style={{ marginRight: '0.5rem' }} />Download</button>
+          </div>
+        </div>
+        {miniStatement ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Account Holder</div>
+                <div style={{ fontWeight: '500' }}>{miniStatement.accountHolder}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Account Number</div>
+                <div style={{ fontWeight: '500' }}>{miniStatement.accountNumber}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Period</div>
+                <div style={{ fontWeight: '500' }}>{formatDate(miniStatement.period.from)} - {formatDate(miniStatement.period.to)}</div>
+              </div>
+            </div>
+            <div style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: '4px', marginBottom: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 1rem 0' }}>Summary</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Total Transactions</div>
+                  <div style={{ fontWeight: '600', fontSize: '1.2rem' }}>{miniStatement.summary.totalTransactions}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Credits</div>
+                  <div style={{ fontWeight: '600', color: '#28a745' }}>{miniStatement.summary.credits} ({formatCurrency(miniStatement.summary.totalCredits)})</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Debits</div>
+                  <div style={{ fontWeight: '600', color: '#dc3545' }}>{miniStatement.summary.debits} ({formatCurrency(miniStatement.summary.totalDebits)})</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Net Change</div>
+                  <div style={{ fontWeight: '600', fontSize: '1.2rem', color: miniStatement.summary.netChange >= 0 ? '#28a745' : '#dc3545' }}>{formatCurrency(miniStatement.summary.netChange)}</div>
+                </div>
+              </div>
+            </div>
+            <h4 style={{ marginBottom: '1rem' }}>Recent Transactions</h4>
+            {miniStatement.transactions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No transactions found</div>
+            ) : (
+              <div className="transaction-list">
+                {miniStatement.transactions.map((transaction, index) => (
+                  <div key={index} className="transaction-item">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>{getTransactionIcon(transaction.type)}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{transaction.description}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(transaction.createdAt || transaction.timestamp)}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: '600', color: transaction.type === 'credit' ? '#28a745' : '#dc3545', fontSize: '1.1rem' }}>{transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+            <Receipt size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+            <h3>Generate Your Mini Statement</h3>
+            <p>Recent transactions summary will appear here.</p>
+          </div>
+        )}
       </div>
 
       <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
@@ -316,12 +503,105 @@ const Statements = ({ user }) => {
         </div>
       </div>
 
-      <div className="card">
+
+      {/* Full Statement Actions */}
+      <div className="card" style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3>Transaction History</h3>
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            Showing {filteredTransactions.length} of {transactions.length} transactions
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                // Custom printout for full statement
+                const printWindow = window.open('', '_blank');
+                const statementHTML = `
+                  <!DOCTYPE html>
+                  <html>
+                    <head>
+                      <title>Account Statement - ${user.name}</title>
+                      <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+                        .account-info { margin-bottom: 20px; }
+                        .summary { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                        .transaction { border-bottom: 1px solid #eee; padding: 10px 0; }
+                        .transaction:last-child { border-bottom: none; }
+                        .credit { color: #28a745; font-weight: bold; }
+                        .debit { color: #dc3545; font-weight: bold; }
+                        .total { font-weight: bold; font-size: 1.1em; }
+                        @media print { body { margin: 0; } }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="header">
+                        <h1>🏦 BankPro</h1>
+                        <h2>Account Statement</h2>
+                      </div>
+                      <div class="account-info">
+                        <p><strong>Account Holder:</strong> ${user.name}</p>
+                        <p><strong>Account Number:</strong> ${user.accountNumber || '****1234'}</p>
+                        <p><strong>Generated:</strong> ${new Date().toLocaleString('en-US')}</p>
+                        <p><strong>Period:</strong> ${dateRange.start} - ${dateRange.end}</p>
+                      </div>
+                      <div class="summary">
+                        <h3>Summary</h3>
+                        <p><strong>Total Transactions:</strong> ${filteredTransactions.length}</p>
+                        <p><strong>Credits:</strong> ${filteredTransactions.filter(t => t.type === 'credit').length} (₹${filteredTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0).toFixed(2)})</p>
+                        <p><strong>Debits:</strong> ${filteredTransactions.filter(t => t.type === 'debit').length} (₹${filteredTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0).toFixed(2)})</p>
+                        <p class="total"><strong>Net Change:</strong>
+                          <span class="${filteredTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0) - filteredTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0) >= 0 ? 'credit' : 'debit'}">
+                            ₹${(filteredTransactions.filter(t => t.type === 'credit').reduce((sum, t) => sum + t.amount, 0) - filteredTransactions.filter(t => t.type === 'debit').reduce((sum, t) => sum + t.amount, 0)).toFixed(2)}
+                          </span>
+                        </p>
+                      </div>
+                      <h3>Transactions</h3>
+                      ${filteredTransactions.length === 0 ? `<div style="text-align:center; color:#888; padding:2rem;">No transactions found</div>` : filteredTransactions.map(transaction => `
+                        <div class="transaction">
+                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                              <div style="font-weight: 500;">${transaction.description}</div>
+                              <div style="font-size: 0.9em; color: #666;">${transaction.createdAt ? new Date(transaction.createdAt).toLocaleString('en-US') : ''}</div>
+                            </div>
+                            <div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
+                              ${transaction.type === 'credit' ? '+' : '-'}₹${transaction.amount.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      `).join('')}
+                      <div style="margin-top: 30px; text-align: center; font-size: 0.8em; color: #666;">
+                        <p>This is a computer-generated statement and does not require a signature.</p>
+                        <p>For any queries, please contact customer support.</p>
+                      </div>
+                    </body>
+                  </html>
+                `;
+                printWindow.document.write(statementHTML);
+                printWindow.document.close();
+                printWindow.print();
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Printer size={16} /> Print
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={async () => {
+                await generateAccountStatementPDF(
+                  filteredTransactions,
+                  user,
+                  user.accountNumber || '****1234',
+                  dateRange.start ? new Date(dateRange.start) : new Date(),
+                  dateRange.end ? new Date(dateRange.end) : new Date()
+                );
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <Download size={16} /> Download PDF
+            </button>
           </div>
+        </div>
+        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+          Showing {filteredTransactions.length} of {transactions.length} transactions
         </div>
 
         {filteredTransactions.length === 0 ? (

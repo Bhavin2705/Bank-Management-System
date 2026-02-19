@@ -4,8 +4,6 @@ import {
   BarChart3,
   Bell,
   Calculator,
-  // ChevronLeft,
-  // ChevronRight,
   CreditCard,
   DollarSign,
   Download,
@@ -40,32 +38,25 @@ const Sidebar = ({
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
     { id: 'transactions', label: 'Transactions', icon: CreditCard, path: '/transactions' },
-    { id: 'transfer', label: 'Transfer Money', icon: ArrowRightLeft, path: '/transfer' },
-    // Removed Account Management from sidebar
-    { id: 'deposit-withdraw', label: 'Deposit & Withdraw', icon: ArrowUpCircle, path: '/deposit-withdraw' },
     { id: 'cards', label: 'My Cards', icon: CreditCard, path: '/cards' },
     { id: 'recurring', label: 'Recurring Payments', icon: Repeat, path: '/recurring' },
     { id: 'security', label: 'Security', icon: Shield, path: '/security' },
     { id: 'statements', label: 'Statements', icon: FileText, path: '/statements' },
-    { id: 'mini-statement', label: 'Mini Statement', icon: Receipt, path: '/mini-statement' },
     { id: 'currency-exchange', label: 'Currency Exchange', icon: DollarSign, path: '/currency-exchange' },
     { id: 'financial-markets', label: 'Financial Markets', icon: BarChart3, path: '/financial-markets' },
-    // Branch Locator removed per project scope (single-bank enforced)
-    // ...existing code...
     { id: 'bills', label: 'Bill Payments', icon: FileText, path: '/bills' },
     { id: 'goals', label: 'Savings Goals', icon: Target, path: '/goals' },
     { id: 'budget', label: 'Budget', icon: PieChart, path: '/budget' },
-    // Search page removed
     { id: 'export', label: 'Export', icon: Download, path: '/export' },
     { id: 'calculator', label: 'Loan Calculator', icon: Calculator, path: '/calculator' },
     { id: 'investments', label: 'Investments', icon: TrendingUp, path: '/investments' },
     { id: 'notifications', label: 'Notifications', icon: Bell, path: '/notifications' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
+    { id: 'admin-banks', label: 'Manage Banks', icon: Users, path: '/admin-banks' }
   ];
 
   if (canAccessAdminFeatures(user)) {
     navItems.splice(2, 0, { id: 'users', label: 'Users', icon: Users, path: '/users' });
-    // ...existing code...
   }
 
   return (
@@ -73,7 +64,6 @@ const Sidebar = ({
       <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">🏦 BankPro</div>
-          {/* collapse button removed per user request */}
         </div>
 
         <nav>
