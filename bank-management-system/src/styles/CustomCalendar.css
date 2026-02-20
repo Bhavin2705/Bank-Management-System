@@ -114,6 +114,56 @@
     min-width: 320px;
 }
 
+/* Compact Calendar Mode */
+.calendar-compact .custom-calendar-dropdown {
+    width: 100%;
+    min-width: auto;
+    padding: 0.5rem;
+    max-width: none;
+}
+
+.calendar-compact .calendar-header {
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.3rem;
+    gap: 0.2rem;
+}
+
+.calendar-compact .calendar-nav-button {
+    padding: 0.25rem;
+    min-width: auto;
+}
+
+.calendar-compact .calendar-nav-button svg {
+    width: 14px;
+    height: 14px;
+}
+
+.calendar-compact .calendar-month-year h3 {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.calendar-compact .calendar-weekday {
+    padding: 0.2rem;
+    font-size: 0.75rem;
+}
+
+.calendar-compact .calendar-weekdays {
+    gap: 1px;
+    margin-bottom: 0.3rem;
+}
+
+.calendar-compact .calendar-day {
+    min-height: 24px;
+    font-size: 0.9rem;
+    border-radius: 3px;
+    padding: 0;
+}
+
+.calendar-compact .calendar-quick-actions {
+    display: none;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;

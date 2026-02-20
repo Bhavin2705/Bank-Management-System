@@ -13,20 +13,16 @@ const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 
-// Load environment variables
 require('dotenv').config();
 
-// Quick environment sanity checks (development-friendly)
 const requiredEnv = ['MONGODB_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
 if (process.env.NODE_ENV === 'development') {
-    // In development, provide helpful warnings for missing env vars
     const missing = requiredEnv.filter(e => !process.env[e]);
     if (missing.length) {
         console.warn('Warning: Missing environment variables:', missing.join(', '));
         console.warn('Please check your .env file and ensure all required variables are set.');
     }
 } else {
-    // In production, require all essential env vars
     const missing = requiredEnv.filter(e => !process.env[e]);
     if (missing.length) {
         console.error('Error: Missing required environment variables:', missing.join(', '));
@@ -34,27 +30,26 @@ if (process.env.NODE_ENV === 'development') {
         process.exit(1);
     }
 }
-// Connect to database
+
 connectDB();
 
-// Route files
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
+const recurringRoutes = require('./routes/recurring');
+const billsRoutes = require('./routes/bills');
 const banksRoutes = require('./routes/banks');
 const cardRoutes = require('./routes/cards');
 const exchangeRoutes = require('./routes/exchange');
+const notificationRoutes = require('./routes/notifications');
 
-// Initialize Express app
 const app = express();
 const server = http.createServer(app);
-// Build Socket.IO allowed origins using FRONTEND_URL when provided
+
 const allowedSocketOrigins = [];
 if (process.env.FRONTEND_URL) {
-    // allow the configured frontend production origin
     allowedSocketOrigins.push(process.env.FRONTEND_URL);
 }
-// keep common local dev origins for convenience
 allowedSocketOrigins.push('http://localhost:3000', 'http://localhost:5173');
 
 const io = socketIo(server, {
@@ -65,25 +60,17 @@ const io = socketIo(server, {
     }
 });
 
-// Security middleware
-app.use(helmet()); // Set security headers
-app.use(mongoSanitize()); // Data sanitization against NoSQL injection
-app.use(xss()); // Data sanitization against XSS
-app.use(hpp()); // Prevent HTTP Parameter Pollution
-// Parse cookies
+app.use(helmet());
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp());
 app.use(cookieParser());
-
-// CORS
 app.use(cors);
-
-// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Handle preflight requests
 app.options('*', cors);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({
         success: true,
@@ -93,22 +80,20 @@ app.get('/health', (req, res) => {
     });
 });
 
-// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
-// Branch routes removed (Branch Locator feature removed)
+app.use('/api/recurring', recurringRoutes);
+app.use('/api/bills', billsRoutes);
 app.use('/api/banks', banksRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api/exchange', exchangeRoutes);
+app.use('/api/notifications', notificationRoutes);
 
-// Socket.io middleware for authentication
 io.use(async (socket, next) => {
-    // Accept token from handshake auth (preferred) or cookie header (httpOnly cookies)
     let token = socket.handshake.auth && socket.handshake.auth.token;
     if (!token && socket.handshake.headers && socket.handshake.headers.cookie) {
         const parsed = cookie.parse(socket.handshake.headers.cookie || '');
-        // Only consider access token cookie names here (do not accept refresh tokens as auth)
         token = parsed.token || parsed.Token || parsed['access_token'];
     }
 
@@ -117,22 +102,18 @@ io.use(async (socket, next) => {
     }
 
     try {
-        // Verify with access token secret
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret_change_me');
 
-        // Ensure token is an access token (not a refresh token)
         if (!decoded || decoded.tokenType !== 'access' || !decoded.id) {
             return next(new Error('Authentication error: invalid token type'));
         }
 
-        // Attach minimal identity to socket and fetch full user info from DB
         socket.userId = decoded.id;
 
         try {
             const user = await User.findById(decoded.id).select('-password');
             socket.user = user ? user.toObject() : { id: decoded.id };
         } catch (dbErr) {
-            // If DB lookup fails, still attach decoded payload but warn
             console.warn('Socket auth: failed to load user from DB', dbErr && dbErr.message);
             socket.user = decoded;
         }
@@ -143,22 +124,18 @@ io.use(async (socket, next) => {
     }
 });
 
-// Socket.io connection handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.userId);
 
-    // Join support room
     socket.on('join_support', (data) => {
         socket.join('support');
         console.log(`User ${data.name} joined support chat`);
 
-        // If user is admin, join admin support room
         if (socket.user.role === 'admin') {
             socket.join('admin_support');
             console.log(`Admin ${data.name} joined admin support room`);
         }
 
-        // Notify support agents (in a real app, you'd have admin/support user detection)
         socket.to('support').emit('user_joined', {
             userId: data.userId,
             name: data.name,
@@ -166,11 +143,9 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Handle user messages
     socket.on('user_message', (data) => {
         console.log('User message:', data);
 
-        // Broadcast to admin support agents
         socket.to('admin_support').emit('new_user_message', {
             userId: socket.userId,
             name: data.name,
@@ -178,12 +153,10 @@ io.on('connection', (socket) => {
             timestamp: new Date()
         });
 
-        // Only send auto-response if no admin is online
         const adminRoom = io.sockets.adapter.rooms.get('admin_support');
         const hasActiveAdmins = adminRoom && adminRoom.size > 0;
 
         if (!hasActiveAdmins) {
-            // Auto-response system for demo (simulates support agent)
             setTimeout(() => {
                 const autoResponse = generateAutoResponse(data.content);
                 socket.emit('support_message', {
@@ -191,9 +164,8 @@ io.on('connection', (socket) => {
                     timestamp: new Date(),
                     isAutoResponse: true
                 });
-            }, 2000); // 2 second delay to simulate human response time
+            }, 2000);
         } else {
-            // Notify user that message was sent to live agent
             setTimeout(() => {
                 socket.emit('support_message', {
                     content: "Your message has been received by our support team. A live agent will respond to you shortly.",
@@ -204,10 +176,8 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle manual admin responses
     socket.on('admin_response', (data) => {
         if (socket.user.role === 'admin') {
-            // Send response to specific user
             io.to(data.userId).emit('support_message', {
                 content: data.content,
                 timestamp: new Date(),
@@ -219,7 +189,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Auto-response generator function
     function generateAutoResponse(userMessage) {
         const message = userMessage.toLowerCase();
 
@@ -255,20 +224,16 @@ io.on('connection', (socket) => {
             return "You're welcome! I'm glad I could help. If you have any other questions or need further assistance, please don't hesitate to ask. Have a great day!";
         }
 
-        // Default response
         return "Thank you for contacting BankPro support. I've received your message and will do my best to assist you. For complex issues or immediate assistance, you can also call our 24/7 support line at 1-800-BANK-HELP or visit your nearest branch.";
     }
 
-    // Handle support agent messages (for demo, allow any authenticated user to respond)
     socket.on('support_message', (data) => {
-        // Send to specific user
         io.to(data.userId).emit('support_message', {
             content: data.content,
             timestamp: new Date()
         });
     });
 
-    // Handle typing indicators
     socket.on('typing', (data) => {
         socket.to(data.room || 'support').emit('support_typing', {
             userId: socket.userId,
@@ -281,7 +246,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// 404 handler
 app.all('*', (req, res) => {
     res.status(404).json({
         success: false,
@@ -289,7 +253,6 @@ app.all('*', (req, res) => {
     });
 });
 
-// Error handler middleware (must be last)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
@@ -298,16 +261,13 @@ server.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
     console.log(`Error: ${err.message}`);
-    // Close server & exit process
     server.close(() => {
         process.exit(1);
     });
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
     console.log(`Error: ${err.message}`);
     console.log('Shutting down the server due to Uncaught Exception');

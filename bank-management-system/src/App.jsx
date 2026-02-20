@@ -9,9 +9,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import Sidebar from './components/Layout/Sidebar';
 import { NotificationProvider } from './components/NotificationProvider';
 import AdminSupport from './pages/AdminSupport';
-import Bills from './pages/Bills';
 import Budget from './pages/Budget';
-import Calculator from './pages/Calculator';
 import Cards from './pages/Cards';
 import CurrencyExchange from './pages/CurrencyExchange';
 import DepositWithdraw from './pages/DepositWithdraw';
@@ -20,7 +18,6 @@ import FinancialMarkets from './pages/FinancialMarkets';
 import Goals from './pages/Goals';
 import Investments from './pages/Investments';
 import Notifications from './pages/Notifications';
-import RecurringPayments from './pages/RecurringPayments';
 import Security from './pages/Security';
 import Settings from './pages/Settings';
 import Statements from './pages/Statements';
@@ -28,6 +25,8 @@ import Transactions from './pages/Transactions';
 import Transfer from './pages/Transfer';
 import Users from './pages/Users';
 import AdminBanks from './pages/AdminBanks';
+import Payments from './pages/Payments';
+import Insights from './pages/Insights';
 import './styles/index.css';
 import { checkBackendHealth } from './utils/api';
 import {
@@ -73,7 +72,7 @@ function App() {
           initializeUsers(),
           new Promise((_, reject) => setTimeout(() => reject(new Error()), 3000))
         ]);
-      } catch {}
+      } catch { }
       const pathname = window.location.pathname;
       const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/password-reset-success'];
       const isOnAuthPage = authPaths.some(p => pathname.startsWith(p));
@@ -151,15 +150,42 @@ function App() {
   };
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading…</div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
+        <div>Loading…</div>
+      </div>
+    );
   }
 
   if (sessionExpired) {
-    return <button onClick={handleSessionExpired}>Go to Login</button>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
+        <div>Your session has expired. Please log in again.</div>
+        <button
+          onClick={() => {
+            handleSessionExpired();
+            window.location.href = '/login';
+          }}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
+        >
+          Go to Login
+        </button>
+      </div>
+    );
   }
 
   if (error) {
-    return <button onClick={initializeApp}>Retry</button>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
+        <div>Error: {error}</div>
+        <button
+          onClick={initializeApp}
+          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -175,6 +201,29 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Dashboard user={user} /></main></div></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Transactions user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
           <Route path="/cards" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Cards user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/payments" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Payments user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
+          <Route path="/security" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Security user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
+          <Route path="/statements" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Statements user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/currency-exchange" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><CurrencyExchange user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/insights" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Insights user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/financial-markets" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><FinancialMarkets user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/goals" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Goals user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/budget" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Budget user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/export" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Export user={user} /></main></div></ProtectedRoute>} />
+          <Route path="/investments" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Investments user={user} /></main></div></ProtectedRoute>} />
+
+          {/* Added Notifications route */}
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <div className="app-layout">
+                <Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+                <main className="main-content">
+                  <Notifications />
+                </main>
+              </div>
+            </ProtectedRoute>
+          } />
+
           <Route path="/admin-banks" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><AdminBanks /></main></div></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Users /></main></div></ProtectedRoute>} />
 

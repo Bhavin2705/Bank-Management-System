@@ -10,7 +10,8 @@ const CustomCalendar = ({
     maxDate = null,
     className = "",
     showTime = false,
-    allowManualInput = true
+    allowManualInput = true,
+    compact = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -286,6 +287,19 @@ const CustomCalendar = ({
         }
     }, [value]);
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (calendarRef.current && !calendarRef.current.contains(event.target) && !inputRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [calendarRef, inputRef]);
+
     const renderCalendarDays = () => {
         const daysInMonth = getDaysInMonth(currentMonth);
         const firstDay = getFirstDayOfMonth(currentMonth);
@@ -351,7 +365,7 @@ const CustomCalendar = ({
     };
 
     return (
-        <div className={`custom-calendar-container ${className}`}>
+        <div className={`custom-calendar-container ${compact ? 'calendar-compact' : ''} ${className}`}>
             <div className={`custom-calendar-input ${isOpen ? 'calendar-input-focused' : ''} ${disabled ? 'calendar-input-disabled' : ''}`}>
                 {allowManualInput ? (
                     <input

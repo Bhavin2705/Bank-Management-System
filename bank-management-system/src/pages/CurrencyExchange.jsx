@@ -8,7 +8,7 @@ const CurrencyExchange = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [lastUpdated, setLastUpdated] = useState(null);
-    const [useLiveData, setUseLiveData] = useState(false);
+    const [useLiveData, setUseLiveData] = useState(true);
 
     const [conversion, setConversion] = useState({
         fromCurrency: 'USD',
@@ -19,9 +19,8 @@ const CurrencyExchange = () => {
     const [result, setResult] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const [refreshDisabled, setRefreshDisabled] = useState(false);
-    const MIN_REFRESH_INTERVAL = 10 * 1000; // 10 seconds between manual refreshes
+    const MIN_REFRESH_INTERVAL = 10 * 1000;
 
-    // Popular currencies for quick selection
     const popularCurrencies = [
         { code: 'USD', name: 'US Dollar', symbol: '$', icon: DollarSign },
         { code: 'EUR', name: 'Euro', symbol: '€', icon: Euro },
@@ -44,33 +43,10 @@ const CurrencyExchange = () => {
             }
             setError('');
 
-            // Check cache first (valid for 1 hour)
-            const cacheKey = `exchange_rates_${useLiveData ? 'live' : 'stable'}`;
-            try {
-                const cached = await clientData.getSection('exchangeCache');
-                const cachedData = cached && cached.key === cacheKey ? cached.data : null;
-                const cacheTimestamp = cached && cached.timestamp ? Number(cached.timestamp) : 0;
-
-                if (cachedData && cacheTimestamp && !isRefresh) {
-                    const cacheAge = Date.now() - Number(cacheTimestamp);
-                    const cacheValidTime = useLiveData ? 5 * 60 * 1000 : 60 * 60 * 1000; // 5 min for live, 1 hour for stable
-
-                    if (cacheAge < cacheValidTime) {
-                        setExchangeRates(cachedData.rates);
-                        setLastUpdated(new Date(cachedData.timestamp));
-                        setLoading(false);
-                        setRefreshing(false);
-                        return;
-                    }
-                }
-            } catch (e) {
-                // continue to fetch if client data fails
-            }
-
-            let rates;
+            let rates = {};
+            let timestamp = null;
 
             if (useLiveData) {
-                // Fetch live data from backend proxy which applies rate limiting and caching
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -87,40 +63,30 @@ const CurrencyExchange = () => {
 
                 const data = await response.json();
 
-                if (data && data.rates) {
-                    rates = data.rates;
-                } else {
+                if (!data || !data.rates) {
                     throw new Error('Invalid proxy response structure');
                 }
-            } else {
-                // Use stable mock data for consistent results
-                rates = {
-                    USD: 1,
-                    EUR: 0.85,
-                    GBP: 0.73,
-                    JPY: 110.0,
-                    CAD: 1.25,
-                    AUD: 1.35,
-                    CHF: 0.92,
-                    CNY: 6.45,
-                    INR: 74.5,
-                    BRL: 5.2
-                };
-            }
 
-            // Cache the data in backend clientData
-            const cacheData = {
-                rates,
-                timestamp: Date.now()
-            };
-            try {
-                await clientData.setSection('exchangeCache', { key: cacheKey, timestamp: Date.now(), data: cacheData });
-            } catch (e) {
-                // non-fatal
+                rates = data.rates;
+                timestamp = Date.now();
+
+                await clientData.setSection('exchangeCache', {
+                    rates,
+                    timestamp
+                }).catch(() => { });
+            } else {
+                const cached = await clientData.getSection('exchangeCache');
+
+                if (!cached || !cached.rates || !cached.timestamp) {
+                    throw new Error('No cached exchange rates available in stable mode. Please switch to live mode and refresh first.');
+                }
+
+                rates = cached.rates;
+                timestamp = cached.timestamp;
             }
 
             setExchangeRates(rates);
-            setLastUpdated(new Date());
+            setLastUpdated(new Date(timestamp));
             setError('');
 
         } catch (err) {
@@ -131,35 +97,16 @@ const CurrencyExchange = () => {
                 errorMessage = 'Request timed out. Please check your internet connection.';
             }
 
-            // Only show error if it's not a refresh and we don't have existing data
             if (!isRefresh) {
                 setError(`Failed to load exchange rates: ${errorMessage}`);
             }
 
-            // Fallback to mock data only if we don't have any existing rates
-            if (!isRefresh) {
-                const fallbackRates = {
-                    USD: 1,
-                    EUR: 0.85,
-                    GBP: 0.73,
-                    JPY: 110.0,
-                    CAD: 1.25,
-                    AUD: 1.35,
-                    CHF: 0.92,
-                    CNY: 6.45,
-                    INR: 74.5,
-                    BRL: 5.2
-                };
-                setExchangeRates(fallbackRates);
-                setLastUpdated(new Date());
-            }
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
     }, [useLiveData]);
 
-    // Debounce fetch to avoid rapid repeat calls
     const debouncedFetchRef = useRef(debounce((isRefresh) => fetchExchangeRates(isRefresh), 300));
 
     useEffect(() => {
@@ -167,7 +114,6 @@ const CurrencyExchange = () => {
     }, [fetchExchangeRates]);
 
     useEffect(() => {
-        // Perform conversion when exchange rates or conversion parameters change
         if (Object.keys(exchangeRates).length > 0 &&
             exchangeRates[conversion.fromCurrency] &&
             exchangeRates[conversion.toCurrency]) {
@@ -199,40 +145,30 @@ const CurrencyExchange = () => {
         const currency = popularCurrencies.find(c => c.code === currencyCode);
         const symbol = currency ? currency.symbol : currencyCode;
 
-        // Format the number without currency first
         const formattedNumber = new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 4
         }).format(amount);
 
-        // Handle different symbol positions and spacing based on currency
         switch (currencyCode) {
             case 'JPY':
             case 'CNY':
-                // For yen and yuan, symbol comes before with no space
                 return `${symbol}${formattedNumber}`;
             case 'EUR':
-                // Euro symbol comes after with space
                 return `${formattedNumber} ${symbol}`;
             case 'GBP':
-                // Pound symbol comes before with no space
                 return `${symbol}${formattedNumber}`;
             case 'CHF':
-                // Swiss franc comes after with space
                 return `${formattedNumber} ${symbol}`;
             case 'CAD':
             case 'AUD':
-                // Canadian and Australian dollars come before with no space
                 return `${symbol}${formattedNumber}`;
             case 'INR':
-                // Indian rupee comes before with no space
                 return `${symbol}${formattedNumber}`;
             case 'BRL':
-                // Brazilian real comes before with space
                 return `${symbol} ${formattedNumber}`;
             case 'USD':
             default:
-                // US dollar comes before with no space (default)
                 return `${symbol}${formattedNumber}`;
         }
     };
@@ -276,7 +212,6 @@ const CurrencyExchange = () => {
                 </div>
             )}
 
-            {/* Exchange Rate Cards */}
             <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', marginBottom: '2rem' }}>
                 {popularCurrencies.slice(0, 6).map(currency => (
                     <div key={currency.code} className="stat-card">
@@ -309,7 +244,6 @@ const CurrencyExchange = () => {
                 ))}
             </div>
 
-            {/* Currency Converter */}
             <div className="card" style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h3>Currency Converter</h3>
@@ -320,8 +254,7 @@ const CurrencyExchange = () => {
                             </label>
                             <button
                                 onClick={() => {
-                                    // Clear cache when switching modes (persisted on backend)
-                                    clientData.setSection('exchangeCache', { key: '', timestamp: 0, data: {} }).catch(() => { });
+                                    clientData.setSection('exchangeCache', { rates: {}, timestamp: null }).catch(() => { });
                                     setUseLiveData(!useLiveData);
                                 }}
                                 style={{
@@ -341,7 +274,6 @@ const CurrencyExchange = () => {
                         </div>
                         <button
                             onClick={() => {
-                                // prevent rapid manual refreshes
                                 if (refreshDisabled) return;
                                 fetchExchangeRates(true);
                                 setRefreshDisabled(true);
@@ -358,7 +290,6 @@ const CurrencyExchange = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                    {/* From Currency */}
                     <div style={{ flex: 1 }}>
                         <label className="form-label">From</label>
                         <select
@@ -374,7 +305,6 @@ const CurrencyExchange = () => {
                         </select>
                     </div>
 
-                    {/* Swap Button */}
                     <button
                         onClick={swapCurrencies}
                         style={{
@@ -390,7 +320,6 @@ const CurrencyExchange = () => {
                         <ArrowRightLeft size={20} />
                     </button>
 
-                    {/* To Currency */}
                     <div style={{ flex: 1 }}>
                         <label className="form-label">To</label>
                         <select
@@ -407,7 +336,6 @@ const CurrencyExchange = () => {
                     </div>
                 </div>
 
-                {/* Amount Input */}
                 <div style={{ marginBottom: '2rem' }}>
                     <label className="form-label">Amount</label>
                     <input
@@ -421,7 +349,6 @@ const CurrencyExchange = () => {
                     />
                 </div>
 
-                {/* Conversion Result */}
                 {result && (
                     <div style={{
                         background: 'var(--bg-tertiary)',
@@ -456,7 +383,6 @@ const CurrencyExchange = () => {
                 )}
             </div>
 
-            {/* Popular Currency Pairs */}
             <div className="card">
                 <h3 style={{ marginBottom: '1.5rem' }}>Popular Currency Pairs</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
@@ -493,7 +419,6 @@ const CurrencyExchange = () => {
                 </div>
             </div>
 
-            {/* Last Updated */}
             {lastUpdated && (
                 <div style={{
                     textAlign: 'center',
@@ -506,11 +431,11 @@ const CurrencyExchange = () => {
                     border: '1px solid var(--border)'
                 }}>
                     <div style={{ marginBottom: '0.5rem' }}>
-                        📊 Data Source: {useLiveData ? 'Live Exchange Rates API' : 'Stable Reference Rates'}
+                        📊 Data Source: {useLiveData ? 'Live Exchange Rates API' : 'Stable (from last live fetch)'}
                     </div>
                     <div>
                         Last updated: {lastUpdated.toLocaleString()}
-                        {!useLiveData && ' (Stable rates for consistent results)'}
+                        {!useLiveData && ' (using previously fetched rates)'}
                     </div>
                 </div>
             )}

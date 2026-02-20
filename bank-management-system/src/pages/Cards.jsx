@@ -426,7 +426,7 @@ const Cards = ({ user }) => {
         )}
       </div>
       {/* One-time CVV modal */}
-      {showCvvModal && (
+      {false && (
         <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowCvvModal(false)}>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: 8, minWidth: 300 }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ marginBottom: '.5rem' }}>Card created</h3>

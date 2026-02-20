@@ -88,7 +88,10 @@ const updateUser = async (req, res) => {
         }
 
         const allowed = ['name', 'email', 'phone', 'profile', 'preferences', 'status'];
-        if (req.user.role !== 'admin') allowed.splice(allowed.indexOf('status'), 1);
+        if (req.user.role !== 'admin') {
+            const index = allowed.indexOf('status');
+            if (index !== -1) allowed.splice(index, 1);
+        }
 
         const updates = {};
         allowed.forEach(f => req.body[f] !== undefined && (updates[f] = req.body[f]));
@@ -149,6 +152,43 @@ const getBanks = async (req, res) => {
     }
 };
 
+const getTransferRecipients = async (req, res) => {
+    try {
+        const recipients = await User.find(
+            { _id: { $ne: req.user._id } },
+            'name email phone accountNumber bankDetails balance'
+        ).sort({ name: 1 });
+
+        res.status(200).json({ success: true, data: recipients });
+    } catch {
+        res.status(500).json({ success: false, error: 'Server error getting transfer recipients' });
+    }
+};
+
+const getClientData = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('profile preferences');
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+        res.status(200).json({ success: true, data: user });
+    } catch {
+        res.status(500).json({ success: false, error: 'Server error getting client data' });
+    }
+};
+
+const updateClientData = async (req, res) => {
+    try {
+        const updated = await User.findByIdAndUpdate(
+            req.user._id,
+            { $set: req.body },
+            { new: true, runValidators: true }
+        ).select('profile preferences');
+
+        res.status(200).json({ success: true, data: updated });
+    } catch {
+        res.status(500).json({ success: false, error: 'Server error updating client data' });
+    }
+};
+
 module.exports = {
     getUsers,
     getUser,
@@ -156,5 +196,8 @@ module.exports = {
     deleteUser,
     getUserStats,
     getBanks,
-    getBankMetrics
+    getBankMetrics,
+    getTransferRecipients,
+    getClientData,
+    updateClientData
 };
