@@ -189,6 +189,51 @@ const updateClientData = async (req, res) => {
     }
 };
 
+const verifyPin = async (req, res) => {
+    try {
+        const { pin } = req.body;
+        const userId = req.user.id;
+
+        if (!pin) {
+            return res.status(400).json({
+                success: false,
+                error: 'PIN is required'
+            });
+        }
+
+        // Fetch user with PIN field (select('+pin'))
+        const user = await User.findById(userId).select('+pin');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // Compare PIN
+        const isPinValid = await user.comparePin(pin);
+
+        if (!isPinValid) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid PIN'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'PIN verified successfully'
+        });
+    } catch (error) {
+        console.error('PIN verification error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'PIN verification failed'
+        });
+    }
+};
+
 module.exports = {
     getUsers,
     getUser,
@@ -199,5 +244,6 @@ module.exports = {
     getBankMetrics,
     getTransferRecipients,
     getClientData,
-    updateClientData
+    updateClientData,
+    verifyPin
 };

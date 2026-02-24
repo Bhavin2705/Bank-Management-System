@@ -12,14 +12,19 @@ const Register = ({ onLogin, switchToLogin }) => {
     phone: '',
     password: '',
     confirmPassword: '',
+    pin: '',
+    confirmPin: '',
     initialDeposit: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [pinStrength, setPinStrength] = useState(0);
   const [emailExists, setEmailExists] = useState(false);
   const [emailCheckInProgress, setEmailCheckInProgress] = useState(false);
   const [phoneExists, setPhoneExists] = useState(false);
@@ -45,6 +50,22 @@ const Register = ({ onLogin, switchToLogin }) => {
 
     setPasswordStrength(strength);
   }, [formData.password]);
+
+  // PIN Strength Calculation
+  useEffect(() => {
+    if (!formData.pin) {
+      setPinStrength(0);
+      return;
+    }
+
+    let strength = 0;
+    if (formData.pin.length >= 4) strength += 1;
+    if (formData.pin.length >= 5) strength += 1;
+    if (formData.pin.length === 6) strength += 1;
+    if (!/^(\d)\1{3,5}$/.test(formData.pin)) strength += 1; // Not all same digits
+    
+    setPinStrength(strength);
+  }, [formData.pin]);
 
   const checkEmailExists = async (email) => {
     setEmailCheckInProgress(true);
@@ -107,7 +128,10 @@ const Register = ({ onLogin, switchToLogin }) => {
       formData.phone.trim() !== '' &&
       formData.password.trim() !== '' &&
       formData.confirmPassword.trim() !== '' &&
+      formData.pin.trim() !== '' &&
+      formData.confirmPin.trim() !== '' &&
       formData.password === formData.confirmPassword &&
+      formData.pin === formData.confirmPin &&
       !emailExists &&
       !emailCheckInProgress &&
       !phoneExists &&
@@ -151,12 +175,31 @@ const Register = ({ onLogin, switchToLogin }) => {
       return;
     }
 
+    if (formData.pin !== formData.confirmPin) {
+      setError('PINs do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (!/^\d{4,6}$/.test(formData.pin)) {
+      setError('PIN must be a 4-6 digit number');
+      setLoading(false);
+      return;
+    }
+
+    if (/^(\d)\1{3,5}$/.test(formData.pin)) {
+      setError('PIN cannot be all the same digits (e.g., 1111)');
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await register({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
+        pin: formData.pin,
         initialDeposit: parseFloat(formData.initialDeposit) || 0,
       });
 
@@ -190,6 +233,18 @@ const Register = ({ onLogin, switchToLogin }) => {
   const getPasswordStrengthText = () => {
     if (passwordStrength <= 2) return 'Weak';
     if (passwordStrength <= 3) return 'Medium';
+    return 'Strong';
+  };
+
+  const getPinStrengthColor = () => {
+    if (pinStrength <= 1) return 'bg-red-500';
+    if (pinStrength <= 2) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  const getPinStrengthText = () => {
+    if (pinStrength <= 1) return 'Weak';
+    if (pinStrength <= 2) return 'Medium';
     return 'Strong';
   };
 
@@ -239,13 +294,13 @@ const Register = ({ onLogin, switchToLogin }) => {
             </div>
             <p className="text-gray-600">Secure Banking Made Simple</p>
           </div>
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100">
-            <div className="text-center mb-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100 flex flex-col max-h-[75vh]">
+            <div className="text-center mb-8 flex-shrink-0">
               <h2 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h2>
               <p className="text-gray-500">Join thousands of secure users today</p>
             </div>
             {error && (
-              <div className="mb-6 bg-red-50 text-red-700 p-3 rounded-lg flex items-center">
+              <div className="mb-6 bg-red-50 text-red-700 p-3 rounded-lg flex items-center flex-shrink-0">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 mr-2"
@@ -261,7 +316,8 @@ const Register = ({ onLogin, switchToLogin }) => {
                 {error}
               </div>
             )}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="overflow-y-auto flex-1 pr-2">
+              <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                 <div className="relative">
@@ -418,6 +474,93 @@ const Register = ({ onLogin, switchToLogin }) => {
                 </div>
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Transaction PIN</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock size={18} className="text-gray-400" />
+                  </div>
+                  <input
+                    type={showPin ? 'text' : 'password'}
+                    name="pin"
+                    className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    value={formData.pin}
+                    onChange={handleChange}
+                    required
+                    placeholder="Set a 4-6 digit PIN"
+                    inputMode="numeric"
+                    pattern="[0-9]{4,6}"
+                    title="PIN must be 4-6 digits"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    title={showPin ? 'Hide PIN' : 'Show PIN'}
+                  >
+                    {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {formData.pin && (
+                  <div className="mt-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500">PIN strength:</span>
+                      <span
+                        className={`text-xs font-medium ${pinStrength <= 1
+                          ? 'text-red-500'
+                          : pinStrength <= 2
+                            ? 'text-yellow-500'
+                            : 'text-green-500'
+                          }`}
+                      >
+                        {getPinStrengthText()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${getPinStrengthColor()}`}
+                        style={{ width: `${(pinStrength / 4) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-gray-500">
+                  Use a 4-6 digit PIN for deposits and withdrawals. Avoid patterns like 1111.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm PIN</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock size={18} className="text-gray-400" />
+                  </div>
+                  <input
+                    type={showConfirmPin ? 'text' : 'password'}
+                    name="confirmPin"
+                    className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    value={formData.confirmPin}
+                    onChange={handleChange}
+                    required
+                    placeholder="Confirm your PIN"
+                    inputMode="numeric"
+                    pattern="[0-9]{4,6}"
+                    title="PIN must be 4-6 digits"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPin(!showConfirmPin)}
+                    className="absolute right-3 top-1/2 -translate-y-[25%] text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    title={showConfirmPin ? 'Hide PIN' : 'Show PIN'}
+                  >
+                    {showConfirmPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {formData.pin && formData.confirmPin && formData.pin !== formData.confirmPin && (
+                  <p className="text-red-500 text-sm mt-2">PINs do not match</p>
+                )}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Initial Deposit (Optional)</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -476,7 +619,8 @@ const Register = ({ onLogin, switchToLogin }) => {
                 )}
               </button>
             </form>
-            <div className="mt-8 pt-6 border-t border-gray-100">
+            </div>
+            <div className="mt-6 pt-6 border-t border-gray-100 flex-shrink-0">
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-gray-500">Already have an account?</span>
                 <button

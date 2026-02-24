@@ -69,6 +69,12 @@ const transactionSchema = new mongoose.Schema({
         ref: 'Bill'
     },
 
+    // For card transactions
+    cardId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Card'
+    },
+
     // For investments
     investmentId: {
         type: mongoose.Schema.Types.ObjectId,

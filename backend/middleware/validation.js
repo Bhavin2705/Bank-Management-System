@@ -99,6 +99,11 @@ const validateTransaction = [
             'healthcare', 'investment', 'loan', 'fee', 'interest', 'other'
         ])
         .withMessage('Invalid category'),
+    body('cardId')
+        .optional()
+        .isString()
+        .trim()
+        .withMessage('Invalid card ID'),
     handleValidationErrors
 ];
 

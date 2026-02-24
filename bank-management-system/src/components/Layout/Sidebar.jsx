@@ -99,15 +99,33 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
 
           <button
             onClick={onLogout}
-            className="sidebar-nav-link"
             style={{
-              padding: '0.65rem 0.8rem',
+              padding: '0.75rem 1rem',
               fontSize: '0.95rem',
               width: '100%',
-              gap: '0.6rem'
+              gap: '0.6rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              borderRadius: '6px',
+              background: 'var(--primary)',
+              color: 'white',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              marginTop: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.opacity = '0.9';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.opacity = '1';
+              e.target.style.transform = 'translateY(0)';
             }}
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             {!isCollapsed && <span>Logout</span>}
           </button>
         </div>

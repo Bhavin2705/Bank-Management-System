@@ -4,7 +4,7 @@ import { useNotification } from '../components/NotificationProvider';
 import api from '../utils/api';
 
 const Cards = ({ user }) => {
-  const { showError } = useNotification();
+  const { showError, showSuccess } = useNotification();
   const [cards, setCards] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [visibleCards, setVisibleCards] = useState(new Set());
@@ -18,6 +18,11 @@ const Cards = ({ user }) => {
   const [oneTimeCvv, setOneTimeCvv] = useState(null);
   const [showCvvModal, setShowCvvModal] = useState(false);
   const [modal, setModal] = useState({ open: false });
+  const [showCvvPinModal, setShowCvvPinModal] = useState(false);
+  const [cvvPin, setCvvPin] = useState('');
+  const [cvvPinError, setCvvPinError] = useState('');
+  const [cvvPinVerifying, setCvvPinVerifying] = useState(false);
+  const [pendingCvvCardId, setPendingCvvCardId] = useState(null);
 
   const loadCards = () => {
     api.cards.getAll()
@@ -103,13 +108,54 @@ const Cards = ({ user }) => {
   };
 
   const toggleCvvVisibility = (cardId) => {
-    const newVisible = new Set(visibleCvvs);
-    if (newVisible.has(cardId)) {
+    // If CVV is already visible, hide it directly
+    if (visibleCvvs.has(cardId)) {
+      const newVisible = new Set(visibleCvvs);
       newVisible.delete(cardId);
+      setVisibleCvvs(newVisible);
     } else {
-      newVisible.add(cardId);
+      // Show PIN modal first to verify before revealing CVV
+      setPendingCvvCardId(cardId);
+      setShowCvvPinModal(true);
+      setCvvPin('');
+      setCvvPinError('');
     }
-    setVisibleCvvs(newVisible);
+  };
+
+  const verifyCvvPin = async () => {
+    if (!cvvPin.trim()) {
+      setCvvPinError('Please enter your PIN');
+      return;
+    }
+
+    try {
+      setCvvPinVerifying(true);
+      setCvvPinError('');
+      console.log('Verifying PIN for CVV reveal...');
+      const result = await api.users.verifyPin(cvvPin);
+      console.log('CVV PIN verification response:', result);
+
+      if (result && result.success) {
+        console.log('PIN verified successfully, revealing CVV...');
+        // PIN is correct, reveal CVV
+        const newVisible = new Set(visibleCvvs);
+        newVisible.add(pendingCvvCardId);
+        setVisibleCvvs(newVisible);
+        showSuccess('CVV revealed');
+        setShowCvvPinModal(false);
+        setCvvPin('');
+        setCvvPinError('');
+        setPendingCvvCardId(null);
+      } else {
+        setCvvPinError(result?.error || 'Invalid PIN. Please try again.');
+        console.error('PIN verification failed:', result?.error);
+      }
+    } catch (error) {
+      setCvvPinError(error.message || 'PIN verification failed. Please try again.');
+      console.error('PIN verification error:', error);
+    } finally {
+      setCvvPinVerifying(false);
+    }
   };
 
   const toggleCardLock = (cardId) => {
@@ -270,7 +316,7 @@ const Cards = ({ user }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">4-Digit PIN</label>
+              <label className="form-label">Set 4-Digit PIN</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPin ? 'text' : 'password'}
@@ -449,6 +495,113 @@ const Cards = ({ user }) => {
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
               <button onClick={handleModalCancel} style={{ background: '#e9ecef', color: '#333', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}>{modal.cancelText || 'Cancel'}</button>
               <button onClick={handleModalConfirm} style={{ background: '#dc3545', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}>{modal.confirmText || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PIN Verification Modal for CVV Reveal */}
+      {showCvvPinModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '2rem',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+          }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+              Verify PIN
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+              Enter your PIN to reveal the CVV
+            </p>
+
+            {cvvPinError && (
+              <div style={{
+                backgroundColor: '#fee2e2',
+                color: '#991b1b',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                marginBottom: '1rem'
+              }}>
+                {cvvPinError}
+              </div>
+            )}
+
+            <input
+              type="password"
+              inputMode="numeric"
+              value={cvvPin}
+              onChange={(e) => setCvvPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+              placeholder="Enter 4-6 digit PIN"
+              pattern="[0-9]{4,6}"
+              autoComplete="off"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid var(--border)',
+                borderRadius: '4px',
+                marginBottom: '1.5rem',
+                fontSize: '1rem',
+                letterSpacing: '0.2em'
+              }}
+              autoFocus
+            />
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => {
+                  setShowCvvPinModal(false);
+                  setCvvPin('');
+                  setCvvPinError('');
+                  setPendingCvvCardId(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'transparent',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  color: 'var(--text-primary)',
+                  fontSize: '1rem'
+                }}
+                disabled={cvvPinVerifying}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={verifyCvvPin}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  backgroundColor: '#667eea',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: cvvPinVerifying || !cvvPin.trim() ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  fontSize: '1rem',
+                  opacity: cvvPinVerifying || !cvvPin.trim() ? 0.6 : 1
+                }}
+                disabled={!cvvPin.trim() || cvvPinVerifying}
+              >
+                {cvvPinVerifying ? 'Verifying...' : 'Reveal CVV'}
+              </button>
             </div>
           </div>
         </div>

@@ -118,7 +118,8 @@ export const api = {
         updateRole: (id, data) => apiRequest(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify(data) }),
         updateStatus: (id, data) => apiRequest(`/users/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
         checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
-        checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`)
+        checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
+        verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) })
     }
 };
 

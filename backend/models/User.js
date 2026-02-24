@@ -49,6 +49,19 @@ const userSchema = new mongoose.Schema({
             message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
         }
     },
+    pin: {
+        type: String,
+        required: [true, 'PIN is required'],
+        minlength: [4, 'PIN must be at least 4 digits'],
+        maxlength: [6, 'PIN must be at most 6 digits'],
+        select: false, // Don't include PIN in queries by default
+        validate: {
+            validator: function (v) {
+                return /^\d{4,6}$/.test(v);
+            },
+            message: 'PIN must be a 4-6 digit number'
+        }
+    },
     role: {
         type: String,
         enum: ['user', 'admin'],
@@ -199,7 +212,7 @@ userSchema.virtual('accountAge').get(function () {
     return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60 * 24));
 });
 
-// Pre-save middleware to hash password and generate account number
+// Pre-save middleware to hash password and PIN, and generate account number
 userSchema.pre('save', async function (next) {
     // Generate account number if not present
     if (!this.accountNumber) {
@@ -207,21 +220,39 @@ userSchema.pre('save', async function (next) {
     }
 
     // Only hash the password if it has been modified (or is new)
-    if (!this.isModified('password')) return next();
-
-    try {
-        // Hash password with cost of 12
-        const salt = await bcrypt.genSalt(12);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
+    let passwordHashPromise = Promise.resolve();
+    if (this.isModified('password')) {
+        try {
+            // Hash password with cost of 12
+            const salt = await bcrypt.genSalt(12);
+            this.password = await bcrypt.hash(this.password, salt);
+        } catch (error) {
+            return next(error);
+        }
     }
+
+    // Hash PIN if it has been modified (or is new)
+    if (this.isModified('pin')) {
+        try {
+            // Hash PIN with cost of 10
+            const salt = await bcrypt.genSalt(10);
+            this.pin = await bcrypt.hash(this.pin, salt);
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+    next();
 });
 
 // Instance method to check password
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Instance method to compare PIN
+userSchema.methods.comparePin = async function (candidatePin) {
+    return await bcrypt.compare(candidatePin, this.pin);
 };
 
 // Instance method to generate account number

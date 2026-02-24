@@ -405,7 +405,8 @@ const validateTransferDetails = async (req, res) => {
 
         // Calculate fees (use rounded amount to avoid floating precision issues)
         const amt = roundTwo(Number(amount));
-        const processingFee = roundTwo(isInternalTransfer ? 0 : Math.max(10, amt * 0.005));
+        // No processing fee for any transfers (internal or external)
+        const processingFee = 0;
         const totalDebit = roundTwo(amt + processingFee);
 
         // Check if sender has sufficient balance
@@ -524,8 +525,8 @@ const transferMoney = async (req, res) => {
         }
 
         // For external transfers, add processing fee (rounded)
-        const processingFeeRaw = isInternalTransfer ? 0 : Math.max(10, amt * 0.005);
-        const processingFee = roundTwo(processingFeeRaw);
+        // No processing fee for any transfers
+        const processingFee = 0;
         const totalDebit = roundTwo(amt + processingFee);
 
         if (sender.balance < totalDebit) {

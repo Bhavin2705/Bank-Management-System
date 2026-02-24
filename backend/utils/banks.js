@@ -1,11 +1,5 @@
 const popularBanks = [
     {
-        id: 'bankpro',
-        name: 'BankPro',
-        ifscPrefix: 'BANK',
-        description: 'Our primary banking system'
-    },
-    {
         id: 'sbi',
         name: 'State Bank of India',
         ifscPrefix: 'SBIN',
