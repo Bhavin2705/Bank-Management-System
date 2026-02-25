@@ -78,8 +78,11 @@ export const api = {
     },
 
     banks: {
-        add: (data) => apiRequest('/banks', { method: 'POST', body: JSON.stringify(data) }),
-        delete: (id) => apiRequest(`/banks/${id}`, { method: 'DELETE' })
+        getAll: () => apiRequest('/banks'),
+        addBank: (data) => apiRequest('/banks', { method: 'POST', body: JSON.stringify(data) }),
+        add: (data) => apiRequest('/banks', { method: 'POST', body: JSON.stringify(data) }), // Legacy alias
+        delete: (id) => apiRequest(`/banks/${id}`, { method: 'DELETE' }), // Legacy alias
+        deleteBank: (id) => apiRequest(`/banks/${id}`, { method: 'DELETE' })
     },
 
     bills: {
@@ -96,6 +99,30 @@ export const api = {
         delete: (id) => apiRequest(`/recurring/${id}`, { method: 'DELETE' })
     },
 
+    budgets: {
+        getAll: () => apiRequest('/budgets'),
+        getSummary: () => apiRequest('/budgets/summary'),
+        create: (data) => apiRequest('/budgets', { method: 'POST', body: JSON.stringify(data) }),
+        update: (id, data) => apiRequest(`/budgets/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+        delete: (id) => apiRequest(`/budgets/${id}`, { method: 'DELETE' })
+    },
+
+    goals: {
+        getAll: () => apiRequest('/goals'),
+        getStats: () => apiRequest('/goals/stats'),
+        create: (data) => apiRequest('/goals', { method: 'POST', body: JSON.stringify(data) }),
+        update: (id, data) => apiRequest(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+        delete: (id) => apiRequest(`/goals/${id}`, { method: 'DELETE' })
+    },
+
+    investments: {
+        getAll: () => apiRequest('/investments'),
+        getSummary: () => apiRequest('/investments/portfolio/summary'),
+        create: (data) => apiRequest('/investments', { method: 'POST', body: JSON.stringify(data) }),
+        update: (id, data) => apiRequest(`/investments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+        delete: (id) => apiRequest(`/investments/${id}`, { method: 'DELETE' })
+    },
+
     transactions: {
         getAll: (params = {}) => apiRequest(`/transactions?${new URLSearchParams(params)}`),
         getById: (id) => apiRequest(`/transactions/${id}`),
@@ -105,6 +132,20 @@ export const api = {
         getStats: () => apiRequest('/transactions/stats'),
         getCategories: () => apiRequest('/transactions/categories'),
         transfer: (data) => apiRequest('/transactions/transfer', { method: 'POST', body: JSON.stringify(data) })
+    },
+
+    notifications: {
+        getAll: () => apiRequest('/notifications'),
+        getById: (id) => apiRequest(`/notifications/${id}`),
+        markAsRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PUT' }),
+        markAllAsRead: () => apiRequest('/notifications/read-all', { method: 'PUT' }),
+        delete: (id) => apiRequest(`/notifications/${id}`, { method: 'DELETE' }),
+        deleteAll: () => apiRequest('/notifications', { method: 'DELETE' })
+    },
+
+    exchange: {
+        getRates: () => apiRequest('/exchange/rates'),
+        convert: (data) => apiRequest('/exchange/convert', { method: 'POST', body: JSON.stringify(data) })
     },
 
     users: {

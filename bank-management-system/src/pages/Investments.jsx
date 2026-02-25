@@ -1,45 +1,71 @@
-import { Plus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Plus, Trash2, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import clientData from '../utils/clientData';
+import { api } from '../utils/api';
 
 const Investments = ({ user }) => {
   const [investments, setInvestments] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     type: 'stocks',
-    amount: '',
-    currentValue: ''
+    quantity: '',
+    purchasePrice: '',
+    currentPrice: ''
   });
 
   useEffect(() => {
-    let mounted = true;
-    clientData.getSection('investments').then((savedInvestments) => {
-      if (!mounted) return;
-      if (savedInvestments) setInvestments(Array.isArray(savedInvestments) ? savedInvestments : []);
-    }).catch(() => { });
-    return () => { mounted = false; };
-  }, [user.id]);
+    loadInvestments();
+  }, [user?.id]);
 
-  const saveInvestments = (newInvestments) => {
-    setInvestments(newInvestments);
-    clientData.setSection('investments', newInvestments).catch((err) => console.error('Save investments failed', err));
+  const loadInvestments = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await api.investments.getAll();
+      if (response.success) {
+        setInvestments(response.data || []);
+      }
+    } catch (err) {
+      console.error('Error loading investments:', err);
+      setError('Failed to load investments');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      const submitData = {
+        ...formData,
+        quantity: parseFloat(formData.quantity),
+        purchasePrice: parseFloat(formData.purchasePrice),
+        currentPrice: parseFloat(formData.currentPrice),
+        totalValue: parseFloat(formData.quantity) * parseFloat(formData.currentPrice)
+      };
 
-    const newInvestment = {
-      id: Date.now().toString(),
-      ...formData,
-      amount: parseFloat(formData.amount),
-      currentValue: parseFloat(formData.currentValue),
-      purchaseDate: new Date().toISOString()
-    };
+      if (editingId) {
+        const response = await api.investments.update(editingId, submitData);
+        if (response.success) {
+          setInvestments(investments.map(i => i._id === editingId ? response.data : i));
+        }
+      } else {
+        const response = await api.investments.create(submitData);
+        if (response.success) {
+          setInvestments([...investments, response.data]);
+        }
+      }
 
-    saveInvestments([...investments, newInvestment]);
-    setShowForm(false);
-    setFormData({ name: '', type: 'stocks', amount: '', currentValue: '' });
+      setShowForm(false);
+      setEditingId(null);
+      setFormData({ name: '', type: 'stocks', quantity: '', purchasePrice: '', currentPrice: '' });
+    } catch (err) {
+      console.error('Error saving investment:', err);
+      setError('Failed to save investment');
+    }
   };
 
   const handleChange = (e) => {
@@ -49,6 +75,29 @@ const Investments = ({ user }) => {
     });
   };
 
+  const handleEdit = (investment) => {
+    setEditingId(investment._id);
+    setFormData({
+      name: investment.name,
+      type: investment.type,
+      quantity: investment.quantity.toString(),
+      purchasePrice: investment.purchasePrice.toString(),
+      currentPrice: investment.currentPrice.toString()
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this investment?')) return;
+    try {
+      await api.investments.delete(id);
+      setInvestments(investments.filter(i => i._id !== id));
+    } catch (err) {
+      console.error('Error deleting investment:', err);
+      setError('Failed to delete investment');
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -56,17 +105,26 @@ const Investments = ({ user }) => {
     }).format(amount);
   };
 
+  const calculateTotalInvested = (investment) => {
+    return investment.quantity * investment.purchasePrice;
+  };
+
   const calculateGainLoss = (investment) => {
-    return investment.currentValue - investment.amount;
+    return investment.totalValue - calculateTotalInvested(investment);
   };
 
   const calculateGainLossPercentage = (investment) => {
-    return ((investment.currentValue - investment.amount) / investment.amount) * 100;
+    const invested = calculateTotalInvested(investment);
+    return invested > 0 ? ((investment.totalValue - invested) / invested) * 100 : 0;
   };
 
-  const totalInvested = investments.reduce((sum, inv) => sum + inv.amount, 0);
-  const totalValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
+  const totalInvested = investments.reduce((sum, inv) => sum + calculateTotalInvested(inv), 0);
+  const totalValue = investments.reduce((sum, inv) => sum + inv.totalValue, 0);
   const totalGainLoss = totalValue - totalInvested;
+
+  const investmentTypes = [
+    'stocks', 'mutual_funds', 'bonds', 'fd', 'rd', 'gold', 'crypto', 'etf'
+  ];
 
   return (
     <div className="container">
@@ -80,13 +138,30 @@ const Investments = ({ user }) => {
           </p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setEditingId(null);
+            setFormData({ name: '', type: 'stocks', quantity: '', purchasePrice: '', currentPrice: '' });
+            setShowForm(true);
+          }}
           className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
           <Plus size={16} />
           Add Investment
         </button>
       </div>
+
+      {error && (
+        <div style={{
+          background: 'var(--error-bg)',
+          color: 'var(--error)',
+          padding: '1rem',
+          borderRadius: '8px',
+          marginBottom: '1rem'
+        }}>
+          {error}
+        </div>
+      )}
 
       <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
         <div className="stat-card">
@@ -127,7 +202,7 @@ const Investments = ({ user }) => {
 
       {showForm && (
         <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Add New Investment</h3>
+          <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Edit Investment' : 'Add New Investment'}</h3>
 
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -152,51 +227,67 @@ const Investments = ({ user }) => {
                   value={formData.type}
                   onChange={handleChange}
                 >
-                  <option value="stocks">Stocks</option>
-                  <option value="bonds">Bonds</option>
-                  <option value="crypto">Cryptocurrency</option>
-                  <option value="real-estate">Real Estate</option>
-                  <option value="mutual-funds">Mutual Funds</option>
+                  {investmentTypes.map(type => (
+                    <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Purchase Amount</label>
+                <label className="form-label">Quantity</label>
                 <input
                   type="number"
                   step="0.01"
-                  name="amount"
+                  name="quantity"
                   className="form-input"
-                  value={formData.amount}
+                  value={formData.quantity}
                   onChange={handleChange}
                   required
-                  placeholder="1000.00"
+                  placeholder="10"
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Current Value</label>
+                <label className="form-label">Purchase Price per Unit</label>
                 <input
                   type="number"
                   step="0.01"
-                  name="currentValue"
+                  name="purchasePrice"
                   className="form-input"
-                  value={formData.currentValue}
+                  value={formData.purchasePrice}
                   onChange={handleChange}
                   required
-                  placeholder="1200.00"
+                  placeholder="100.00"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Current Price per Unit</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="currentPrice"
+                  className="form-input"
+                  value={formData.currentPrice}
+                  onChange={handleChange}
+                  required
+                  placeholder="120.00"
                 />
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn btn-primary">
-                Add Investment
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                {editingId ? 'Update' : 'Add'} Investment
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingId(null);
+                }}
                 className="btn btn-secondary"
+                style={{ flex: 1 }}
               >
                 Cancel
               </button>
@@ -211,27 +302,31 @@ const Investments = ({ user }) => {
           Your Investments
         </h3>
 
-        {investments.length > 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>Loading investments...</div>
+        ) : investments.length > 0 ? (
           <div className="transaction-list">
             {investments.map((investment) => {
               const gainLoss = calculateGainLoss(investment);
               const gainLossPercent = calculateGainLossPercentage(investment);
+              const invested = calculateTotalInvested(investment);
 
               return (
-                <div key={investment.id} className="transaction-item">
+                <div key={investment._id} className="transaction-item">
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
                       {investment.name}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {investment.type.charAt(0).toUpperCase() + investment.type.slice(1)} •
-                      Invested: {formatCurrency(investment.amount)}
+                      {investment.type.replace(/_/g, ' ')} • 
+                      Qty: {investment.quantity} • 
+                      Invested: {formatCurrency(invested)}
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right' }}>
+                  <div style={{ textAlign: 'right', marginRight: '1rem' }}>
                     <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
-                      {formatCurrency(investment.currentValue)}
+                      {formatCurrency(investment.totalValue)}
                     </div>
                     <div style={{
                       fontSize: '0.85rem',
@@ -241,6 +336,23 @@ const Investments = ({ user }) => {
                       {gainLoss >= 0 ? '+' : ''}{formatCurrency(gainLoss)} ({gainLossPercent.toFixed(2)}%)
                     </div>
                   </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => handleEdit(investment)}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px' }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(investment._id)}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', background: '#dc3545' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -249,6 +361,14 @@ const Investments = ({ user }) => {
           <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
             <TrendingUp size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
             <p>No investments added yet</p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="btn btn-primary"
+              style={{ marginTop: '1rem' }}
+            >
+              <Plus size={16} style={{ marginRight: '0.5rem' }} />
+              Add Investment
+            </button>
           </div>
         )}
       </div>

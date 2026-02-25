@@ -1,39 +1,51 @@
 import { AlertTriangle, Bell, CheckCircle, CreditCard, ShieldAlert, ShoppingBag } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { api } from '../utils/api';
+import { useNotification } from '../components/NotificationProvider';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { showError } = useNotification();
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         setLoading(true);
         setError('');
-        const response = await fetch('/api/notifications', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        if (!response.ok) throw new Error(`Failed: ${response.status}`);
-        const data = await response.json();
-        setNotifications(Array.isArray(data) ? data : []);
+        const response = await api.notifications.getAll();
+        setNotifications(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
         console.error('Notifications error:', err);
-        setError('Failed to load notifications. Please try again.');
+        const errorMsg = 'Failed to load notifications. Please try again.';
+        setError(errorMsg);
+        showError(errorMsg);
       } finally {
         setLoading(false);
       }
     };
     fetchNotifications();
-  }, []);
+  }, [showError]);
 
   const markAsRead = async (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      await api.notifications.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id || n._id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+      showError('Failed to mark notification as read');
+    }
   };
 
   const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      await api.notifications.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+      showError('Failed to mark all as read');
+    }
   };
 
   const getIcon = (type) => {

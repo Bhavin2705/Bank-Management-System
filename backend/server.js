@@ -42,6 +42,9 @@ const banksRoutes = require('./routes/banks');
 const cardRoutes = require('./routes/cards');
 const exchangeRoutes = require('./routes/exchange');
 const notificationRoutes = require('./routes/notifications');
+const budgetsRoutes = require('./routes/budgets');
+const goalsRoutes = require('./routes/goals');
+const investmentsRoutes = require('./routes/investments');
 
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +92,9 @@ app.use('/api/banks', banksRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api/exchange', exchangeRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/budgets', budgetsRoutes);
+app.use('/api/goals', goalsRoutes);
+app.use('/api/investments', investmentsRoutes);
 
 io.use(async (socket, next) => {
     let token = socket.handshake.auth && socket.handshake.auth.token;

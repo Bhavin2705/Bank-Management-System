@@ -1,47 +1,80 @@
-import { Plus, Target, TrendingUp } from 'lucide-react';
+import { Plus, Target, Trash2, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CustomCalendar from '../components/UI/CustomCalendar';
-import clientData from '../utils/clientData';
+import { api } from '../utils/api';
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
 
 const Goals = ({ user }) => {
   const [goals, setGoals] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    category: 'other',
     targetAmount: '',
     currentAmount: '0',
-    targetDate: ''
+    targetDate: '',
+    priority: 'medium'
   });
 
   useEffect(() => {
-    let mounted = true;
-    clientData.getSection('goals').then((savedGoals) => {
-      if (!mounted) return;
-      if (savedGoals) setGoals(Array.isArray(savedGoals) ? savedGoals : []);
-    }).catch(() => { });
-    return () => { mounted = false; };
-  }, [user.id]);
+    loadGoals();
+  }, [user?.id]);
 
-  const saveGoals = (newGoals) => {
-    setGoals(newGoals);
-    clientData.setSection('goals', newGoals).catch((err) => console.error('Save goals failed', err));
+  const loadGoals = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await api.goals.getAll();
+      if (response.success) {
+        setGoals(response.data || []);
+      }
+    } catch (err) {
+      console.error('Error loading goals:', err);
+      setError('Failed to load goals');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    try {
+      const submitData = {
+        ...formData,
+        targetAmount: parseFloat(formData.targetAmount),
+        currentAmount: parseFloat(formData.currentAmount),
+        targetDate: formData.targetDate
+      };
 
-    const newGoal = {
-      id: Date.now().toString(),
-      ...formData,
-      targetAmount: parseFloat(formData.targetAmount),
-      currentAmount: parseFloat(formData.currentAmount),
-      createdAt: new Date().toISOString()
-    };
+      if (editingId) {
+        const response = await api.goals.update(editingId, submitData);
+        if (response.success) {
+          setGoals(goals.map(g => g._id === editingId ? response.data : g));
+        }
+      } else {
+        const response = await api.goals.create(submitData);
+        if (response.success) {
+          setGoals([...goals, response.data]);
+        }
+      }
 
-    saveGoals([...goals, newGoal]);
-    setShowForm(false);
-    setFormData({ name: '', targetAmount: '', currentAmount: '0', targetDate: '' });
+      setShowForm(false);
+      setEditingId(null);
+      setFormData({
+        name: '',
+        category: 'other',
+        targetAmount: '',
+        currentAmount: '0',
+        targetDate: '',
+        priority: 'medium'
+      });
+    } catch (err) {
+      console.error('Error saving goal:', err);
+      setError('Failed to save goal');
+    }
   };
 
   const handleChange = (e) => {
@@ -51,13 +84,47 @@ const Goals = ({ user }) => {
     });
   };
 
-  const updateProgress = (goalId, amount) => {
-    const updatedGoals = goals.map(goal =>
-      goal.id === goalId
-        ? { ...goal, currentAmount: goal.currentAmount + parseFloat(amount) }
-        : goal
-    );
-    saveGoals(updatedGoals);
+  const handleEdit = (goal) => {
+    setEditingId(goal._id);
+    setFormData({
+      name: goal.name,
+      category: goal.category || 'other',
+      targetAmount: goal.targetAmount.toString(),
+      currentAmount: goal.currentAmount.toString(),
+      targetDate: goal.targetDate ? toLocalYYYYMMDD(new Date(goal.targetDate)) : '',
+      priority: goal.priority || 'medium'
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this goal?')) return;
+    try {
+      await api.goals.delete(id);
+      setGoals(goals.filter(g => g._id !== id));
+    } catch (err) {
+      console.error('Error deleting goal:', err);
+      setError('Failed to delete goal');
+    }
+  };
+
+  const updateProgress = async (goalId, additionalAmount) => {
+    const goal = goals.find(g => g._id === goalId);
+    if (!goal) return;
+
+    try {
+      const newAmount = goal.currentAmount + parseFloat(additionalAmount);
+      const response = await api.goals.update(goalId, {
+        ...goal,
+        currentAmount: newAmount
+      });
+      if (response.success) {
+        setGoals(goals.map(g => g._id === goalId ? response.data : g));
+      }
+    } catch (err) {
+      console.error('Error updating goal progress:', err);
+      setError('Failed to update goal progress');
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -71,6 +138,11 @@ const Goals = ({ user }) => {
     return Math.min((current / target) * 100, 100);
   };
 
+  const categories = [
+    'emergency_fund', 'vacation', 'car', 'house', 'education',
+    'retirement', 'wedding', 'business', 'investment', 'debt_payoff', 'other'
+  ];
+
   return (
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -83,17 +155,41 @@ const Goals = ({ user }) => {
           </p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setEditingId(null);
+            setFormData({
+              name: '',
+              category: 'other',
+              targetAmount: '',
+              currentAmount: '0',
+              targetDate: '',
+              priority: 'medium'
+            });
+            setShowForm(true);
+          }}
           className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
         >
           <Plus size={16} />
           New Goal
         </button>
       </div>
 
+      {error && (
+        <div style={{
+          background: 'var(--error-bg)',
+          color: 'var(--error)',
+          padding: '1rem',
+          borderRadius: '8px',
+          marginBottom: '1rem'
+        }}>
+          {error}
+        </div>
+      )}
+
       {showForm && (
         <div className="card" style={{ marginBottom: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>Create New Goal</h3>
+          <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Edit Goal' : 'Create New Goal'}</h3>
 
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
@@ -108,6 +204,35 @@ const Goals = ({ user }) => {
                   required
                   placeholder="Vacation Fund"
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Category</label>
+                <select
+                  name="category"
+                  className="form-input"
+                  value={formData.category}
+                  onChange={handleChange}
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Priority</label>
+                <select
+                  name="priority"
+                  className="form-input"
+                  value={formData.priority}
+                  onChange={handleChange}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
               </div>
 
               <div className="form-group">
@@ -149,13 +274,17 @@ const Goals = ({ user }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn btn-primary">
-                Create Goal
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+                {editingId ? 'Update' : 'Create'} Goal
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingId(null);
+                }}
                 className="btn btn-secondary"
+                style={{ flex: 1 }}
               >
                 Cancel
               </button>
@@ -164,63 +293,96 @@ const Goals = ({ user }) => {
         </div>
       )}
 
-      <div className="dashboard-grid">
-        {goals.map((goal) => {
-          const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
-          return (
-            <div key={goal.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ margin: 0 }}>{goal.name}</h3>
-                <Target size={20} />
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span>{formatCurrency(goal.currentAmount)}</span>
-                  <span>{formatCurrency(goal.targetAmount)}</span>
-                </div>
-                <div style={{
-                  width: '100%',
-                  height: '8px',
-                  background: 'var(--border-color)',
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: `${progress}%`,
-                    height: '100%',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    transition: 'width 0.3s ease'
-                  }}></div>
-                </div>
-                <div style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  {progress.toFixed(1)}% Complete
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  const amount = prompt('Enter amount to add:');
-                  if (amount && !isNaN(amount)) {
-                    updateProgress(goal.id, parseFloat(amount));
-                  }
-                }}
-                className="btn btn-primary"
-                style={{ width: '100%' }}
-              >
-                <TrendingUp size={16} />
-                Add Progress
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {goals.length === 0 && (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading goals...</div>
+      ) : goals.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <Target size={48} style={{ marginBottom: '1rem', opacity: 0.5, color: 'var(--text-secondary)' }} />
           <h3>No savings goals yet</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>Create your first savings goal to start tracking your progress!</p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Create your first savings goal to start tracking your progress!</p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="btn btn-primary"
+          >
+            <Plus size={16} style={{ marginRight: '0.5rem' }} />
+            Create Goal
+          </button>
+        </div>
+      ) : (
+        <div className="dashboard-grid">
+          {goals.map((goal) => {
+            const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
+            const daysRemaining = goal.targetDate
+              ? Math.ceil((new Date(goal.targetDate) - new Date()) / (1000 * 60 * 60 * 24))
+              : null;
+
+            return (
+              <div key={goal._id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: 0 }}>{goal.name}</h3>
+                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      {goal.category?.replace(/_/g, ' ')} • Priority: {goal.priority}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => handleEdit(goal)}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px' }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(goal._id)}
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 8px', background: '#dc3545' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span>{formatCurrency(goal.currentAmount)}</span>
+                    <span>{formatCurrency(goal.targetAmount)}</span>
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    height: '8px',
+                    background: 'var(--border-color)',
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${progress}%`,
+                      height: '100%',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      transition: 'width 0.3s ease'
+                    }}></div>
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    {progress.toFixed(1)}% Complete {daysRemaining !== null && `• ${daysRemaining} days left`}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const amount = prompt('Enter amount to add:');
+                    if (amount && !isNaN(amount)) {
+                      updateProgress(goal._id, parseFloat(amount));
+                    }
+                  }}
+                  className="btn btn-primary"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  <TrendingUp size={16} />
+                  Add Progress
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
