@@ -42,7 +42,12 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
     <>
       <aside
         className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}
-        style={{ display: 'flex', flexDirection: 'column' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
+          color: 'white'
+        }}
       >
         <div className="sidebar-header">
           <div className="sidebar-brand">🏦 BankPro</div>
@@ -71,7 +76,7 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
         <div
           className="sidebar-footer"
           style={{
-            borderTop: '1px solid var(--sidebar-hover)',
+            borderTop: '1px solid rgba(0, 212, 255, 0.3)',
             padding: '1.2rem 1rem'
           }}
         >
@@ -81,16 +86,17 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
               alignItems: 'center',
               gap: '0.9rem',
               padding: '0.7rem 0.8rem',
-              marginBottom: '0.7rem'
+              marginBottom: '0.7rem',
+              color: 'white'
             }}
           >
             <User size={22} />
             {!isCollapsed && (
               <div style={{ lineHeight: 1.35 }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white' }}>
                   {user?.name}
                 </div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                <div style={{ fontSize: '0.8rem', opacity: 0.7, color: 'white' }}>
                   {user?.role}
                 </div>
               </div>
@@ -109,7 +115,7 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
               justifyContent: 'center',
               border: 'none',
               borderRadius: '6px',
-              background: 'var(--primary)',
+              background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
               color: 'white',
               fontWeight: '500',
               cursor: 'pointer',

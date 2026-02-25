@@ -79,19 +79,25 @@ const Payments = ({ user, onUserUpdate }) => {
     }
     // Create transaction referencing the bill
     const transaction = {
-      userId: user.id,
+      userId: user._id || user.id,
       type: 'debit',
       amount: amount,
       description: `Bill Payment: ${billFormData.name} (${billFormData.category})`,
       billId: billRes && billRes.data ? billRes.data._id : undefined
     };
-    await addTransaction(transaction);
-    updateUserBalance(user.id, user.balance - amount);
-    const updatedUser = getCurrentUser();
-    onUserUpdate(updatedUser);
-    loadBills();
-    setShowBillForm(false);
-    setBillFormData({ name: '', amount: '', dueDate: '', category: 'utilities' });
+    try {
+      await addTransaction(transaction);
+      // Just update the UI - don't call updateUserBalance since it needs localStorage
+      // The balance will be fetched from the backend
+      const updatedUser = getCurrentUser();
+      onUserUpdate(updatedUser || user);
+      loadBills();
+      setShowBillForm(false);
+      setBillFormData({ name: '', amount: '', dueDate: '', category: 'utilities' });
+    } catch (err) {
+      console.error('Error processing bill payment:', err);
+      showBillError('Error processing bill payment');
+    }
   };
   const handleBillChange = (e) => {
     setBillFormData({ ...billFormData, [e.target.name]: e.target.value });
@@ -244,7 +250,16 @@ const Payments = ({ user, onUserUpdate }) => {
 
   // Shared formatting
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  };
 
   return (
     <div className="container">
@@ -300,10 +315,10 @@ const Payments = ({ user, onUserUpdate }) => {
             {bills.length > 0 ? (
               <div className="transaction-list">
                 {bills.map((bill) => (
-                  <div key={bill.id} className="transaction-item">
+                  <div key={bill.id || bill._id} className="transaction-item">
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{bill.description}</div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(bill.date)}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(bill.createdAt || bill.paidDate || bill.date || new Date().toISOString())}</div>
                     </div>
                     <div style={{ fontWeight: '600', color: 'var(--error)' }}>-{formatCurrency(bill.amount)}</div>
                   </div>

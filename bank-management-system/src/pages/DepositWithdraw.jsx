@@ -1,5 +1,5 @@
 import { ArrowDownCircle, ArrowUpCircle, CreditCard, Minus, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import { api } from '../utils/api';
 
@@ -9,133 +9,8 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showPinModal, setShowPinModal] = useState(false);
-    const [pendingTransaction, setPendingTransaction] = useState(null);
     const [pin, setPin] = useState('');
-    const [pinVerifying, setPinVerifying] = useState(false);
     const [pinError, setPinError] = useState('');
-    const [cards, setCards] = useState([]);
-    const [selectedCardId, setSelectedCardId] = useState('');
-
-    useEffect(() => {
-        // Load user's cards
-        loadCards();
-    }, [user]);
-
-    const loadCards = async () => {
-        try {
-            const res = await api.cards.getAll();
-            if (res && res.success) {
-                setCards(res.data || []);
-                // Auto-select first card if available
-                if (res.data && res.data.length > 0) {
-                    setSelectedCardId(res.data[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading cards:', error);
-        }
-    };
-
-    const verifyPin = async () => {
-        if (!pin.trim()) {
-            setPinError('Please enter your PIN');
-            return;
-        }
-
-        try {
-            setPinVerifying(true);
-            setPinError('');
-            console.log('Starting PIN verification...', { pin: '****', pendingTransaction });
-            const result = await api.users.verifyPin(pin);
-            console.log('PIN verification response:', result);
-
-            if (result && result.success) {
-                console.log('PIN verified successfully, processing transaction...');
-                // PIN is correct, proceed with the transaction
-                const transactionSuccess = await processPendingTransaction();
-                
-                if (transactionSuccess) {
-                    console.log('Transaction processed successfully, closing modal...');
-                    setShowPinModal(false);
-                    setPin('');
-                    setPendingTransaction(null);
-                }
-                // If transaction failed, don't close modal - user can retry or cancel
-            } else {
-                setPinError(result?.error || 'Invalid PIN. Please try again.');
-                console.error('PIN verification failed:', result?.error);
-            }
-        } catch (error) {
-            setPinError(error.message || 'PIN verification failed. Please try again.');
-            console.error('PIN verification error:', error);
-        } finally {
-            setPinVerifying(false);
-        }
-    };
-
-    const processPendingTransaction = async () => {
-        if (!pendingTransaction) {
-            showError('No pending transaction found');
-            return false;
-        }
-
-        const { type, amount: transAmount, description: desc, cardId } = pendingTransaction;
-        const transactionData = {
-            type,
-            amount: transAmount,
-            description: desc || (type === 'credit' ? 'Cash Deposit' : 'Cash Withdrawal'),
-            category: type === 'credit' ? 'deposit' : 'withdrawal',
-            cardId: cardId || null
-        };
-
-        try {
-            console.log('Creating transaction with data:', transactionData);
-            const result = await api.transactions.create(transactionData);
-            
-            console.log('Transaction API response:', result);
-
-            if (result && result.success && result.data) {
-                const isDeposit = type === 'credit';
-                const successMsg = isDeposit 
-                    ? `Successfully deposited Rs${transAmount.toFixed(2)}` 
-                    : `Successfully withdrew Rs${transAmount.toFixed(2)}`;
-                
-                console.log('Transaction successful:', successMsg);
-                showSuccess(successMsg);
-
-                // Update user balance in parent component
-                const newBalance = isDeposit 
-                    ? user.balance + transAmount 
-                    : user.balance - transAmount;
-                    
-                onUserUpdate({ ...user, balance: newBalance });
-
-                // Store PIN requirement preference in localStorage
-                localStorage.setItem('pinRequiredForTransactions', 'true');
-
-                // Reset form fields
-                setAmount('');
-                setDescription('');
-                
-                return true;
-            } else {
-                const errorMsg = result?.error || 'Transaction failed - no response data';
-                console.error('Transaction failed:', { result, errorMsg });
-                showError(errorMsg);
-                return false;
-            }
-        } catch (error) {
-            console.error('Transaction error details:', { 
-                message: error.message, 
-                status: error.status,
-                data: error.data,
-                fullError: error 
-            });
-            showError(error.message || 'Transaction failed. Please try again.');
-            return false;
-        }
-    };
 
     const handleDeposit = async (e) => {
         e.preventDefault();
@@ -146,21 +21,76 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
             return;
         }
 
-        if (!selectedCardId && cards.length > 0) {
-            showError('Please select a card');
+        if (!pin.trim()) {
+            setPinError('Please enter your PIN');
             return;
         }
 
-        // Set pending transaction and show PIN modal
-        setPendingTransaction({
-            type: 'credit',
-            amount: depositAmount,
-            description: description || 'Cash Deposit',
-            cardId: selectedCardId
-        });
-        setShowPinModal(true);
-        setPinError('');
-        setPin('');
+        // Verify PIN and process transaction
+        try {
+            setLoading(true);
+            setPinError('');
+            console.log('Starting PIN verification...', { pin: '****' });
+            const result = await api.users.verifyPin(pin);
+            console.log('PIN verification response:', result);
+
+            if (result && result.success) {
+                console.log('PIN verified successfully, processing transaction...');
+                // PIN is correct, proceed with the transaction
+                const transactionData = {
+                    type: 'credit',
+                    amount: depositAmount,
+                    description: description || 'Cash Deposit',
+                    category: 'deposit',
+                    cardId: null
+                };
+
+                try {
+                    console.log('Creating transaction with data:', transactionData);
+                    const txResult = await api.transactions.create(transactionData);
+                    
+                    console.log('Transaction API response:', txResult);
+
+                    if (txResult && txResult.success && txResult.data) {
+                        const successMsg = `Successfully deposited Rs${depositAmount.toFixed(2)}`;
+                        console.log('Transaction successful:', successMsg);
+                        showSuccess(successMsg);
+
+                        // Update user balance in parent component
+                        const newBalance = user.balance + depositAmount;
+                        onUserUpdate({ ...user, balance: newBalance });
+
+                        // Store PIN requirement preference in localStorage
+                        localStorage.setItem('pinRequiredForTransactions', 'true');
+
+                        // Reset form fields
+                        setAmount('');
+                        setDescription('');
+                        setPin('');
+                    } else {
+                        const errorMsg = txResult?.error || 'Transaction failed - no response data';
+                        console.error('Transaction failed:', { txResult, errorMsg });
+                        showError(errorMsg);
+                    }
+                } catch (error) {
+                    console.error('Transaction error details:', { 
+                        message: error.message, 
+                        status: error.status,
+                        data: error.data,
+                        fullError: error 
+                    });
+                    showError(error.message || 'Transaction failed. Please try again.');
+                }
+            } else {
+                setPinError(result?.error || 'Invalid PIN. Please try again.');
+                console.error('PIN verification failed:', result?.error);
+            }
+        } catch (error) {
+            setPinError(error.message || 'PIN verification failed. Please try again.');
+            console.error('PIN verification error:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleWithdraw = async (e) => {
@@ -177,21 +107,76 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
             return;
         }
 
-        if (!selectedCardId && cards.length > 0) {
-            showError('Please select a card');
+        if (!pin.trim()) {
+            setPinError('Please enter your PIN');
             return;
         }
 
-        // Set pending transaction and show PIN modal
-        setPendingTransaction({
-            type: 'debit',
-            amount: withdrawAmount,
-            description: description || 'Cash Withdrawal',
-            cardId: selectedCardId
-        });
-        setShowPinModal(true);
-        setPinError('');
-        setPin('');
+        // Verify PIN and process transaction
+        try {
+            setLoading(true);
+            setPinError('');
+            console.log('Starting PIN verification...', { pin: '****' });
+            const result = await api.users.verifyPin(pin);
+            console.log('PIN verification response:', result);
+
+            if (result && result.success) {
+                console.log('PIN verified successfully, processing transaction...');
+                // PIN is correct, proceed with the transaction
+                const transactionData = {
+                    type: 'debit',
+                    amount: withdrawAmount,
+                    description: description || 'Cash Withdrawal',
+                    category: 'withdrawal',
+                    cardId: null
+                };
+
+                try {
+                    console.log('Creating transaction with data:', transactionData);
+                    const txResult = await api.transactions.create(transactionData);
+                    
+                    console.log('Transaction API response:', txResult);
+
+                    if (txResult && txResult.success && txResult.data) {
+                        const successMsg = `Successfully withdrew Rs${withdrawAmount.toFixed(2)}`;
+                        console.log('Transaction successful:', successMsg);
+                        showSuccess(successMsg);
+
+                        // Update user balance in parent component
+                        const newBalance = user.balance - withdrawAmount;
+                        onUserUpdate({ ...user, balance: newBalance });
+
+                        // Store PIN requirement preference in localStorage
+                        localStorage.setItem('pinRequiredForTransactions', 'true');
+
+                        // Reset form fields
+                        setAmount('');
+                        setDescription('');
+                        setPin('');
+                    } else {
+                        const errorMsg = txResult?.error || 'Transaction failed - no response data';
+                        console.error('Transaction failed:', { txResult, errorMsg });
+                        showError(errorMsg);
+                    }
+                } catch (error) {
+                    console.error('Transaction error details:', { 
+                        message: error.message, 
+                        status: error.status,
+                        data: error.data,
+                        fullError: error 
+                    });
+                    showError(error.message || 'Transaction failed. Please try again.');
+                }
+            } else {
+                setPinError(result?.error || 'Invalid PIN. Please try again.');
+                console.error('PIN verification failed:', result?.error);
+            }
+        } catch (error) {
+            setPinError(error.message || 'PIN verification failed. Please try again.');
+            console.error('PIN verification error:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const formatCurrency = (amount) => {
@@ -291,41 +276,40 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                             className="form-input"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Enter transaction description"
+                            placeholder="Purpose of transaction"
                         />
                     </div>
 
-                    {cards.length > 0 && (
-                        <div className="form-group">
-                            <label className="form-label">Select Card</label>
-                            <select
-                                className="form-input"
-                                value={selectedCardId}
-                                onChange={(e) => setSelectedCardId(e.target.value)}
-                                style={{ cursor: 'pointer' }}
-                            >
-                                <option value="">-- Choose a card --</option>
-                                {cards.map((card) => (
-                                    <option key={card.id} value={card.id}>
-                                        {card.cardName} (****{String(card.cardNumber).slice(-4)}) - {card.status}
-                                    </option>
-                                ))}
-                            </select>
+                    {pinError && (
+                        <div style={{
+                            backgroundColor: '#fee2e2',
+                            color: '#991b1b',
+                            padding: '0.75rem',
+                            borderRadius: '4px',
+                            marginBottom: '1rem',
+                            fontSize: '0.9rem'
+                        }}>
+                            {pinError}
                         </div>
                     )}
 
-                    {cards.length === 0 && (
-                        <div style={{
-                            padding: '1rem',
-                            background: '#fff3cd',
-                            borderLeft: '4px solid #ffc107',
-                            borderRadius: '4px',
-                            marginBottom: '1rem',
-                            color: '#856404'
-                        }}>
-                            <strong>No cards found.</strong> Go to <a href="/cards" style={{ color: '#667eea', textDecoration: 'underline' }}>My Cards</a> to create one.
-                        </div>
-                    )}
+                    <div className="form-group">
+                        <label className="form-label">Enter PIN</label>
+                        <input
+                            type="password"
+                            inputMode="numeric"
+                            className="form-input"
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                            placeholder="Enter 4-6 digit PIN"
+                            pattern="[0-9]{4,6}"
+                            autoComplete="off"
+                            style={{
+                                letterSpacing: '0.2em',
+                                fontSize: '1.2rem'
+                            }}
+                        />
+                    </div>
 
                     <div style={{ marginBottom: '1rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '4px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -360,125 +344,18 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                             activeTab === 'deposit' ? (
                                 <>
                                     <Plus size={18} style={{ marginRight: '0.5rem' }} />
-                                    Deposit Funds
+                                    Confirm Deposit
                                 </>
                             ) : (
                                 <>
                                     <Minus size={18} style={{ marginRight: '0.5rem' }} />
-                                    Withdraw Funds
+                                    Confirm Withdrawal
                                 </>
                             )
                         )}
                     </button>
                 </form>
             </div>
-
-            {/* PIN Verification Modal */}
-            {showPinModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        padding: '2rem',
-                        maxWidth: '400px',
-                        width: '90%',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
-                    }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-                            Verify PIN
-                        </h2>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                            Enter your PIN to confirm {pendingTransaction?.type === 'credit' ? 'deposit' : 'withdrawal'}
-                        </p>
-
-                        {pinError && (
-                            <div style={{
-                                backgroundColor: '#fee2e2',
-                                color: '#991b1b',
-                                padding: '0.75rem',
-                                borderRadius: '4px',
-                                marginBottom: '1rem'
-                            }}>
-                                {pinError}
-                            </div>
-                        )}
-
-                        <input
-                            type="password"
-                            inputMode="numeric"
-                            value={pin}
-                            onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                            placeholder="Enter 4-6 digit PIN"
-                            pattern="[0-9]{4,6}"
-                            autoComplete="off"
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem',
-                                border: '1px solid var(--border)',
-                                borderRadius: '4px',
-                                marginBottom: '1.5rem',
-                                fontSize: '1rem',
-                                letterSpacing: '0.2em'
-                            }}
-                            autoFocus
-                        />
-
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button
-                                onClick={() => {
-                                    setShowPinModal(false);
-                                    setPendingTransaction(null);
-                                    setPin('');
-                                    setPinError('');
-                                }}
-                                style={{
-                                    flex: 1,
-                                    padding: '0.75rem',
-                                    border: '1px solid var(--border)',
-                                    backgroundColor: 'transparent',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontWeight: '500',
-                                    color: 'var(--text-primary)',
-                                    fontSize: '1rem'
-                                }}
-                                disabled={pinVerifying}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={verifyPin}
-                                style={{
-                                    flex: 1,
-                                    padding: '0.75rem',
-                                    backgroundColor: '#667eea',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: pinVerifying || !pin.trim() ? 'not-allowed' : 'pointer',
-                                    fontWeight: '600',
-                                    fontSize: '1rem',
-                                    opacity: pinVerifying || !pin.trim() ? 0.6 : 1
-                                }}
-                                disabled={!pin.trim() || pinVerifying}
-                            >
-                                {pinVerifying ? 'Verifying...' : 'Confirm'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../utils/api';
 import { register } from '../../utils/auth';
+import AuthLayout from '../Layout/AuthLayout';
 
 const Register = ({ onLogin, switchToLogin }) => {
   const navigate = useNavigate();
@@ -248,9 +249,69 @@ const Register = ({ onLogin, switchToLogin }) => {
     return 'Strong';
   };
 
+  const handleNameChange = (e) => {
+    const value = e.target.value;
+    // Allow only letters and spaces
+    if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
+      setFormData({
+        ...formData,
+        name: value,
+      });
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    // Allow only digits
+    if (/^\d*$/.test(value) && value.length <= 10) {
+      setFormData({
+        ...formData,
+        phone: value,
+      });
+    }
+  };
+
+  const handlePinChange = (e) => {
+    const value = e.target.value;
+    // Allow only digits, max 6
+    if (/^\d*$/.test(value) && value.length <= 6) {
+      setFormData({
+        ...formData,
+        pin: value,
+      });
+    }
+  };
+
+  const handleConfirmPinChange = (e) => {
+    const value = e.target.value;
+    // Allow only digits, max 6
+    if (/^\d*$/.test(value) && value.length <= 6) {
+      setFormData({
+        ...formData,
+        confirmPin: value,
+      });
+    }
+  };
+
+  const handleInitialDepositChange = (e) => {
+    const value = e.target.value;
+    // Allow only digits and decimal point
+    if (/^[\d.]*$/.test(value)) {
+      setFormData({
+        ...formData,
+        initialDeposit: value,
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+      <div 
+        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
+        style={{
+          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
+        }}
+      >
         <div className="flex items-center space-x-2">
           <Building2 size={32} className="text-blue-200" />
           <h1 className="text-2xl font-bold">BankPro</h1>
@@ -330,9 +391,11 @@ const Register = ({ onLogin, switchToLogin }) => {
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.name}
-                    onChange={handleChange}
+                    onChange={handleNameChange}
                     required
                     placeholder="Enter your full name"
+                    pattern="[a-zA-Z\s]*"
+                    title="Name should only contain letters and spaces"
                   />
                 </div>
               </div>
@@ -380,6 +443,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     required
                     placeholder="Enter your phone number"
                     pattern="[0-9]{10}"
+                    maxLength="10"
                     title="Please enter a 10-digit phone number"
                   />
                 </div>
@@ -485,11 +549,12 @@ const Register = ({ onLogin, switchToLogin }) => {
                     className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.pin}
-                    onChange={handleChange}
+                    onChange={handlePinChange}
                     required
                     placeholder="Set a 4-6 digit PIN"
                     inputMode="numeric"
                     pattern="[0-9]{4,6}"
+                    maxLength="6"
                     title="PIN must be 4-6 digits"
                   />
                   <button
@@ -540,11 +605,12 @@ const Register = ({ onLogin, switchToLogin }) => {
                     className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.confirmPin}
-                    onChange={handleChange}
+                    onChange={handleConfirmPinChange}
                     required
                     placeholder="Confirm your PIN"
                     inputMode="numeric"
                     pattern="[0-9]{4,6}"
+                    maxLength="6"
                     title="PIN must be 4-6 digits"
                   />
                   <button
@@ -567,14 +633,13 @@ const Register = ({ onLogin, switchToLogin }) => {
                     <span className="text-gray-500">Rs</span>
                   </div>
                   <input
-                    type="number"
+                    type="text"
                     name="initialDeposit"
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.initialDeposit}
-                    onChange={handleChange}
-                    min="0"
-                    step="0.01"
+                    onChange={handleInitialDepositChange}
+                    inputMode="decimal"
                     placeholder="Enter initial deposit amount"
                   />
                 </div>
@@ -584,7 +649,11 @@ const Register = ({ onLogin, switchToLogin }) => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                }}
+                className="w-full text-white py-3.5 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={!isFormValid() || loading}
               >
                 {loading ? (

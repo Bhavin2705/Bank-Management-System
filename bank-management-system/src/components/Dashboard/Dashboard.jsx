@@ -116,7 +116,7 @@ const Dashboard = ({ user }) => {
                   <div className="stat-value">{formatCurrency(user?.balance || 0)}</div>
                   <div className="stat-label">Current Balance</div>
                 </div>
-                <IndianRupee size={32} style={{ color: '#667eea' }} />
+                <IndianRupee size={32} style={{ color: '#1E3A8A' }} />
               </div>
             </div>
 
@@ -146,7 +146,7 @@ const Dashboard = ({ user }) => {
                   <div className="stat-value">{stats.totalTransactions}</div>
                   <div className="stat-label">Total Transactions</div>
                 </div>
-                <Activity size={32} style={{ color: '#667eea' }} />
+                <Activity size={32} style={{ color: '#1E3A8A' }} />
               </div>
             </div>
           </div>

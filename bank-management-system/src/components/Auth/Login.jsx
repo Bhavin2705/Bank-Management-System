@@ -2,6 +2,7 @@ import { ArrowRight, Eye, EyeOff, Shield, Smartphone, Users } from 'lucide-react
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, loginWithAccount } from '../../utils/auth';
+import AuthLayout from '../Layout/AuthLayout';
 import ForgotPassword from './ForgotPassword';
 import PasswordResetSuccess from './PasswordResetSuccess';
 import ResetPassword from './ResetPassword';
@@ -194,7 +195,12 @@ const Login = ({ onLogin, switchToRegister }) => {
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       {/* Left side - Illustration/Info */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+      <div 
+        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
+        style={{
+          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
+        }}
+      >
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold">BankPro</h1>
         </div>
@@ -297,7 +303,11 @@ const Login = ({ onLogin, switchToRegister }) => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                }}
+                className="w-full text-white py-3.5 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={loading}
               >
                 {loading ? (

@@ -15,7 +15,8 @@
   --bg-hover: #f0f0f0;
   --text-primary: #333;
   --text-secondary: #6c757d;
-  --text-accent: #f97316; /* switched to orange-500 for text-only change */
+  --text-accent: #00D4FF;
+  /* switched to orange-500 for text-only change */
   --border-color: #e9ecef;
   /* simple border color variable used in some inline styles */
   --border: #e9ecef;
@@ -132,7 +133,7 @@
 }
 
 .to-indigo-700 {
-  --to-color: #4338ca;
+  --to-color: #00D4FF;
 }
 
 .text-white {
@@ -152,24 +153,29 @@
 }
 
 .text-blue-100 {
-  color: #ffedd5; /* mapped to orange-100 */
+  color: #ffedd5;
+  /* mapped to orange-100 */
 }
 
 .text-blue-200 {
-  color: #fed7aa; /* mapped to orange-200 */
+  color: #fed7aa;
+  /* mapped to orange-200 */
 }
 
 /* map commonly used blue text utility classes to orange shades for text-only change */
 .text-blue-500 {
-  color: #f97316; /* orange-500 */
+  color: #f97316;
+  /* orange-500 */
 }
 
 .text-blue-600 {
-  color: #ea580c; /* orange-600 */
+  color: #ea580c;
+  /* orange-600 */
 }
 
 .text-blue-800 {
-  color: #c2410c; /* orange-800 */
+  color: #c2410c;
+  /* orange-800 */
 }
 
 .text-red-700 {
@@ -332,7 +338,8 @@
   --bg-hover: #4a5f7a;
   --text-primary: #ecf0f1;
   --text-secondary: #bdc3c7;
-  --text-accent: #f97316; /* dark theme text accent switched to orange-500 */
+  --text-accent: #f97316;
+  /* dark theme text accent switched to orange-500 */
   --border-color: #52708a;
   --border-light: #7f8c8d;
   --shadow: rgba(0, 0, 0, 0.3);
@@ -477,14 +484,14 @@ body {
   text-align: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--sidebar-hover);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
   position: relative;
 }
 
 .collapse-btn {
   background: none;
   border: none;
-  color: var(--sidebar-text);
+  color: white;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 4px;
@@ -492,13 +499,14 @@ body {
 }
 
 .collapse-btn:hover {
-  background: var(--sidebar-hover);
+  background: rgba(0, 212, 255, 0.1);
+  color: #00D4FF;
 }
 
 .sidebar-brand {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-accent);
+  color: white;
 }
 
 .sidebar-nav {
@@ -516,15 +524,15 @@ body {
   padding: 0.75rem 1rem;
   border-radius: 8px;
   text-decoration: none;
-  color: var(--sidebar-text);
+  color: white;
   transition: all 0.3s ease;
   font-weight: 500;
 }
 
 .sidebar-nav-link:hover,
 .sidebar-nav-link.active {
-  background: var(--sidebar-hover);
-  color: var(--text-accent);
+  background: rgba(0, 212, 255, 0.1);
+  color: #00D4FF;
 }
 
 /* Tabs used in settings/security page */
@@ -559,8 +567,8 @@ body {
 .sidebar .sidebar-nav-link.logout-btn {
   width: 100%;
   margin-top: 0.5rem;
-  background: transparent;
-  color: var(--sidebar-text);
+  background: #00D4FF;
+  color: white;
   border: none;
   text-align: left;
   display: flex;
@@ -571,8 +579,8 @@ body {
 }
 
 .sidebar .sidebar-nav-link.logout-btn:hover {
-  background: var(--sidebar-hover);
-  color: var(--text-accent);
+  background: rgba(0, 212, 255, 0.1);
+  color: #00D4FF;
 }
 
 .main-content {
@@ -684,23 +692,26 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%);
   color: white;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 15px rgba(10, 31, 68, 0.4);
+  opacity: 0.9;
 }
 
 .btn-secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%);
+  color: white;
+  border: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 .btn-secondary:hover {
-  background: var(--border-color);
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(10, 31, 68, 0.4);
 }
 
 .btn-danger {
@@ -1533,7 +1544,7 @@ option {
 }
 
 .contact-item svg {
-  color: var(--text-accent);
+  color: #1E3A8A;
 }
 
 .error-message {

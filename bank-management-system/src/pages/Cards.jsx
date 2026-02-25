@@ -161,7 +161,7 @@ const Cards = ({ user }) => {
   const toggleCardLock = (cardId) => {
     const card = cards.find(c => c.id === cardId);
     if (!card) return;
-    const newStatus = card.status === 'active' ? 'locked' : 'active';
+    const newStatus = card.status === 'active' ? 'inactive' : 'active';
     api.cards.updateStatus(cardId, { status: newStatus })
       .then((res) => {
         if (res.success) loadCards();
@@ -248,7 +248,7 @@ const Cards = ({ user }) => {
               <div className="stat-value">{cards.length}</div>
               <div className="stat-label">Total Cards</div>
             </div>
-            <CreditCard size={32} style={{ color: '#667eea' }} />
+            <CreditCard size={32} style={{ color: '#1E3A8A' }} />
           </div>
         </div>
 

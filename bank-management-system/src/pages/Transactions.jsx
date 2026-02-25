@@ -91,6 +91,12 @@ export default function Transactions({ user, onUserUpdate }) {
     loadCards();
   }, [loadTransactions, loadCards]);
 
+  // Reset PIN and errors when switching transaction type
+  useEffect(() => {
+    setPin('');
+    setPinError('');
+  }, [actionType]);
+
   useEffect(() => {
     // Load banks for external transfers
     const loadBanks = async () => {
@@ -137,14 +143,14 @@ export default function Transactions({ user, onUserUpdate }) {
         console.log('PIN verified successfully, processing transaction...');
         // PIN is correct, proceed with the transaction
         const transactionSuccess = await processPendingTransaction();
-        
+
         if (transactionSuccess) {
-          console.log('Transaction processed successfully, closing modal...');
-          setShowPinModal(false);
-          setPin('');
+          console.log('Transaction processed successfully, closing form...');
+          resetForms();
           setPendingTransaction(null);
+          setPin('');
         }
-        // If transaction failed, don't close modal - user can retry or cancel
+        // If transaction failed, keep the form open - user can retry or cancel
       } else {
         setPinError(result?.error || 'Invalid PIN. Please try again.');
         console.error('PIN verification failed:', result?.error);
@@ -171,7 +177,7 @@ export default function Transactions({ user, onUserUpdate }) {
     } else if (pendingTransaction.type === 'transfer') {
       return await handleTransferConfirmed(pendingTransaction);
     }
-    
+
     console.error('Unknown transaction type:', pendingTransaction.type);
     return false;
   };
@@ -210,7 +216,7 @@ export default function Transactions({ user, onUserUpdate }) {
       resetForms();
       return true;
     } catch (err) {
-      console.error('Deposit/Withdraw error details:', { 
+      console.error('Deposit/Withdraw error details:', {
         message: err.message,
         fullError: err
       });
@@ -239,7 +245,7 @@ export default function Transactions({ user, onUserUpdate }) {
       resetForms();
       return true;
     } catch (err) {
-      console.error('Transfer error details:', { 
+      console.error('Transfer error details:', {
         message: err.message,
         fullError: err
       });
@@ -250,6 +256,12 @@ export default function Transactions({ user, onUserUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate PIN for both deposit/withdraw and transfer
+    if (!pin.trim()) {
+      setPinError('Please enter your PIN');
+      return;
+    }
 
     if (actionType === 'transfer') {
       const amount = parseFloat(transferData.amount || formData.amount);
@@ -296,15 +308,14 @@ export default function Transactions({ user, onUserUpdate }) {
         };
       }
 
-      // Set pending transaction and show PIN modal
+      // Set pending transaction and verify PIN
       setPendingTransaction({
         type: 'transfer',
         amount,
         payload
       });
-      setShowPinModal(true);
       setPinError('');
-      setPin('');
+      await verifyPin();
     } else {
       await handleDepositOrWithdraw();
     }
@@ -324,22 +335,41 @@ export default function Transactions({ user, onUserUpdate }) {
       return;
     }
 
-    if (!selectedCardId && cards.length > 0) {
-      showError('Please select a card');
+    if (!pin.trim()) {
+      setPinError('Please enter your PIN');
       return;
     }
 
-    // Set pending transaction and show PIN modal
-    setPendingTransaction({
-      type: isDeposit ? 'credit' : 'debit',
-      amount,
-      description: formData.description.trim() || (isDeposit ? 'Cash Deposit' : 'Cash Withdrawal'),
-      category: isDeposit ? 'deposit' : 'withdrawal',
-      cardId: selectedCardId || null,
-    });
-    setShowPinModal(true);
-    setPinError('');
-    setPin('');
+    // Verify PIN and process transaction
+    try {
+      setPinError('');
+      console.log('Starting PIN verification...', { pin: '****' });
+      const result = await api.users.verifyPin(pin);
+      console.log('PIN verification response:', result);
+
+      if (result && result.success) {
+        console.log('PIN verified successfully, processing transaction...');
+        // PIN is correct, proceed with the transaction
+        const transactionData = {
+          type: isDeposit ? 'credit' : 'debit',
+          amount,
+          description: formData.description.trim() || (isDeposit ? 'Cash Deposit' : 'Cash Withdrawal'),
+          category: isDeposit ? 'deposit' : 'withdrawal',
+          cardId: selectedCardId || (cards.length > 0 ? cards[0].id : null)
+        };
+
+        const transactionSuccess = await handleDepositOrWithdrawConfirmed(transactionData);
+        if (transactionSuccess) {
+          resetForms();
+        }
+      } else {
+        setPinError(result?.error || 'Invalid PIN. Please try again.');
+        console.error('PIN verification failed:', result?.error);
+      }
+    } catch (error) {
+      setPinError(error.message || 'PIN verification failed. Please try again.');
+      console.error('PIN verification error:', error);
+    }
   };
 
   const resetForms = () => {
@@ -354,6 +384,8 @@ export default function Transactions({ user, onUserUpdate }) {
       description: '',
     });
     setShowBankSelector(false);
+    setPin('');
+    setPinError('');
   };
 
   const formatCurrency = (amt) =>
@@ -388,8 +420,7 @@ export default function Transactions({ user, onUserUpdate }) {
         <h1 className="text-3xl font-bold">Transactions & Transfers</h1>
 
         <button
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg shadow-md hover:shadow-lg focus:outline-none"
-          onClick={() => setShowActionForm(true)}
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg shadow-md hover:shadow-lg focus:outline-none bg-[linear-gradient(135deg,_#0A1F44_0%,_#1E3A8A_50%,_#00D4FF_100%)]" onClick={() => setShowActionForm(true)}
         >
           <Plus size={18} /> New Action
         </button>
@@ -413,11 +444,10 @@ export default function Transactions({ user, onUserUpdate }) {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-2 text-sm font-medium focus:outline-none ${
-                activeTab === tab
+              className={`py-2 text-sm font-medium focus:outline-none ${activeTab === tab
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-blue-600'
-              }`}
+                }`}
             >
               {tab === 'all' ? 'All' :
                 tab === 'deposit' ? 'Deposits' :
@@ -443,9 +473,8 @@ export default function Transactions({ user, onUserUpdate }) {
               className="flex items-center gap-4 p-4 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow"
             >
               <div
-                className={`p-2 rounded-full ${
-                  tx.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
-                }`}
+                className={`p-2 rounded-full ${tx.type === 'credit' ? 'bg-green-100' : 'bg-red-100'
+                  }`}
               >
                 {tx.type === 'credit' ? (
                   <ArrowDownLeft className="text-green-600" />
@@ -461,9 +490,8 @@ export default function Transactions({ user, onUserUpdate }) {
                 </div>
               </div>
               <div
-                className={`font-semibold ${
-                  tx.type === 'credit' ? 'text-green-600' : 'text-red-600'
-                }`}
+                className={`font-semibold ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'
+                  }`}
               >
                 {tx.type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount)}
               </div>
@@ -553,40 +581,75 @@ export default function Transactions({ user, onUserUpdate }) {
                 />
               </div>
 
-              {/* Card Selection for Deposit/Withdraw */}
+              {/* PIN Field for Deposit/Withdraw */}
               {actionType !== 'transfer' && (
                 <>
-                  {cards.length > 0 && (
-                    <div className="form-group">
-                      <label className="form-label">Select Card</label>
-                      <select
-                        className="form-input"
-                        value={selectedCardId}
-                        onChange={(e) => setSelectedCardId(e.target.value)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <option value="">-- Choose a card --</option>
-                        {cards.map((card) => (
-                          <option key={card.id} value={card.id}>
-                            {card.cardName} (****{String(card.cardNumber).slice(-4)}) - {card.status}
-                          </option>
-                        ))}
-                      </select>
+                  {pinError && (
+                    <div style={{
+                      backgroundColor: '#fee2e2',
+                      color: '#991b1b',
+                      padding: '0.75rem',
+                      borderRadius: '4px',
+                      marginBottom: '1rem',
+                      fontSize: '0.9rem'
+                    }}>
+                      {pinError}
                     </div>
                   )}
 
-                  {cards.length === 0 && (
+                  <div className="form-group">
+                    <label className="form-label">Enter PIN</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      className="form-input"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                      placeholder="Enter 4-6 digit PIN"
+                      pattern="[0-9]{4,6}"
+                      autoComplete="off"
+                      style={{
+                        letterSpacing: '0.2em',
+                        fontSize: '1.2rem'
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* PIN Field for Transfer */}
+              {actionType === 'transfer' && (
+                <>
+                  {pinError && (
                     <div style={{
-                      padding: '1rem',
-                      background: '#fff3cd',
-                      borderLeft: '4px solid #ffc107',
+                      backgroundColor: '#fee2e2',
+                      color: '#991b1b',
+                      padding: '0.75rem',
                       borderRadius: '4px',
                       marginBottom: '1rem',
-                      color: '#856404'
+                      fontSize: '0.9rem'
                     }}>
-                      <strong>No cards found.</strong> Go to <a href="/cards" style={{ color: '#667eea', textDecoration: 'underline' }}>My Cards</a> to create one.
+                      {pinError}
                     </div>
                   )}
+
+                  <div className="form-group">
+                    <label className="form-label">Enter PIN</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      className="form-input"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                      placeholder="Enter 4-6 digit PIN"
+                      pattern="[0-9]{4,6}"
+                      autoComplete="off"
+                      style={{
+                        letterSpacing: '0.2em',
+                        fontSize: '1.2rem'
+                      }}
+                    />
+                  </div>
                 </>
               )}
 
@@ -711,10 +774,10 @@ export default function Transactions({ user, onUserUpdate }) {
               )}
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? 'Processing...' : `Confirm ${actionType.charAt(0).toUpperCase() + actionType.slice(1)}`}
+                <button type="submit" className="btn btn-primary" disabled={pinVerifying}>
+                  {pinVerifying ? 'Verifying...' : `Confirm ${actionType.charAt(0).toUpperCase() + actionType.slice(1)}`}
                 </button>
-                <button type="button" className="btn btn-secondary" onClick={resetForms}>
+                <button type="button" className="btn btn-secondary" onClick={resetForms} disabled={pinVerifying}>
                   Cancel
                 </button>
               </div>
