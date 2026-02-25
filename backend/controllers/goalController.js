@@ -1,4 +1,6 @@
 const Goal = require('../models/Goal');
+const User = require('../models/User');
+const emailHelpers = require('../utils/emailHelpers');
 
 // @desc    Get all goals for a user
 // @route   GET /api/goals
@@ -161,7 +163,6 @@ const updateGoal = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Goal not found' });
     }
 
-    // Update allowed fields
     const allowedFields = ['name', 'description', 'targetAmount', 'currentAmount', 'targetDate', 'priority', 'status', 'category'];
     Object.keys(req.body).forEach(key => {
       if (allowedFields.includes(key)) {
@@ -169,7 +170,6 @@ const updateGoal = async (req, res) => {
       }
     });
 
-    // Calculate progress
     if (goal.targetAmount > 0) {
       const percentComplete = (goal.currentAmount / goal.targetAmount) * 100;
       if (percentComplete >= 100) {
@@ -178,6 +178,17 @@ const updateGoal = async (req, res) => {
     }
 
     goal = await goal.save();
+
+    const user = await User.findById(req.user._id);
+
+    const goalDetails = {
+      goalName: goal.name,
+      currentAmount: goal.currentAmount,
+      targetAmount: goal.targetAmount,
+      currency: 'INR'
+    };
+
+    emailHelpers.sendGoalUpdateNotification(user.email, goalDetails);
 
     res.status(200).json({ success: true, data: goal });
   } catch (err) {

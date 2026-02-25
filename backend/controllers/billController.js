@@ -1,5 +1,7 @@
 const Bill = require('../models/Bill');
 const Transaction = require('../models/Transaction');
+const User = require('../models/User');
+const emailHelpers = require('../utils/emailHelpers');
 
 // @desc    Get all bills for a user
 // @route   GET /api/bills
@@ -207,7 +209,8 @@ const payBill = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment amount must be positive' });
     }
 
-    // Create transaction record
+    const reference = `BILLPAY-${bill._id}-${Date.now()}`;
+
     const transaction = await Transaction.create({
       userId: req.user._id,
       type: 'debit',
@@ -217,19 +220,27 @@ const payBill = async (req, res) => {
       category: 'bill_payment',
       status: 'completed',
       billId: bill._id,
-      reference: `BILLPAY-${bill._id}-${Date.now()}`
+      reference: reference
     });
 
-    // Update bill
     bill.status = 'paid';
     bill.paidAmount = (bill.paidAmount || 0) + paymentAmount;
     bill.paidDate = new Date();
     bill.transactionId = transaction._id;
     await bill.save();
 
-    // Update user balance
     req.user.balance -= paymentAmount;
     await req.user.save();
+
+    const billDetails = {
+      billName: bill.name,
+      amount: paymentAmount,
+      currency: 'INR',
+      referenceNumber: reference,
+      date: new Date()
+    };
+
+    emailHelpers.sendBillPaymentNotification(req.user.email, billDetails);
 
     res.status(200).json({
       success: true,

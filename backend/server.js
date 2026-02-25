@@ -45,6 +45,7 @@ const notificationRoutes = require('./routes/notifications');
 const budgetsRoutes = require('./routes/budgets');
 const goalsRoutes = require('./routes/goals');
 const investmentsRoutes = require('./routes/investments');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const server = http.createServer(app);
@@ -95,6 +96,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/goals', goalsRoutes);
 app.use('/api/investments', investmentsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 io.use(async (socket, next) => {
     let token = socket.handshake.auth && socket.handshake.auth.token;

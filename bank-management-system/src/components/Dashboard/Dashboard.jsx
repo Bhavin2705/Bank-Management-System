@@ -70,7 +70,7 @@ const Dashboard = ({ user }) => {
           {isNewUser ? 'Welcome' : 'Welcome back'}, {user?.name}!
         </h1>
         <p style={{ color: 'var(--text-secondary)' }}>
-          Account: {user?.accountNumber}
+          Account No.: {user?.accountNumber}
         </p>
 
         {isNewUser && (

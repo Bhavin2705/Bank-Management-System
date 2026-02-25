@@ -44,8 +44,8 @@ A comprehensive REST API for BankPro's banking management system built with Node
 - **Authentication**: JWT (JSON Web Tokens)
 - **Security**: bcrypt, helmet, cors, express-rate-limit
 - **Validation**: express-validator
+- **Email**: Nodemailer (Implemented - SMTP support)
 - **File Upload**: multer (planned)
-- **Email**: nodemailer (planned)
 
 ## Project Structure
 
@@ -117,12 +117,27 @@ backend/
    MONGODB_URI=mongodb://localhost:27017/bank_management
    JWT_SECRET=your_super_secret_jwt_key_here
    JWT_EXPIRE=7d
+   FRONTEND_URL=http://localhost:5173
    ```
 
-4. **Start MongoDB**
+4. **Email Configuration (Optional)**
+   
+   For email functionality, configure SMTP in `.env`:
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your_email@gmail.com
+   SMTP_PASS=your_app_password
+   SMTP_SECURE=false
+   SMTP_FROM=noreply@bankpro.com
+   ```
+   
+   See [EMAIL_CONFIG.md](./EMAIL_CONFIG.md) for detailed setup instructions.
+
+5. **Start MongoDB**
    Make sure MongoDB is running on your system.
 
-5. **Run the server**
+6. **Run the server**
    ```bash
    # Development mode
    npm run dev

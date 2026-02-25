@@ -1,4 +1,6 @@
 const Investment = require('../models/Investment');
+const User = require('../models/User');
+const emailHelpers = require('../utils/emailHelpers');
 
 // @desc    Get all investments for a user
 // @route   GET /api/investments
@@ -180,7 +182,8 @@ const updateInvestment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Investment not found' });
     }
 
-    // Update allowed fields
+    const oldValue = investment.totalValue;
+
     const allowedFields = ['name', 'purchasePrice', 'quantity', 'currentPrice', 'purchaseDate', 'status', 'notes'];
     Object.keys(req.body).forEach(key => {
       if (allowedFields.includes(key)) {
@@ -188,12 +191,25 @@ const updateInvestment = async (req, res) => {
       }
     });
 
-    // Recalculate total value
     if (investment.currentPrice && investment.quantity) {
       investment.totalValue = investment.currentPrice * investment.quantity;
     }
 
     investment = await investment.save();
+
+    const user = await User.findById(req.user._id);
+    const change = investment.totalValue - (investment.purchasePrice * investment.quantity);
+
+    const investmentDetails = {
+      instrumentName: investment.name,
+      currentValue: investment.totalValue,
+      currency: 'INR',
+      change: parseFloat(change.toFixed(2)),
+      percentage: ((change / (investment.purchasePrice * investment.quantity)) * 100).toFixed(2),
+      updatedAt: new Date()
+    };
+
+    emailHelpers.sendInvestmentNotification(user.email, investmentDetails);
 
     res.status(200).json({ success: true, data: investment });
   } catch (err) {

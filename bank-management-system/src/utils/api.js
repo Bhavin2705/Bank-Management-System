@@ -1,5 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 const handleResponse = async (response, isLoginRequest = false) => {
     let data = {};
     try {
@@ -44,7 +43,7 @@ export const checkBackendHealth = async () => {
 
     try {
         const response = await Promise.race([
-            fetch('http://localhost:5000/health'),
+            fetch(`${API_BASE_URL.replace('/api', '')}/health`),
             timeoutPromise
         ]);
         return response.ok;
@@ -161,6 +160,14 @@ export const api = {
         checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
         checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
         verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) })
+    },
+
+    settings: {
+        getAll: () => apiRequest('/settings'),
+        updatePreferences: (data) => apiRequest('/settings/preferences', { method: 'PUT', body: JSON.stringify(data) }),
+        updateTwoFactor: (data) => apiRequest('/settings/two-factor', { method: 'PUT', body: JSON.stringify(data) }),
+        getLinkedAccounts: () => apiRequest('/settings/linked-accounts'),
+        getSessions: () => apiRequest('/settings/sessions')
     }
 };
 

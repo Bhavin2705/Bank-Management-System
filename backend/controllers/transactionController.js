@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
+const emailHelpers = require('../utils/emailHelpers');
 
 // @desc    Get all transactions for a user
 // @route   GET /api/transactions
@@ -104,13 +105,10 @@ const createTransaction = async (req, res) => {
     try {
         const { type, amount, description, category, recipientId, recipientAccount, recipientName } = req.body;
 
-        // Get current user balance
         const user = await User.findById(req.user._id);
-        // Ensure amounts are numbers and round to 2 decimals to avoid fp issues
         const numericAmount = roundTwo(Number(amount));
         let newBalance = roundTwo(Number(user.balance));
 
-        // Calculate new balance
         if (type === 'credit') {
             newBalance = roundTwo(newBalance + numericAmount);
         } else if (type === 'debit') {
@@ -123,11 +121,9 @@ const createTransaction = async (req, res) => {
             newBalance = roundTwo(newBalance - numericAmount);
         }
 
-        // Ensure there is always a description (Mongoose requires it)
         const finalDescription = description && description.trim().length > 0 ? description.trim() : (type === 'credit' ? 'Credit transaction' : 'Debit transaction');
         const finalCategory = type === 'credit' ? 'salary' : (category || 'other');
 
-        // Create transaction
         const transaction = await Transaction.create({
             userId: req.user._id,
             type,
@@ -141,10 +137,18 @@ const createTransaction = async (req, res) => {
         });
         console.log('[Transaction Controller] Transaction created:', transaction);
 
-        // Update user balance
         await User.findByIdAndUpdate(req.user._id, { balance: newBalance });
 
-        // If this is a transfer, create corresponding transaction for recipient
+        const transactionDetails = {
+            type: type,
+            amount: numericAmount,
+            currency: 'INR',
+            description: finalDescription,
+            timestamp: transaction.createdAt
+        };
+
+        emailHelpers.sendTransactionNotification(user.email, transactionDetails);
+
         if (type === 'transfer' && recipientId) {
             const recipient = await User.findById(recipientId);
             if (recipient) {
@@ -160,10 +164,19 @@ const createTransaction = async (req, res) => {
                 });
 
                 await User.findByIdAndUpdate(recipientId, { balance: recipientNewBalance });
+
+                const recipientTransactionDetails = {
+                    type: 'credit',
+                    amount: amount,
+                    currency: 'INR',
+                    description: `Transfer from ${user.name}`,
+                    timestamp: new Date()
+                };
+
+                emailHelpers.sendTransactionNotification(recipient.email, recipientTransactionDetails);
             }
         }
 
-        // Direct raw collection check to verify persistence
         try {
             const rawDoc = await mongoose.connection.db.collection('transactions').findOne({ _id: transaction._id });
             const count = await mongoose.connection.db.collection('transactions').countDocuments();
@@ -175,7 +188,6 @@ const createTransaction = async (req, res) => {
             }
         } catch (rawErr) {
             console.error('Error checking raw collection:', rawErr);
-            // continue to return created transaction since model returned it
         }
 
         res.status(201).json({ success: true, data: transaction });

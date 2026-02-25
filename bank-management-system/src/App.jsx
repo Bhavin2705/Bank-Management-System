@@ -224,6 +224,18 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* Settings route */}
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <div className="app-layout">
+                <Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+                <main className="main-content">
+                  <Settings user={user} onUserUpdate={handleUserUpdate} />
+                </main>
+              </div>
+            </ProtectedRoute>
+          } />
+
           <Route path="/admin-banks" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><AdminBanks /></main></div></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Users /></main></div></ProtectedRoute>} />
 

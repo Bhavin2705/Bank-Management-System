@@ -1,5 +1,5 @@
-import { Bell, Building2, Eye, EyeOff, Lock, Mail, MapPin, Phone, User } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, Building2, Eye, EyeOff, Lock, Mail, MapPin, Phone, User, CreditCard, Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import CustomCalendar from '../components/UI/CustomCalendar';
 import { api } from '../utils/api';
@@ -8,8 +8,9 @@ import { toLocalYYYYMMDD } from '../utils/date';
 const Settings = ({ user, onUserUpdate }) => {
   const { showSuccess, showError } = useNotification();
   const [activeTab, setActiveTab] = useState('profile');
-  // Bank is fixed to BankPro for this application
   const [loading, setLoading] = useState(false);
+  const [linkedAccounts, setLinkedAccounts] = useState([]);
+  const [sessions, setSessions] = useState(null);
   const [profileData, setProfileData] = useState({
     name: user.name || '',
     email: user.email || '',
@@ -28,13 +29,39 @@ const Settings = ({ user, onUserUpdate }) => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [preferencesData, setPreferencesData] = useState({
+    currency: user.preferences?.currency || 'INR',
+    language: user.preferences?.language || 'en',
+    theme: user.preferences?.theme || 'light',
+    notifications: {
+      email: user.preferences?.notifications?.email !== false,
+      sms: user.preferences?.notifications?.sms !== false,
+      push: user.preferences?.notifications?.push !== false
+    }
+  });
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(user.security?.twoFactorEnabled || false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  // No bank list loading: Bank is fixed to BankPro for this site
+  // Load linked accounts and sessions on mount
+  useEffect(() => {
+    const loadAdditionalData = async () => {
+      try {
+        const [accountsRes, sessionsRes] = await Promise.all([
+          api.settings.getLinkedAccounts(),
+          api.settings.getSessions()
+        ]);
+        if (accountsRes.success) setLinkedAccounts(accountsRes.data);
+        if (sessionsRes.success) setSessions(sessionsRes.data);
+      } catch (err) {
+        console.error('Error loading additional data:', err);
+      }
+    };
+    loadAdditionalData();
+  }, []);
 
   const handleFormKeyDown = (e) => {
     // Prevent form submission on Enter key press for all inputs except submit buttons
@@ -139,6 +166,43 @@ const Settings = ({ user, onUserUpdate }) => {
     setLoading(false);
   };
 
+  const handlePreferencesUpdate = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    setLoading(true);
+
+    try {
+      const result = await api.settings.updatePreferences(preferencesData);
+      if (result.success) {
+        showSuccess('Preferences updated successfully! ✨');
+      } else {
+        showError(result.error || 'Failed to update preferences');
+      }
+    } catch (error) {
+      console.error('Preferences update error:', error);
+      showError('Failed to update preferences. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  const handleTwoFactorToggle = async () => {
+    setLoading(true);
+    try {
+      const result = await api.settings.updateTwoFactor({ enable: !twoFactorEnabled });
+      if (result.success) {
+        setTwoFactorEnabled(!twoFactorEnabled);
+        showSuccess(`Two-factor authentication ${!twoFactorEnabled ? 'enabled' : 'disabled'} successfully! 🔐`);
+      } else {
+        showError(result.error || 'Failed to update two-factor settings');
+      }
+    } catch (error) {
+      console.error('Two-factor toggle error:', error);
+      showError('Failed to update two-factor settings. Please try again.');
+    }
+    setLoading(false);
+  };
+
   const handleProfileChange = (e) => {
     setProfileData({
       ...profileData,
@@ -153,6 +217,24 @@ const Settings = ({ user, onUserUpdate }) => {
     });
   };
 
+  const handlePreferencesChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setPreferencesData({
+        ...preferencesData,
+        notifications: {
+          ...preferencesData.notifications,
+          [name]: checked
+        }
+      });
+    } else {
+      setPreferencesData({
+        ...preferencesData,
+        [name]: value
+      });
+    }
+  };
+
   return (
     <div className="container">
       <div style={{ marginBottom: '2rem' }}>
@@ -165,11 +247,11 @@ const Settings = ({ user, onUserUpdate }) => {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '2rem', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveTab('profile')}
             className={`btn ${activeTab === 'profile' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0' }}
+            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0', marginBottom: '0.5rem' }}
           >
             <User size={16} />
             Profile
@@ -177,7 +259,7 @@ const Settings = ({ user, onUserUpdate }) => {
           <button
             onClick={() => setActiveTab('bank')}
             className={`btn ${activeTab === 'bank' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0' }}
+            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0', marginBottom: '0.5rem' }}
           >
             <Building2 size={16} />
             Bank
@@ -185,18 +267,34 @@ const Settings = ({ user, onUserUpdate }) => {
           <button
             onClick={() => setActiveTab('security')}
             className={`btn ${activeTab === 'security' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0' }}
+            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0', marginBottom: '0.5rem' }}
           >
             <Lock size={16} />
             Security
           </button>
           <button
-            onClick={() => setActiveTab('notifications')}
-            className={`btn ${activeTab === 'notifications' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ borderRadius: '8px 8px 0 0' }}
+            onClick={() => setActiveTab('preferences')}
+            className={`btn ${activeTab === 'preferences' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0', marginBottom: '0.5rem' }}
           >
             <Bell size={16} />
-            Notifications
+            Preferences
+          </button>
+          <button
+            onClick={() => setActiveTab('accounts')}
+            className={`btn ${activeTab === 'accounts' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ marginRight: '1rem', borderRadius: '8px 8px 0 0', marginBottom: '0.5rem' }}
+          >
+            <CreditCard size={16} />
+            Accounts
+          </button>
+          <button
+            onClick={() => setActiveTab('sessions')}
+            className={`btn ${activeTab === 'sessions' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ borderRadius: '8px 8px 0 0', marginBottom: '0.5rem' }}
+          >
+            <Clock size={16} />
+            Sessions
           </button>
         </div>
 
@@ -421,14 +519,151 @@ const Settings = ({ user, onUserUpdate }) => {
           </div>
         )}
 
+        {activeTab === 'preferences' && (
+          <div>
+            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Bell size={20} />
+              Preferences & Notifications
+            </h3>
+
+            <form onSubmit={handlePreferencesUpdate}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Currency</label>
+                  <select
+                    name="currency"
+                    className="form-input"
+                    value={preferencesData.currency}
+                    onChange={handlePreferencesChange}
+                  >
+                    <option value="INR">INR (₹)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Language</label>
+                  <select
+                    name="language"
+                    className="form-input"
+                    value={preferencesData.language}
+                    onChange={handlePreferencesChange}
+                  >
+                    <option value="en">English</option>
+                    <option value="hi">Hindi</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Theme</label>
+                  <select
+                    name="theme"
+                    className="form-input"
+                    value={preferencesData.theme}
+                    onChange={handlePreferencesChange}
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '2rem', padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: '8px', backgroundColor: 'var(--bg-tertiary)' }}>
+                <h4 style={{ marginBottom: '1rem', fontWeight: '600' }}>Notification Channels</h4>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: '500' }}>Email Notifications</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive updates via email</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      name="email"
+                      checked={preferencesData.notifications.email}
+                      onChange={handlePreferencesChange}
+                      style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: '500' }}>SMS Notifications</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive updates via SMS</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      name="sms"
+                      checked={preferencesData.notifications.sms}
+                      onChange={handlePreferencesChange}
+                      style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: '500' }}>Push Notifications</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive real-time alerts</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      name="push"
+                      checked={preferencesData.notifications.push}
+                      onChange={handlePreferencesChange}
+                      style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Saving...' : 'Save Preferences'}
+              </button>
+            </form>
+          </div>
+        )}
+
         {activeTab === 'security' && (
           <div>
             <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Lock size={20} />
-              Change Password
+              Security Settings
             </h3>
 
+            <div style={{ marginBottom: '2rem', padding: '1.5rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: '1.05rem' }}>Two-Factor Authentication</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                    Add an extra layer of security to your account
+                  </div>
+                </div>
+                <button
+                  onClick={handleTwoFactorToggle}
+                  disabled={loading}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: twoFactorEnabled ? '#10b981' : '#ef4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '500'
+                  }}
+                >
+                  {twoFactorEnabled ? 'Enabled ✓' : 'Disabled'}
+                </button>
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', padding: '1rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: '6px' }}>
+                {twoFactorEnabled ? '✓ Your account is protected with two-factor authentication.' : 'Enable two-factor authentication for enhanced security.'}
+              </div>
+            </div>
+
             <form onSubmit={handlePasswordChange}>
+              <h4 style={{ marginBottom: '1rem', fontWeight: '600' }}>Change Password</h4>
               <div className="form-group">
                 <label className="form-label">Current Password</label>
                 <div style={{ position: 'relative' }}>
@@ -470,7 +705,7 @@ const Settings = ({ user, onUserUpdate }) => {
                     value={passwordData.newPassword}
                     onChange={handlePasswordChangeInput}
                     required
-                    minLength="6"
+                    minLength="8"
                     style={{ paddingRight: '40px' }}
                   />
                   <button
@@ -502,7 +737,7 @@ const Settings = ({ user, onUserUpdate }) => {
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChangeInput}
                     required
-                    minLength="6"
+                    minLength="8"
                     style={{ paddingRight: '40px' }}
                   />
                   <button
@@ -524,45 +759,101 @@ const Settings = ({ user, onUserUpdate }) => {
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary">
-                Change Password
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Changing...' : 'Change Password'}
               </button>
             </form>
           </div>
         )}
 
-        {activeTab === 'notifications' && (
+        {activeTab === 'accounts' && (
           <div>
             <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Bell size={20} />
-              Notification Preferences
+              <CreditCard size={20} />
+              Linked Accounts & Cards
             </h3>
 
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                <div>
-                  <div style={{ fontWeight: '500' }}>Email Notifications</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive notifications via email</div>
-                </div>
-                <input type="checkbox" defaultChecked style={{ transform: 'scale(1.2)' }} />
+            {linkedAccounts && linkedAccounts.length > 0 ? (
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                {linkedAccounts.map((card) => (
+                  <div key={card._id} style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div>
+                        <div style={{ fontWeight: '600' }}>{card.cardHolder || 'Card'}</div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
+                          {card.cardType || 'Credit Card'} • ••••{card.cardNumber?.slice(-4)}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                          Expires: {card.expiryMonth}/{card.expiryYear}
+                        </div>
+                      </div>
+                      <span style={{
+                        padding: '0.25rem 0.75rem',
+                        backgroundColor: card.status === 'active' ? '#10b981' : '#ef4444',
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontSize: '0.85rem'
+                      }}>
+                        {card.status || 'Active'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  No linked cards found. Add a card from the Cards section.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                <div>
-                  <div style={{ fontWeight: '500' }}>SMS Notifications</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive notifications via SMS</div>
-                </div>
-                <input type="checkbox" style={{ transform: 'scale(1.2)' }} />
-              </div>
+        {activeTab === 'sessions' && (
+          <div>
+            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Clock size={20} />
+              Account & Session Information
+            </h3>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                <div>
-                  <div style={{ fontWeight: '500' }}>Marketing Communications</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive promotional offers and updates</div>
+            {sessions ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Account Created</div>
+                  <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                    {new Date(sessions.accountCreated).toLocaleDateString()}
+                  </div>
                 </div>
-                <input type="checkbox" style={{ transform: 'scale(1.2)' }} />
+
+                <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Account Age</div>
+                  <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                    {sessions.accountAge} days
+                  </div>
+                </div>
+
+                <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Last Login</div>
+                  <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                    {sessions.lastLogin ? new Date(sessions.lastLogin).toLocaleDateString() : 'First login'}
+                  </div>
+                </div>
+
+                <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Current Session</div>
+                  <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                    Active Now
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  Loading session information...
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ const seedAdmin = async () => {
             email: 'admin@bankpro.com',
             password: 'Admin@123',
             phone: '7813765432',
+            pin: '1234',
             accountNumber: '97612743981',
             role: 'admin'
         };
