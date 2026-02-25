@@ -10,6 +10,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me';
 const JWT_EXPIRE_DAYS = parseInt(process.env.JWT_EXPIRE_DAYS) || 7;
 const JWT_REFRESH_EXPIRE_DAYS = parseInt(process.env.JWT_REFRESH_EXPIRE_DAYS) || 30;
+const normalizeSameSite = (value) => {
+    const normalized = String(value || '').toLowerCase();
+    if (['lax', 'strict', 'none'].includes(normalized)) return normalized;
+    return 'none';
+};
+const PRODUCTION_COOKIE_SAME_SITE = normalizeSameSite(process.env.COOKIE_SAME_SITE || 'none');
 
 const generateToken = (id) => {
     // Include a tokenType claim so code can distinguish access vs refresh tokens
@@ -28,14 +34,14 @@ const generateRefreshToken = (id) => {
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+    sameSite: process.env.NODE_ENV === 'production' ? PRODUCTION_COOKIE_SAME_SITE : 'Lax',
     maxAge: JWT_EXPIRE_DAYS * 24 * 60 * 60 * 1000
 };
 
 const refreshCookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+    sameSite: process.env.NODE_ENV === 'production' ? PRODUCTION_COOKIE_SAME_SITE : 'Lax',
     maxAge: JWT_REFRESH_EXPIRE_DAYS * 24 * 60 * 60 * 1000
 };
 
@@ -299,9 +305,6 @@ const login = async (req, res) => {
         res.cookie('token', token, cookieOptions);
         res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
-        res.cookie('token', token, cookieOptions);
-        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
-
         res.status(200).json({
             success: true,
             data: {
@@ -415,6 +418,10 @@ const loginWithAccount = async (req, res) => {
             preferences: user.preferences,
             createdAt: user.createdAt // ensure createdAt is sent to frontend
         };
+
+        // Keep auth behavior consistent with standard login flow
+        res.cookie('token', token, cookieOptions);
+        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
         res.status(200).json({
             success: true,
@@ -568,7 +575,7 @@ const forgotPassword = async (req, res) => {
         const resetToken = user.createPasswordResetToken();
         await user.save({ validateBeforeSave: false });
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173';
         const resetUrl = `${frontendUrl.replace(/\/$/, '')}/reset-password/${resetToken}`;
 
         if (!emailService.isConfigured()) {

@@ -1,33 +1,47 @@
 const cors = require('cors');
 
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+const parseOrigins = (value) => (value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 
-        // Basic allowlist plus a localhost wildcard to accept any localhost:port
-        const allowedOrigins = [
-            process.env.FRONTEND_URL, // Production frontend URL (if set)
-            'http://localhost:5173', // Vite dev server
-            'http://localhost:5174', // Alternative Vite dev server
-            'http://127.0.0.1:5173',
-            'http://127.0.0.1:5174',
-            'http://localhost:3000', // Alternative dev server
-            'http://127.0.0.1:3000',
-            'http://localhost:4173' // Vite preview default
-        ].filter(Boolean); // Remove undefined values
+const explicitAllowedOrigins = [
+    process.env.FRONTEND_URL, // Primary production frontend URL
+    ...parseOrigins(process.env.FRONTEND_URLS), // Optional comma-separated frontend URLs
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:4173'
+].filter(Boolean);
 
-        // Allow any localhost (or 127.0.0.1) origin regardless of port to simplify local dev
-        try {
-            const parsed = new URL(origin);
-            if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-                return callback(null, true);
-            }
-        } catch (e) {
-            // If origin is not a valid URL for some reason, fall through to explicit list check
+const allowedOrigins = new Set(explicitAllowedOrigins);
+
+const isAllowedOrigin = (origin) => {
+    if (!origin) return true;
+
+    try {
+        const parsed = new URL(origin);
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+            return true;
         }
 
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        // Allow Vercel preview and production domains by default
+        if (parsed.hostname.endsWith('.vercel.app')) {
+            return true;
+        }
+    } catch (e) {
+        return false;
+    }
+
+    return allowedOrigins.has(origin);
+};
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (isAllowedOrigin(origin)) {
             callback(null, true);
         } else {
             callback(new Error(`Not allowed by CORS: ${origin}`));

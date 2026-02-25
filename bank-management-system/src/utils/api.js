@@ -1,4 +1,30 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
+const AUTH_TOKEN_KEY = 'bank_auth_token';
+
+export const getAuthToken = () => {
+    try {
+        return localStorage.getItem(AUTH_TOKEN_KEY);
+    } catch {
+        return null;
+    }
+};
+
+export const setAuthToken = (token) => {
+    if (!token) return;
+    try {
+        localStorage.setItem(AUTH_TOKEN_KEY, token);
+    } catch {
+        // no-op when storage is unavailable
+    }
+};
+
+export const clearAuthToken = () => {
+    try {
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+    } catch {
+        // no-op when storage is unavailable
+    }
+};
 const handleResponse = async (response, isLoginRequest = false) => {
     let data = {};
     try {
@@ -17,14 +43,22 @@ const handleResponse = async (response, isLoginRequest = false) => {
 
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
+    const authToken = getAuthToken();
     const config = {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
         credentials: 'include',
         ...options
     };
 
     if (options.headers) {
-        config.headers = { 'Content-Type': 'application/json', ...options.headers };
+        config.headers = {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            ...options.headers
+        };
     }
 
     const timeoutPromise = new Promise((_, reject) =>
@@ -33,7 +67,17 @@ const apiRequest = async (endpoint, options = {}) => {
 
     const response = await Promise.race([fetch(url, config), timeoutPromise]);
     const isLoginRequest = endpoint === '/auth/login';
-    return handleResponse(response, isLoginRequest);
+    const result = await handleResponse(response, isLoginRequest);
+
+    if (endpoint === '/auth/logout') {
+        clearAuthToken();
+    }
+
+    if (result && result.data && result.data.token) {
+        setAuthToken(result.data.token);
+    }
+
+    return result;
 };
 
 export const checkBackendHealth = async () => {

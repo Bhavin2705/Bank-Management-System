@@ -1,6 +1,6 @@
 // Authentication utilities using API
 
-import api from './api.js';
+import api, { clearAuthToken } from './api.js';
 import clientData from './clientData';
 
 export const AUTH_KEY = 'bank_auth_user';
@@ -80,6 +80,7 @@ export const logout = async () => {
   } finally {
     // Backend clears httpOnly cookies, remove any legacy non-httpOnly token cookies if present
     try {
+      clearAuthToken();
       document.cookie = 'bank_auth_token=; path=/; max-age=0';
       document.cookie = 'bank_auth_refresh_token=; path=/; max-age=0';
     } catch (e) {

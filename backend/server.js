@@ -50,15 +50,44 @@ const settingsRoutes = require('./routes/settings');
 const app = express();
 const server = http.createServer(app);
 
-const allowedSocketOrigins = [];
-if (process.env.FRONTEND_URL) {
-    allowedSocketOrigins.push(process.env.FRONTEND_URL);
-}
-allowedSocketOrigins.push('http://localhost:3000', 'http://localhost:5173');
+const parseOrigins = (value) => (value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const allowedSocketOrigins = new Set([
+    process.env.FRONTEND_URL,
+    ...parseOrigins(process.env.FRONTEND_URLS),
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'
+].filter(Boolean));
+
+const isAllowedSocketOrigin = (origin) => {
+    if (!origin) return true;
+    try {
+        const parsed = new URL(origin);
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+            return true;
+        }
+        if (parsed.hostname.endsWith('.vercel.app')) {
+            return true;
+        }
+    } catch (e) {
+        return false;
+    }
+    return allowedSocketOrigins.has(origin);
+};
 
 const io = socketIo(server, {
     cors: {
-        origin: allowedSocketOrigins,
+        origin: (origin, callback) => {
+            if (isAllowedSocketOrigin(origin)) return callback(null, true);
+            return callback(new Error(`Not allowed by Socket CORS: ${origin}`));
+        },
         methods: ["GET", "POST"],
         credentials: true
     }

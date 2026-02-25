@@ -2,9 +2,12 @@ import { Bot, MessageCircle, Send, User, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { useNotification } from '../components/NotificationProvider';
+import { getAuthToken } from '../utils/api';
 
 const AdminSupport = ({ user }) => {
   const { showError, showSuccess } = useNotification();
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
+  const socketUrl = (import.meta.env.VITE_SOCKET_URL || apiUrl.replace(/\/api\/?$/, '')).replace(/\/$/, '');
   const [userMessages, setUserMessages] = useState([]);
   const [responseText, setResponseText] = useState('');
   const [socket, setSocket] = useState(null);
@@ -20,7 +23,10 @@ const AdminSupport = ({ user }) => {
     }
 
     // Rely on cookie-based auth for sockets. Server will read httpOnly cookies.
-    const newSocket = io('http://localhost:5000', {
+    const newSocket = io(socketUrl, {
+      auth: {
+        token: getAuthToken()
+      },
       withCredentials: true,
       transports: ['websocket', 'polling'],
       timeout: 20000,
@@ -65,7 +71,7 @@ const AdminSupport = ({ user }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [user, showError, showSuccess]);
+  }, [user, showError, showSuccess, socketUrl]);
 
   const sendResponse = () => {
     if (!responseText.trim() || !selectedUserId || !socket) return;
