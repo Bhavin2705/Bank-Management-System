@@ -65,17 +65,20 @@ function App() {
   const initializeApp = async () => {
     try {
       setError(null);
+      const pathname = window.location.pathname;
+      const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/password-reset-success'];
+      const isOnAuthPage = authPaths.some(p => pathname.startsWith(p));
+
       const backendHealthy = await checkBackendHealth();
-      if (!backendHealthy) throw new Error('Backend server is not available');
+      if (!backendHealthy && !isOnAuthPage) {
+        throw new Error('Backend server is not available');
+      }
       try {
         await Promise.race([
           initializeUsers(),
           new Promise((_, reject) => setTimeout(() => reject(new Error()), 3000))
         ]);
       } catch { }
-      const pathname = window.location.pathname;
-      const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/password-reset-success'];
-      const isOnAuthPage = authPaths.some(p => pathname.startsWith(p));
       if (!isOnAuthPage) {
         const refreshedUser = await Promise.race([
           refreshUserData(),

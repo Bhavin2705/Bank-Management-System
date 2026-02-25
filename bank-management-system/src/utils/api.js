@@ -82,7 +82,7 @@ const apiRequest = async (endpoint, options = {}) => {
 
 export const checkBackendHealth = async () => {
     const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Health check timeout')), 3000)
+        setTimeout(() => reject(new Error('Health check timeout')), 20000)
     );
 
     try {
