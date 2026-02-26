@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
+const { createInAppNotification } = require('../utils/notifications');
 
 // @desc    Get all transactions for a user
 // @route   GET /api/transactions
@@ -147,7 +148,22 @@ const createTransaction = async (req, res) => {
             timestamp: transaction.createdAt
         };
 
-        emailHelpers.sendTransactionNotification(user.email, transactionDetails);
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'transaction',
+            title: type === 'credit' ? 'Deposit Successful' : 'Withdrawal Successful',
+            message: `Rs${numericAmount.toLocaleString('en-IN')} ${type === 'credit' ? 'credited to' : 'debited from'} your account.`,
+            relatedId: transaction._id,
+            relatedModel: 'Transaction',
+            metadata: {
+                amount: numericAmount,
+                category: finalCategory
+            }
+        });
+
+        if (user?.preferences?.notifications?.email !== false) {
+            emailHelpers.sendTransactionNotification(user.email, transactionDetails);
+        }
 
         if (type === 'transfer' && recipientId) {
             const recipient = await User.findById(recipientId);
@@ -173,7 +189,9 @@ const createTransaction = async (req, res) => {
                     timestamp: new Date()
                 };
 
-                emailHelpers.sendTransactionNotification(recipient.email, recipientTransactionDetails);
+                if (recipient?.preferences?.notifications?.email !== false) {
+                    emailHelpers.sendTransactionNotification(recipient.email, recipientTransactionDetails);
+                }
             }
         }
 
@@ -572,13 +590,26 @@ const transferMoney = async (req, res) => {
             recipientBank: recipientBank || null
         });
 
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'transaction',
+            title: 'Transfer Sent',
+            message: `Rs${amt.toLocaleString('en-IN')} transferred ${recipient ? `to ${recipient.name}` : 'to external account'}.`,
+            relatedId: senderTransaction._id,
+            relatedModel: 'Transaction',
+            metadata: {
+                amount: amt,
+                category: 'transfer'
+            }
+        });
+
         // No separate fee transaction; fee is included in main debit transaction
 
         // For internal transfers, create corresponding credit transaction for recipient
         if (isInternalTransfer && recipient) {
             const recipientNewBalance = recipient.balance + amount;
 
-            await Transaction.create({
+            const recipientTransaction = await Transaction.create({
                 userId: recipient._id,
                 type: 'credit',
                 transferType: 'internal',
@@ -589,6 +620,19 @@ const transferMoney = async (req, res) => {
                 recipientId: req.user._id, // Reference back to sender
                 recipientAccount: sender.accountNumber,
                 recipientName: sender.name
+            });
+
+            await createInAppNotification({
+                userId: recipient._id,
+                type: 'transaction',
+                title: 'Money Received',
+                message: `Rs${amt.toLocaleString('en-IN')} received from ${sender.name}.`,
+                relatedId: recipientTransaction._id,
+                relatedModel: 'Transaction',
+                metadata: {
+                    amount: amt,
+                    category: 'transfer'
+                }
             });
 
             // Update recipient balance

@@ -15,8 +15,6 @@ const Cards = ({ user }) => {
     pin: ''
   });
   const [showPin, setShowPin] = useState(false);
-  const [oneTimeCvv, setOneTimeCvv] = useState(null);
-  const [showCvvModal, setShowCvvModal] = useState(false);
   const [modal, setModal] = useState({ open: false });
   const [showCvvPinModal, setShowCvvPinModal] = useState(false);
   const [cvvPin, setCvvPin] = useState('');
@@ -78,15 +76,9 @@ const Cards = ({ user }) => {
     api.cards.create(newCard)
       .then((result) => {
         if (result.success) {
-          // reload cards
           loadCards();
           setFormData({ cardType: 'debit', cardName: '', pin: '' });
           setShowAddForm(false);
-          // show one-time CVV if provided by server
-          if (result.oneTimeCvv) {
-            setOneTimeCvv(result.oneTimeCvv);
-            setShowCvvModal(true);
-          }
         } else {
           showError(result.error || 'Failed to create card');
         }
@@ -108,13 +100,11 @@ const Cards = ({ user }) => {
   };
 
   const toggleCvvVisibility = (cardId) => {
-    // If CVV is already visible, hide it directly
     if (visibleCvvs.has(cardId)) {
       const newVisible = new Set(visibleCvvs);
       newVisible.delete(cardId);
       setVisibleCvvs(newVisible);
     } else {
-      // Show PIN modal first to verify before revealing CVV
       setPendingCvvCardId(cardId);
       setShowCvvPinModal(true);
       setCvvPin('');
@@ -137,7 +127,6 @@ const Cards = ({ user }) => {
 
       if (result && result.success) {
         console.log('PIN verified successfully, revealing CVV...');
-        // PIN is correct, reveal CVV
         const newVisible = new Set(visibleCvvs);
         newVisible.add(pendingCvvCardId);
         setVisibleCvvs(newVisible);
@@ -229,7 +218,6 @@ const Cards = ({ user }) => {
     );
   }
 
-  // ...existing code for regular users...
   return (
     <div className="container">
       <div style={{ marginBottom: '2rem' }}>
@@ -471,22 +459,6 @@ const Cards = ({ user }) => {
           </div>
         )}
       </div>
-      {/* One-time CVV modal */}
-      {false && (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowCvvModal(false)}>
-          <div style={{ background: 'white', padding: '1.5rem', borderRadius: 8, minWidth: 300 }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginBottom: '.5rem' }}>Card created</h3>
-            <p style={{ marginBottom: '1rem' }}>This is the one-time CVV. It will not be shown again.</p>
-            <div style={{ fontSize: '1.5rem', letterSpacing: '4px', fontWeight: 700, textAlign: 'center', marginBottom: '1rem' }}>{oneTimeCvv}</div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button className="btn" onClick={() => { navigator.clipboard?.writeText(oneTimeCvv || ''); setShowCvvModal(false); }}>Copy</button>
-              <button className="btn btn-primary" onClick={() => setShowCvvModal(false)}>Done</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm modal for close card */}
       {modal.open && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.25)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: '#fff', borderRadius: 8, padding: 24, minWidth: 320, boxShadow: '0 2px 16px rgba(0,0,0,0.15)' }}>
@@ -500,7 +472,6 @@ const Cards = ({ user }) => {
         </div>
       )}
 
-      {/* PIN Verification Modal for CVV Reveal */}
       {showCvvPinModal && (
         <div style={{
           position: 'fixed',

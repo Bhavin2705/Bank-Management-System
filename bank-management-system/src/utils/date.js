@@ -1,4 +1,3 @@
-// Small date helpers to format dates in local YYYY-MM-DD without timezone shifts
 export const toLocalYYYYMMDD = (date) => {
     if (!date) return '';
     const d = new Date(date);
@@ -13,7 +12,6 @@ export const fromLocalYYYYMMDD = (isoString) => {
     const parts = isoString.split('-');
     if (parts.length !== 3) return null;
     const [yyyy, mm, dd] = parts.map(p => parseInt(p, 10));
-    // Construct using local date (year, monthIndex, day)
     return new Date(yyyy, mm - 1, dd);
 };
 

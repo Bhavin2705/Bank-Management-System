@@ -1,6 +1,7 @@
 const Goal = require('../models/Goal');
 const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
+const { createInAppNotification } = require('../utils/notifications');
 
 // @desc    Get all goals for a user
 // @route   GET /api/goals
@@ -188,7 +189,25 @@ const updateGoal = async (req, res) => {
       currency: 'INR'
     };
 
-    emailHelpers.sendGoalUpdateNotification(user.email, goalDetails);
+    if (user?.preferences?.notifications?.email !== false) {
+      emailHelpers.sendGoalUpdateNotification(user.email, goalDetails);
+    }
+
+    await createInAppNotification({
+      userId: req.user._id,
+      type: 'goal_progress',
+      title: goal.status === 'completed' ? 'Goal Completed' : 'Goal Updated',
+      message: goal.status === 'completed'
+        ? `Congrats! You completed "${goal.name}".`
+        : `"${goal.name}" progress updated to Rs${goal.currentAmount.toLocaleString('en-IN')} of Rs${goal.targetAmount.toLocaleString('en-IN')}.`,
+      priority: goal.status === 'completed' ? 'high' : 'medium',
+      relatedId: goal._id,
+      relatedModel: 'Goal',
+      metadata: {
+        amount: goal.currentAmount,
+        category: 'goal'
+      }
+    });
 
     res.status(200).json({ success: true, data: goal });
   } catch (err) {
@@ -255,6 +274,22 @@ const addGoalProgress = async (req, res) => {
     }
 
     goal = await goal.save();
+
+    await createInAppNotification({
+      userId: req.user._id,
+      type: 'goal_progress',
+      title: goal.status === 'completed' ? 'Goal Completed' : 'Goal Progress Added',
+      message: goal.status === 'completed'
+        ? `Congrats! You completed "${goal.name}".`
+        : `Added Rs${amount.toLocaleString('en-IN')} to "${goal.name}".`,
+      priority: goal.status === 'completed' ? 'high' : 'medium',
+      relatedId: goal._id,
+      relatedModel: 'Goal',
+      metadata: {
+        amount,
+        category: 'goal'
+      }
+    });
 
     res.status(200).json({
       success: true,

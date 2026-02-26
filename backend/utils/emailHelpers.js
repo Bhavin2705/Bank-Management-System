@@ -105,6 +105,21 @@ const sendSecurityAlert = async (email, alertDetails) => {
     }
 };
 
+const sendLoginOtpEmail = async (email, name, otpCode) => {
+    if (!emailService.isConfigured()) {
+        console.warn('Email service not configured. Skipping login OTP email.');
+        return false;
+    }
+
+    try {
+        await emailService.sendLoginOtpEmail(email, name, otpCode);
+        return true;
+    } catch (error) {
+        console.error('Error sending login OTP email:', error.message);
+        return false;
+    }
+};
+
 module.exports = {
     sendWelcomeEmail,
     sendAccountCreatedEmail,
@@ -112,5 +127,6 @@ module.exports = {
     sendBillPaymentNotification,
     sendGoalUpdateNotification,
     sendInvestmentNotification,
-    sendSecurityAlert
+    sendSecurityAlert,
+    sendLoginOtpEmail
 };

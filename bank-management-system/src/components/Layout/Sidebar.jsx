@@ -12,15 +12,18 @@ import {
   Shield,
   Sun,
   User,
-  Users
+  Users,
+  Menu,
+  X
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { canAccessAdminFeatures } from '../../utils/auth';
 
 const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
   const location = useLocation();
   const [isCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
@@ -38,10 +41,47 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
       : []
   ];
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleLogoutClick = () => {
+    setIsMobileMenuOpen(false);
+    onLogout();
+  };
+
   return (
     <>
+      <button
+        className="sidebar-mobile-toggle"
+        onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+        aria-label={isMobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-expanded={isMobileMenuOpen}
+      >
+        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {isMobileMenuOpen && (
+        <button
+          className="sidebar-backdrop"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="Close navigation menu backdrop"
+        />
+      )}
+
       <aside
-        className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}
+        className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -63,6 +103,7 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
                   <Link
                     to={item.path}
                     className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Icon size={20} />
                     {!isCollapsed && <span>{item.label}</span>}
@@ -104,7 +145,7 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
           </div>
 
           <button
-            onClick={onLogout}
+            onClick={handleLogoutClick}
             style={{
               padding: '0.75rem 1rem',
               fontSize: '0.95rem',

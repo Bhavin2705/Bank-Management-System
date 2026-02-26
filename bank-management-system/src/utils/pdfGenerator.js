@@ -1,23 +1,13 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-/**
- * Generate a PDF mini statement from transaction data
- * @param {Array} transactions - Array of transaction objects
- * @param {Object} user - User information object
- * @param {string} accountNumber - Account number
- * @param {Date} startDate - Start date for the statement period
- * @param {Date} endDate - End date for the statement period
- */
 export const generateMiniStatementPDF = async (transactions, user, accountNumber, startDate, endDate) => {
     const pdf = new jsPDF();
 
-    // Set up colors and fonts
     const primaryColor = [102, 126, 234]; // Bank blue
     const secondaryColor = [108, 117, 125]; // Gray
     const textColor = [51, 51, 51]; // Dark gray
 
-    // Header
     pdf.setFillColor(...primaryColor);
     pdf.rect(0, 0, 210, 40, 'F');
 
@@ -30,7 +20,6 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     pdf.setFont('helvetica', 'normal');
     pdf.text('Mini Statement', 20, 30);
 
-    // Bank details (right column) - wrap long values to fit page
     pdf.setTextColor(...textColor);
     pdf.setFontSize(10);
     const rightX = 150;
@@ -49,7 +38,6 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     const currLines = pdf.splitTextToSize('Currency: INR (Rs)', rightWidth);
     pdf.text(currLines, rightX, 45);
 
-    // Customer details
     let yPosition = 50;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
@@ -62,14 +50,12 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     yPosition += 6;
     pdf.text('Account Type: ' + (user?.accountType || 'Savings'), 20, yPosition);
     yPosition += 6;
-    // Wrap account number if it's long to avoid clipping
     const acctLabel = 'Account Number: ' + accountNumber;
     const leftMargin = 20;
     const availableWidth = 210 - leftMargin - 20; // keep 20mm right padding
     const acctLines = pdf.splitTextToSize(acctLabel, availableWidth);
     pdf.text(acctLines, leftMargin, yPosition);
 
-    // Transaction summary
     yPosition += 15;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
@@ -93,13 +79,11 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     yPosition += 6;
     pdf.text('Net Balance: Rs ' + (totalCredits - totalDebits).toFixed(2), 20, yPosition);
 
-    // Transactions table
     yPosition += 15;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Recent Transactions', 20, yPosition);
 
-    // Table headers
     yPosition += 10;
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
@@ -108,11 +92,9 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
     pdf.text('Type', 120, yPosition);
     pdf.text('Amount', 150, yPosition);
 
-    // Header line
     pdf.setDrawColor(...secondaryColor);
     pdf.line(20, yPosition + 2, 190, yPosition + 2);
 
-    // Transaction rows
     yPosition += 8;
     pdf.setFont('helvetica', 'normal');
 
@@ -122,7 +104,6 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
             yPosition = 20;
         }
 
-        // Use createdAt if available, fallback to date
         const rawDate = transaction.createdAt || transaction.date;
         let formattedDate = 'N/A';
         if (rawDate) {
@@ -142,22 +123,15 @@ export const generateMiniStatementPDF = async (transactions, user, accountNumber
         yPosition += 6;
     });
 
-    // Footer
     pdf.setFontSize(8);
     pdf.setTextColor(...secondaryColor);
     pdf.text('This is a computer-generated statement. For any discrepancies, please contact customer support.', 20, 285);
     pdf.text('BankPro - Your Trusted Banking Partner', 105, 285, { align: 'center' });
 
-    // Save the PDF
     const fileName = `mini_statement_${accountNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
 };
 
-/**
- * Generate a PDF from an HTML element
- * @param {HTMLElement} element - The HTML element to convert to PDF
- * @param {string} fileName - Name of the PDF file
- */
 export const generatePDFFromHTML = async (element, fileName) => {
     try {
         const canvas = await html2canvas(element, {
@@ -193,19 +167,9 @@ export const generatePDFFromHTML = async (element, fileName) => {
     }
 };
 
-/**
- * Generate a detailed account statement PDF
- * @param {Array} transactions - Array of all transactions
- * @param {Object} user - User information
- * @param {string} accountNumber - Account number
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- */
 export const generateAccountStatementPDF = async (transactions, user, accountNumber, startDate, endDate) => {
     const pdf = new jsPDF();
 
-    // Similar structure to mini statement but with more details
-    // Header
     pdf.setFillColor(102, 126, 234);
     pdf.rect(0, 0, 210, 50, 'F');
 
@@ -236,7 +200,6 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     const currLines2 = pdf.splitTextToSize('Currency: INR (Rs)', rightWidth2);
     pdf.text(currLines2, rightX2, 50);
 
-    // Customer and account details
     let yPosition = 60;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
@@ -253,7 +216,6 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     yPosition += 6;
     pdf.text('Branch: Main Branch', 20, yPosition);
 
-    // Opening and closing balance
     yPosition += 15;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
@@ -280,13 +242,11 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     yPosition += 6;
     pdf.text('Closing Balance: Rs ' + closingBalance.toFixed(2), 20, yPosition);
 
-    // Transactions table with more columns
     yPosition += 15;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Transaction Details', 20, yPosition);
 
-    // Table headers
     yPosition += 10;
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
@@ -297,11 +257,9 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
     pdf.text('Debit', 155, yPosition, { align: 'right' });
     pdf.text('Credit', 185, yPosition, { align: 'right' });
 
-    // Header line
     pdf.setDrawColor(108, 117, 125);
     pdf.line(20, yPosition + 2, 190, yPosition + 2);
 
-    // Transaction rows
     yPosition += 8;
     pdf.setFont('helvetica', 'normal');
 
@@ -311,7 +269,6 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
             yPosition = 20;
         }
 
-        // Use createdAt if available, fallback to date
         const rawDate = transaction.createdAt || transaction.date;
         let formattedDate = 'N/A';
         let formattedTime = 'N/A';
@@ -336,7 +293,6 @@ export const generateAccountStatementPDF = async (transactions, user, accountNum
         yPosition += 8;
     });
 
-    // Footer
     pdf.setFontSize(8);
     pdf.setTextColor(108, 117, 125);
     pdf.text('This is a computer-generated statement and does not require a signature.', 20, 285);

@@ -29,7 +29,6 @@ const CustomCalendar = ({
 
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // Utility functions
     const getDaysInMonth = (date) => {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     };
@@ -62,7 +61,6 @@ const CustomCalendar = ({
     const handleDateSelect = (date) => {
         const finalDate = showTime ? combineDateTime(date) : date;
         onChange(finalDate);
-        // Update input display immediately and close calendar
         setInputValue(formatDisplayValue(finalDate, false));
         setIsOpen(false);
         setCurrentMonth(new Date(date.getFullYear(), date.getMonth()));
@@ -100,12 +98,10 @@ const CustomCalendar = ({
             });
         }
 
-        // If we have original format and should use it, return that
         if (useOriginalFormat && originalFormat && !isTyping) {
             return originalFormat;
         }
 
-        // Default format as DD/MM/YYYY (without forced padding unless user typed it)
         const day = dateToFormat.getDate();
         const month = dateToFormat.getMonth() + 1;
         const year = dateToFormat.getFullYear();
@@ -114,7 +110,6 @@ const CustomCalendar = ({
     };
 
     const parseInputValue = (input) => {
-        // Try different date formats - DD/MM/YYYY format priority
         const formats = [
             /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // DD/MM/YYYY or D/M/YYYY
             /^(\d{1,2})-(\d{1,2})-(\d{4})$/, // DD-MM-YYYY or D-M-YYYY
@@ -127,30 +122,24 @@ const CustomCalendar = ({
             if (match) {
                 let year, month, day;
                 if (i < 2) {
-                    // DD/MM/YYYY or DD-MM-YYYY format
                     day = parseInt(match[1], 10);
                     month = parseInt(match[2], 10) - 1; // JavaScript months are 0-based
                     year = parseInt(match[3], 10);
                 } else {
-                    // YYYY/MM/DD or YYYY-MM-DD format
                     year = parseInt(match[1], 10);
                     month = parseInt(match[2], 10) - 1; // JavaScript months are 0-based
                     day = parseInt(match[3], 10);
                 }
 
-                // Create date at noon to avoid timezone issues
                 const date = new Date(year, month, day, 12, 0, 0, 0);
-                // Validate the date
                 if (!isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
                     return date;
                 }
             }
         }
 
-        // Try parsing with Date constructor as fallback
         const date = new Date(input);
         if (!isNaN(date.getTime())) {
-            // Adjust to noon to avoid timezone issues
             return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
         }
         return null;
@@ -177,22 +166,17 @@ const CustomCalendar = ({
         setInputValue(newValue);
         setIsTyping(true);
 
-        // Try to parse the date as user types (only when input looks complete)
         if (newValue.trim()) {
-            // Only attempt parsing when we have enough characters for a complete date
             if (newValue.length >= 8 && newValue.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$|^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/)) {
                 const parsedDate = parseInputValue(newValue.trim());
                 if (parsedDate && !isDateDisabled(parsedDate)) {
-                    // Store the original format for later use
                     setOriginalFormat(newValue.trim());
-                    // Valid date, update the value - pass Date object
                     const finalDate = showTime ? combineDateTime(parsedDate) : parsedDate;
                     onChange(finalDate);
                     setCurrentMonth(new Date(parsedDate.getFullYear(), parsedDate.getMonth()));
                 }
             }
         } else {
-            // Empty input, clear the original format
             setOriginalFormat('');
             onChange(null);
         }
@@ -201,19 +185,15 @@ const CustomCalendar = ({
     const handleInputBlur = () => {
         setIsTyping(false);
 
-        // Try to parse and validate the final input
         if (inputValue.trim()) {
             const parsedDate = parseInputValue(inputValue.trim());
             if (parsedDate && !isDateDisabled(parsedDate)) {
-                // Store the original format for later use
                 setOriginalFormat(inputValue.trim());
-                // Valid date, make sure it's properly set
                 const finalDate = showTime ? combineDateTime(parsedDate) : parsedDate;
                 onChange(finalDate); // Pass Date object
                 setCurrentMonth(new Date(parsedDate.getFullYear(), parsedDate.getMonth()));
                 setInputValue(inputValue.trim()); // Keep the original format
             } else {
-                // Invalid date, revert to previous value or clear
                 if (value) {
                     setInputValue(formatDisplayValue());
                 } else {
@@ -222,11 +202,9 @@ const CustomCalendar = ({
                 }
             }
         } else {
-            // Empty input, preserve existing value if any
             if (value) {
                 setInputValue(formatDisplayValue());
             } else {
-                // Only clear if there was no previous value
                 setInputValue('');
                 setOriginalFormat('');
             }
@@ -240,19 +218,15 @@ const CustomCalendar = ({
             setIsOpen(false);
             setIsTyping(false);
 
-            // Validate and set the final value
             if (inputValue.trim()) {
                 const parsedDate = parseInputValue(inputValue.trim());
                 if (parsedDate && !isDateDisabled(parsedDate)) {
-                    // Store the original format for later use
                     setOriginalFormat(inputValue.trim());
-                    // Valid date, make sure it's properly set
                     const finalDate = showTime ? combineDateTime(parsedDate) : parsedDate;
                     onChange(finalDate); // Pass Date object
                     setCurrentMonth(new Date(parsedDate.getFullYear(), parsedDate.getMonth()));
                     setInputValue(inputValue.trim()); // Keep the original format
                 } else {
-                    // Invalid date, revert to previous value
                     if (value) {
                         setInputValue(formatDisplayValue());
                     } else {
@@ -260,11 +234,9 @@ const CustomCalendar = ({
                     }
                 }
             } else {
-                // Empty input, preserve existing value if any
                 if (value) {
                     setInputValue(formatDisplayValue());
                 } else {
-                    // Only clear if there was no previous value
                     setInputValue('');
                 }
             }
@@ -280,7 +252,6 @@ const CustomCalendar = ({
         }
     };
 
-    // Keep inputValue in sync when `value` prop changes from parent
     useEffect(() => {
         if (!isTyping) {
             setInputValue(formatDisplayValue());
@@ -305,7 +276,6 @@ const CustomCalendar = ({
         const firstDay = getFirstDayOfMonth(currentMonth);
         const days = [];
 
-        // Previous month's trailing days
         const prevMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
         const daysInPrevMonth = getDaysInMonth(prevMonth);
 
@@ -323,7 +293,6 @@ const CustomCalendar = ({
             );
         }
 
-        // Current month's days
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
             const isSelected = isDateSelected(date);
@@ -342,7 +311,6 @@ const CustomCalendar = ({
             );
         }
 
-        // Next month's leading days
         const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
         const remainingCells = totalCells - (firstDay + daysInMonth);
         const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1);
@@ -377,7 +345,6 @@ const CustomCalendar = ({
                         onKeyDown={handleInputKeyDown}
                         onFocus={() => {
                             setIsTyping(true);
-                            // Open calendar on focus for easier selection
                             setIsOpen(true);
                         }}
                         placeholder={placeholder}
@@ -407,7 +374,6 @@ const CustomCalendar = ({
 
             {isOpen && (
                 <div ref={calendarRef} className="custom-calendar-dropdown">
-                    {/* Calendar Header */}
                     <div className="calendar-header">
                         <button
                             onClick={() => navigateMonth(-1)}
@@ -430,7 +396,6 @@ const CustomCalendar = ({
                         </button>
                     </div>
 
-                    {/* Quick Actions */}
                     <div className="calendar-quick-actions">
                         <button
                             onClick={navigateToToday}
@@ -441,7 +406,6 @@ const CustomCalendar = ({
                         </button>
                     </div>
 
-                    {/* Weekday Headers */}
                     <div className="calendar-weekdays">
                         {weekdays.map(day => (
                             <div key={day} className="calendar-weekday">
@@ -450,12 +414,10 @@ const CustomCalendar = ({
                         ))}
                     </div>
 
-                    {/* Calendar Days */}
                     <div className="calendar-days">
                         {renderCalendarDays()}
                     </div>
 
-                    {/* Time Picker */}
                     {showTime && (
                         <div className="calendar-time-picker">
                             <div className="time-picker-label">Time:</div>

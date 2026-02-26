@@ -32,7 +32,6 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
     setLoading(true);
     setError('');
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -98,30 +97,30 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
   useEffect(() => {
     const verify = async () => {
       if (!tokenFromUrl) {
-        // No token - redirect to forgot password
         navigate('/forgot-password', { replace: true });
         return;
       }
 
       try {
         const res = await api.auth.verifyResetToken(tokenFromUrl);
-        if (res && res.success) {
-          // ok - continue and show email
-        } else {
+        if (!(res && res.success)) {
           navigate('/forgot-password', { replace: true });
         }
-      } catch (err) {
+      } catch {
         navigate('/forgot-password', { replace: true });
       }
     };
     verify();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Left side - Illustration/Info */}
-      <div className="hidden-mobile lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
+      <div
+        className="hidden-mobile lg:w-1/2 flex-col justify-between p-12 text-white"
+        style={{
+          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
+        }}
+      >
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold">BankPro</h1>
         </div>
@@ -149,7 +148,6 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
         </div>
       </div>
 
-      {/* Right side - Reset Password Form */}
       <div className="full-width-mobile flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="text-center mb-2 mobile-header">
@@ -196,7 +194,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-10 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -249,7 +247,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-10 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                     title={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -262,7 +260,10 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full text-white py-3.5 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
+                }}
                 disabled={loading || !formData.password || !formData.confirmPassword || formData.password !== formData.confirmPassword}
               >
                 {loading ? (

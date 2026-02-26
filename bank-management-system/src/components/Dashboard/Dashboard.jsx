@@ -1,5 +1,6 @@
-import { Activity, IndianRupee, TrendingDown, TrendingUp } from 'lucide-react';
+import { Activity, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatCurrencyByPreference } from '../../utils/currency';
 import { getTransactionStats } from '../../utils/transactions';
 
 const Dashboard = ({ user }) => {
@@ -14,9 +15,6 @@ const Dashboard = ({ user }) => {
 
   useEffect(() => {
     if (user) {
-      // Debug: log user object to check createdAt and other fields
-      // Remove this after debugging
-      // eslint-disable-next-line no-console
       console.log('Dashboard user object:', user);
     }
     const fetchStats = async () => {
@@ -39,10 +37,7 @@ const Dashboard = ({ user }) => {
   }, [user?._id]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
+    return formatCurrencyByPreference(amount, user);
   };
 
   const formatDate = (dateString) => {
@@ -55,7 +50,6 @@ const Dashboard = ({ user }) => {
   };
 
 
-  // Use firstLogin flag from backend for accurate onboarding
   const isNewUser = (() => {
     if (user && user.firstLogin) {
       return true;
@@ -64,17 +58,17 @@ const Dashboard = ({ user }) => {
   })();
 
   return (
-    <div className="container">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+    <div className="container dashboard-container">
+      <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
+        <h1 className="dashboard-title" style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
           {isNewUser ? 'Welcome' : 'Welcome back'}, {user?.name}!
         </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
+        <p className="dashboard-account" style={{ color: 'var(--text-secondary)' }}>
           Account No.: {user?.accountNumber}
         </p>
 
         {isNewUser && (
-          <div style={{
+          <div className="dashboard-welcome-banner" style={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
             padding: '1rem',
@@ -111,17 +105,17 @@ const Dashboard = ({ user }) => {
         <>
           <div className="dashboard-grid">
             <div className="stat-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div className="stat-value">{formatCurrency(user?.balance || 0)}</div>
                   <div className="stat-label">Current Balance</div>
                 </div>
-                <IndianRupee size={32} style={{ color: '#1E3A8A' }} />
+                <Wallet size={32} style={{ color: '#1E3A8A' }} />
               </div>
             </div>
 
             <div className="stat-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div className="stat-value">{formatCurrency(stats.monthlyIncome)}</div>
                   <div className="stat-label">Monthly Income</div>
@@ -131,7 +125,7 @@ const Dashboard = ({ user }) => {
             </div>
 
             <div className="stat-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div className="stat-value">{formatCurrency(stats.monthlyExpenses)}</div>
                   <div className="stat-label">Monthly Expenses</div>
@@ -141,7 +135,7 @@ const Dashboard = ({ user }) => {
             </div>
 
             <div className="stat-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
                   <div className="stat-value">{stats.totalTransactions}</div>
                   <div className="stat-label">Total Transactions</div>
@@ -161,7 +155,7 @@ const Dashboard = ({ user }) => {
               <div className="transaction-list">
                 {stats.recentTransactions.map((transaction) => (
                   <div key={transaction.id} className="transaction-item">
-                    <div style={{ flex: 1 }}>
+                    <div className="transaction-main" style={{ flex: 1 }}>
                       <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
                         {transaction.description}
                       </div>
@@ -169,7 +163,9 @@ const Dashboard = ({ user }) => {
                         {formatDate(transaction.date)}
                       </div>
                     </div>
-                    <div style={{
+                    <div
+                    className="transaction-amount"
+                    style={{
                       fontWeight: '600',
                       color: transaction.type === 'credit' ? 'var(--success)' : 'var(--error)'
                     }}>
@@ -181,7 +177,7 @@ const Dashboard = ({ user }) => {
             ) : (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                 {user?.balance === 0 ? (
-                  <div>
+                  <div className="dashboard-empty-state">
                     <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>💰 Ready to Start Banking?</div>
                     <div>Make your first deposit to begin tracking transactions</div>
                   </div>

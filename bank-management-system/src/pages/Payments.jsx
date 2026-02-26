@@ -1,18 +1,17 @@
-
+﻿
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Receipt, Repeat, Trash2, User } from 'lucide-react';
 import CustomCalendar from '../components/UI/CustomCalendar';
 import { useNotification } from '../components/NotificationProvider';
-import { getCurrentUser, updateUserBalance, getNonAdminUsers } from '../utils/auth';
+import { getCurrentUser } from '../utils/auth';
+import { formatCurrencyByPreference } from '../utils/currency';
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
-import { addTransaction, getTransactions } from '../utils/transactions';
+import { addTransaction } from '../utils/transactions';
 import api from '../utils/api';
 
 const Payments = ({ user, onUserUpdate }) => {
-  // Tab state
   const [activeTab, setActiveTab] = useState('bills');
 
-  // Bill Payments state
   const { showError: showBillError } = useNotification();
   const [bills, setBills] = useState([]);
   const [showBillForm, setShowBillForm] = useState(false);
@@ -23,7 +22,6 @@ const Payments = ({ user, onUserUpdate }) => {
     category: 'utilities'
   });
 
-  // Recurring Payments state
   const { showError: showRecurringError, showSuccess: showRecurringSuccess } = useNotification();
   const [recurringPayments, setRecurringPayments] = useState([]);
   const [showRecurringForm, setShowRecurringForm] = useState(false);
@@ -38,13 +36,12 @@ const Payments = ({ user, onUserUpdate }) => {
   });
   const [balanceWarning, setBalanceWarning] = useState('');
 
-  // Bill Payments logic
   useEffect(() => { loadBills(); }, [user?.id]);
   const loadBills = async () => {
     try {
       const res = await api.bills.getAll();
       setBills(res.success ? res.data : []);
-    } catch (error) {
+    } catch {
       setBills([]);
     }
   };
@@ -56,7 +53,6 @@ const Payments = ({ user, onUserUpdate }) => {
       showBillError('Insufficient balance for bill payment');
       return;
     }
-    // Create Bill in backend
     const billPayload = {
       name: billFormData.name,
       type: billFormData.category,
@@ -73,11 +69,10 @@ const Payments = ({ user, onUserUpdate }) => {
     let billRes;
     try {
       billRes = await api.bills.create(billPayload);
-    } catch (err) {
+    } catch {
       showBillError('Failed to create bill');
       return;
     }
-    // Create transaction referencing the bill
     const transaction = {
       userId: user._id || user.id,
       type: 'debit',
@@ -87,8 +82,6 @@ const Payments = ({ user, onUserUpdate }) => {
     };
     try {
       await addTransaction(transaction);
-      // Just update the UI - don't call updateUserBalance since it needs localStorage
-      // The balance will be fetched from the backend
       const updatedUser = getCurrentUser();
       onUserUpdate(updatedUser || user);
       loadBills();
@@ -106,13 +99,12 @@ const Payments = ({ user, onUserUpdate }) => {
     'utilities', 'internet', 'phone', 'insurance', 'rent', 'credit card', 'loan', 'other'
   ];
 
-  // Recurring Payments logic
   const getUserBalance = useCallback(() => user?.balance || 0, [user]);
   const loadRecurringPayments = useCallback(async () => {
     try {
       const res = await api.recurring.getAll();
       setRecurringPayments(res.success ? res.data : []);
-    } catch (error) {
+    } catch {
       setRecurringPayments([]);
     }
   }, []);
@@ -125,12 +117,11 @@ const Payments = ({ user, onUserUpdate }) => {
   const handleRecurringAmountChange = (e) => {
     const newAmount = parseFloat(e.target.value) || 0;
     setRecurringFormData({ ...recurringFormData, amount: e.target.value });
-    
-    // Show balance warning if amount exceeds or is high compared to balance
+
     if (newAmount > 0 && newAmount > user.balance) {
-      setBalanceWarning(`⚠️ INSUFFICIENT BALANCE: Amount (₹${newAmount.toFixed(2)}) exceeds your balance (₹${user.balance.toFixed(2)})`);
+      setBalanceWarning(`INSUFFICIENT BALANCE: Amount (${formatCurrency(newAmount)}) exceeds your balance (${formatCurrency(user.balance)})`);
     } else if (newAmount > 0 && newAmount > user.balance * 0.8) {
-      setBalanceWarning(`⚠️ HIGH AMOUNT: This is ${Math.round((newAmount / user.balance) * 100)}% of your current balance`);
+      setBalanceWarning(`HIGH AMOUNT: This is ${Math.round((newAmount / user.balance) * 100)}% of your current balance`);
     } else {
       setBalanceWarning('');
     }
@@ -160,7 +151,6 @@ const Payments = ({ user, onUserUpdate }) => {
       return;
     }
     
-    // Calculate next due date based on frequency
     const startDate = new Date(recurringFormData.startDate);
     const nextDueDate = new Date(startDate);
     const frequencyMap = {
@@ -177,7 +167,6 @@ const Payments = ({ user, onUserUpdate }) => {
     if (freq.months) nextDueDate.setMonth(nextDueDate.getMonth() + freq.months);
     if (freq.years) nextDueDate.setFullYear(nextDueDate.getFullYear() + freq.years);
 
-    // Create RecurringPayment in backend
     const recurringPayload = {
       name: recurringFormData.recipientName,
       beneficiaryName: recurringFormData.recipientName,
@@ -192,15 +181,13 @@ const Payments = ({ user, onUserUpdate }) => {
       status: 'active'
     };
     
-    let recRes;
     try {
-      recRes = await api.recurring.create(recurringPayload);
-    } catch (err) {
+      await api.recurring.create(recurringPayload);
+    } catch {
       showRecurringError('Failed to create recurring payment');
       return;
     }
 
-    // Create initial transaction for the first payment
     try {
       await addTransaction({
         type: 'debit',
@@ -227,7 +214,7 @@ const Payments = ({ user, onUserUpdate }) => {
       await api.recurring.delete(paymentId);
       showRecurringSuccess('Recurring payment deleted successfully!');
       loadRecurringPayments();
-    } catch (err) {
+    } catch {
       showRecurringError('Failed to delete recurring payment');
     }
   };
@@ -239,7 +226,7 @@ const Payments = ({ user, onUserUpdate }) => {
       await api.recurring.update(paymentId, { status: newStatus });
       showRecurringSuccess(`Recurring payment ${newStatus === 'active' ? 'resumed' : 'paused'} successfully!`);
       loadRecurringPayments();
-    } catch (err) {
+    } catch {
       showRecurringError('Failed to update recurring payment');
     }
   };
@@ -248,15 +235,14 @@ const Payments = ({ user, onUserUpdate }) => {
     return labels[frequency] || frequency;
   };
 
-  // Shared formatting
-  const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+  const formatCurrency = (amount) => formatCurrencyByPreference(amount, user);
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid Date';
       return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    } catch (e) {
+    } catch {
       return 'Invalid Date';
     }
   };

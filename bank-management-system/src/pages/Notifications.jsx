@@ -1,7 +1,7 @@
-import { AlertTriangle, Bell, CheckCircle, CreditCard, ShieldAlert, ShoppingBag } from 'lucide-react';
+﻿import { AlertTriangle, Bell, CheckCircle, CreditCard, ShieldAlert, ShoppingBag } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { api } from '../utils/api';
 import { useNotification } from '../components/NotificationProvider';
+import { api } from '../utils/api';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -15,7 +15,10 @@ const Notifications = () => {
         setLoading(true);
         setError('');
         const response = await api.notifications.getAll();
-        setNotifications(Array.isArray(response.data) ? response.data : []);
+        const list = Array.isArray(response)
+          ? response
+          : (Array.isArray(response.data) ? response.data : []);
+        setNotifications(list);
       } catch (err) {
         console.error('Notifications error:', err);
         const errorMsg = 'Failed to load notifications. Please try again.';
@@ -31,7 +34,7 @@ const Notifications = () => {
   const markAsRead = async (id) => {
     try {
       await api.notifications.markAsRead(id);
-      setNotifications(prev => prev.map(n => n.id === id || n._id === id ? { ...n, read: true } : n));
+      setNotifications((prev) => prev.map((n) => (n.id === id || n._id === id ? { ...n, read: true } : n)));
     } catch (err) {
       console.error('Error marking notification as read:', err);
       showError('Failed to mark notification as read');
@@ -41,7 +44,7 @@ const Notifications = () => {
   const markAllAsRead = async () => {
     try {
       await api.notifications.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch (err) {
       console.error('Error marking all as read:', err);
       showError('Failed to mark all as read');
@@ -80,7 +83,7 @@ const Notifications = () => {
     });
   };
 
-  const hasUnread = notifications.some(n => !n.read);
+  const hasUnread = notifications.some((n) => !n.read);
 
   if (loading) {
     return (
@@ -150,11 +153,7 @@ const Notifications = () => {
           color: 'var(--text-secondary)',
           fontSize: '1.15rem'
         }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
-          <h3 style={{ fontWeight: 600, marginBottom: '0.6rem' }}>
-            You’re all caught up!
-          </h3>
-          <p>No new notifications right now.</p>
+          <p>No notifications available</p>
         </div>
       ) : (
         <div style={{
@@ -168,7 +167,7 @@ const Notifications = () => {
         }}>
           {notifications.map((n) => (
             <div
-              key={n.id}
+              key={n.id || n._id}
               style={{
                 padding: '1.25rem 1.5rem',
                 background: n.read ? 'transparent' : 'rgba(99, 102, 241, 0.07)',
@@ -215,7 +214,7 @@ const Notifications = () => {
                     borderRadius: '50%'
                   }} />
                   <button
-                    onClick={() => markAsRead(n.id)}
+                    onClick={() => markAsRead(n.id || n._id)}
                     style={{
                       padding: '5px 12px',
                       fontSize: '0.82rem',

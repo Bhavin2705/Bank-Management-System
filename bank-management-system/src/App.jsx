@@ -1,40 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
-import ForgotPassword from './components/Auth/ForgotPassword';
-import Login from './components/Auth/Login';
-import PasswordResetSuccess from './components/Auth/PasswordResetSuccess';
-import Register from './components/Auth/Register';
-import ResetPassword from './components/Auth/ResetPassword';
-import Dashboard from './components/Dashboard/Dashboard';
-import Sidebar from './components/Layout/Sidebar';
+import { Navigate, Route, Routes, useNavigate, BrowserRouter as Router } from 'react-router-dom';
+
 import { NotificationProvider } from './components/NotificationProvider';
-import AdminSupport from './pages/AdminSupport';
-import Budget from './pages/Budget';
-import Cards from './pages/Cards';
-import CurrencyExchange from './pages/CurrencyExchange';
-import DepositWithdraw from './pages/DepositWithdraw';
-import Export from './pages/Export';
-import FinancialMarkets from './pages/FinancialMarkets';
-import Goals from './pages/Goals';
-import Investments from './pages/Investments';
-import Notifications from './pages/Notifications';
-import Security from './pages/Security';
-import Settings from './pages/Settings';
-import Statements from './pages/Statements';
+import Sidebar from './components/Layout/Sidebar';
+
+import Login from './components/Auth/Login';
+import Register from './components/Auth/Register';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
+import PasswordResetSuccess from './components/Auth/PasswordResetSuccess';
+
+import Dashboard from './components/Dashboard/Dashboard';
 import Transactions from './pages/Transactions';
-import Transfer from './pages/Transfer';
-import Users from './pages/Users';
-import AdminBanks from './pages/AdminBanks';
+import Cards from './pages/Cards';
 import Payments from './pages/Payments';
+import Security from './pages/Security';
+import Statements from './pages/Statements';
+import CurrencyExchange from './pages/CurrencyExchange';
 import Insights from './pages/Insights';
-import './styles/index.css';
-import { checkBackendHealth } from './utils/api';
+import Budget from './pages/Budget';
+import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
+
+import AdminBanks from './pages/AdminBanks';
+import Users from './pages/Users';
+
+import { api, checkBackendHealth } from './utils/api';
+import { setExchangeRates } from './utils/currency';
 import {
   canAccessAdminFeatures,
   initializeUsers,
   logout,
-  refreshUserData
+  refreshUserData,
 } from './utils/auth';
+
+import './styles/index.css';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -44,105 +44,43 @@ function App() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [backendWaking, setBackendWaking] = useState(false);
   const [wakeAttempt, setWakeAttempt] = useState(0);
+
   const retryTimeoutRef = useRef(null);
 
-  const LoginWrapper = () => {
-    const navigate = useNavigate();
-    return <Login onLogin={handleLogin} switchToRegister={() => navigate('/register')} />;
+  // ────────────────────────────────────────────────
+  //  Helpers
+  // ────────────────────────────────────────────────
+
+  const applyTheme = (userData) => {
+    const isDark = userData?.preferences?.theme === 'dark';
+    setDarkMode(isDark);
+    document.documentElement.toggleAttribute('data-theme', 'dark', isDark);
   };
 
-  const RegisterWrapper = () => {
-    const navigate = useNavigate();
-    return <Register onLogin={handleLogin} switchToLogin={() => navigate('/login')} />;
-  };
+  const toggleDarkMode = async () => {
+    if (!user) return;
 
-  const ResetPasswordWrapper = () => {
-    const navigate = useNavigate();
-    return <ResetPassword onBack={() => navigate('/login')} onSuccess={() => navigate('/password-reset-success')} />;
-  };
+    const nextDark = !darkMode;
+    applyTheme({ ...user, preferences: { ...user.preferences, theme: nextDark ? 'dark' : 'light' } });
 
-  useEffect(() => {
-    initializeApp();
-    return () => {
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, []);
-
-  const scheduleHealthRetry = () => {
-    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    setBackendWaking(true);
-    setWakeAttempt(prev => prev + 1);
-    retryTimeoutRef.current = setTimeout(() => initializeApp({ silent: true }), 5000);
-  };
-
-  const initializeApp = async ({ silent = false } = {}) => {
     try {
-      if (!silent) setLoading(true);
-      setError(null);
-      const pathname = window.location.pathname;
-      const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/password-reset-success'];
-      const isOnAuthPage = authPaths.some((p) => pathname.startsWith(p));
-
-      const backendHealthy = await checkBackendHealth();
-      if (!backendHealthy) {
-        scheduleHealthRetry();
-        setLoading(false);
-        return;
+      const updated = {
+        ...user.preferences,
+        theme: nextDark ? 'dark' : 'light',
+      };
+      const res = await api.settings.updatePreferences(updated);
+      if (res?.success) {
+        setUser((prev) => ({ ...prev, preferences: res.data }));
       }
-
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-      setBackendWaking(false);
-      setWakeAttempt(0);
-
-      try {
-        await Promise.race([
-          initializeUsers(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error()), 3000))
-        ]);
-      } catch { }
-      if (!isOnAuthPage) {
-        const refreshedUser = await Promise.race([
-          refreshUserData(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error()), 5000))
-        ]);
-        if (refreshedUser) {
-          setUser(refreshedUser);
-          setSessionExpired(false);
-        } else {
-          setUser(null);
-          const tokenExists = document.cookie.includes('token=') || document.cookie.includes('refreshToken=');
-          setSessionExpired(!!tokenExists);
-        }
-      } else {
-        setUser(null);
-        setSessionExpired(false);
-      }
-      const match = document.cookie.match(/bank_theme=([^;]+)/);
-      if (match && match[1] === 'dark') {
-        setDarkMode(true);
-        document.documentElement.setAttribute('data-theme', 'dark');
-      }
-      setLoading(false);
     } catch (err) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
-
-  const toggleDarkMode = () => {
-    const next = !darkMode;
-    setDarkMode(next);
-    if (next) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      document.cookie = `bank_theme=dark; path=/; max-age=${60 * 60 * 24 * 365}`;
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      document.cookie = `bank_theme=; path=/; max-age=0`;
+      // rollback on failure
+      applyTheme(user);
     }
   };
 
   const handleLogin = (userData) => {
     setUser(userData);
+    applyTheme(userData);
     setError(null);
   };
 
@@ -151,11 +89,13 @@ function App() {
       await logout();
     } finally {
       setUser(null);
+      applyTheme(null);
       setError(null);
     }
   };
 
   const handleSessionExpired = () => {
+    // clear auth cookies
     document.cookie = 'bank_auth_token=; path=/; max-age=0';
     document.cookie = 'bank_auth_refresh_token=; path=/; max-age=0';
     setUser(null);
@@ -165,7 +105,111 @@ function App() {
 
   const handleUserUpdate = (updatedUser) => {
     setUser(updatedUser);
+    applyTheme(updatedUser);
   };
+
+  // ────────────────────────────────────────────────
+  //  Initialization & Health check
+  // ────────────────────────────────────────────────
+
+  const scheduleRetry = () => {
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+
+    setBackendWaking(true);
+    setWakeAttempt((c) => c + 1);
+
+    retryTimeoutRef.current = setTimeout(() => initializeApp({ silent: true }), 5000);
+  };
+
+  const initializeApp = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    setError(null);
+
+    const pathname = window.location.pathname;
+    const isAuthPage = [
+      '/login',
+      '/register',
+      '/forgot-password',
+      '/reset-password',
+      '/password-reset-success',
+    ].some((p) => pathname.startsWith(p));
+
+    // Check backend availability
+    if (!(await checkBackendHealth())) {
+      scheduleRetry();
+      setLoading(false);
+      return;
+    }
+
+    // Reset retry state
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    setBackendWaking(false);
+    setWakeAttempt(0);
+
+    try {
+      // Non-blocking user init (best effort)
+      await Promise.race([
+        initializeUsers(),
+        new Promise((_, r) => setTimeout(() => r(new Error('init timeout')), 3000)),
+      ]).catch(() => {});
+
+      if (!isAuthPage) {
+        const freshUser = await Promise.race([
+          refreshUserData(),
+          new Promise((_, r) => setTimeout(() => r(new Error('refresh timeout')), 5000)),
+        ]).catch(() => null);
+
+        if (freshUser) {
+          setUser(freshUser);
+          applyTheme(freshUser);
+          setSessionExpired(false);
+        } else {
+          setUser(null);
+          applyTheme(null);
+          const hasToken = document.cookie.includes('token=') || document.cookie.includes('refreshToken=');
+          setSessionExpired(!!hasToken);
+        }
+      } else {
+        setUser(null);
+        applyTheme(null);
+        setSessionExpired(false);
+      }
+    } catch (err) {
+      setError(err.message || 'Initialization failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load exchange rates when user / currency preference changes
+  useEffect(() => {
+    if (!user?.preferences?.currency) {
+      setExchangeRates(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await api.exchange.getRates();
+        if (res?.success && res.rates) {
+          setExchangeRates(res.rates);
+        }
+      } catch (err) {
+        console.error('Failed to load exchange rates', err);
+      }
+    })();
+  }, [user?._id, user?.preferences?.currency]);
+
+  useEffect(() => {
+    initializeApp();
+    return () => clearTimeout(retryTimeoutRef.current);
+  }, []);
+
+  // ────────────────────────────────────────────────
+  //  Route Wrappers
+  // ────────────────────────────────────────────────
+
+  const AuthWrapper = ({ children }) => (user ? <Navigate to="/dashboard" replace /> : children);
 
   const ProtectedRoute = ({ children, adminOnly = false }) => {
     if (!user) return <Navigate to="/login" replace />;
@@ -173,74 +217,50 @@ function App() {
     return children;
   };
 
+  const Layout = ({ children }) => (
+    <div className="app-layout">
+      <Sidebar
+        user={user}
+        onLogout={handleLogout}
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+      />
+      <main className="main-content">{children}</main>
+    </div>
+  );
+
+  // ────────────────────────────────────────────────
+  //  Render
+  // ────────────────────────────────────────────────
+
   if (loading) {
-    return (
-      <div className="backend-wake-screen">
-        <div className="backend-wake-orb backend-wake-orb-one" />
-        <div className="backend-wake-orb backend-wake-orb-two" />
-        <div className="backend-wake-card">
-          <div className="backend-wake-spinner">
-            <span />
-            <span />
-            <span />
-          </div>
-          <h1>Preparing Your Workspace</h1>
-          <p>Please wait while we initialize your secure session.</p>
-          <div className="backend-wake-status">Loading application</div>
-        </div>
-      </div>
-    );
+    return <BackendWakeScreen message="Preparing Your Workspace" />;
   }
 
   if (sessionExpired) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
-        <div>Your session has expired. Please log in again.</div>
-        <button
-          onClick={() => {
-            handleSessionExpired();
-            window.location.href = '/login';
-          }}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          Go to Login
-        </button>
-      </div>
+      <SessionExpiredScreen
+        onClick={() => {
+          handleSessionExpired();
+          window.location.href = '/login';
+        }}
+      />
     );
   }
 
   if (backendWaking) {
-    return (
-      <div className="backend-wake-screen">
-        <div className="backend-wake-orb backend-wake-orb-one" />
-        <div className="backend-wake-orb backend-wake-orb-two" />
-        <div className="backend-wake-card">
-          <div className="backend-wake-spinner">
-            <span />
-            <span />
-            <span />
-          </div>
-          <h1>Waking Secure Banking Services</h1>
-          <p>
-            Our services are starting up after inactivity. This can take a short while.
-          </p>
-          <div className="backend-wake-status">Attempt {wakeAttempt} - reconnecting automatically</div>
-        </div>
-      </div>
-    );
+    return <BackendWakeScreen message="Waking Secure Banking Services" attempt={wakeAttempt} />;
   }
 
   if (error) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
-        <div>Error: {error}</div>
-        <button
-          onClick={initializeApp}
-          style={{ padding: '10px 20px', fontSize: '16px', cursor: 'pointer' }}
-        >
-          Retry
-        </button>
-      </div>
+      <ErrorScreen
+        message={error}
+        onRetry={() => {
+          setError(null);
+          initializeApp();
+        }}
+      />
     );
   }
 
@@ -248,58 +268,91 @@ function App() {
     <Router>
       <NotificationProvider>
         <Routes>
-          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginWrapper />} />
-          <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterWrapper />} />
-          <Route path="/forgot-password" element={user ? <Navigate to="/dashboard" replace /> : <ForgotPassword />} />
-          <Route path="/reset-password/:token" element={user ? <Navigate to="/dashboard" replace /> : <ResetPasswordWrapper />} />
-          <Route path="/password-reset-success" element={user ? <Navigate to="/dashboard" replace /> : <PasswordResetSuccess />} />
+          {/* Public / Auth routes */}
+          <Route path="/login" element={<AuthWrapper><Login onLogin={handleLogin} /></AuthWrapper>} />
+          <Route path="/register" element={<AuthWrapper><Register onLogin={handleLogin} /></AuthWrapper>} />
+          <Route path="/forgot-password" element={<AuthWrapper><ForgotPassword /></AuthWrapper>} />
+          <Route
+            path="/reset-password/:token"
+            element={
+              <AuthWrapper>
+                <ResetPassword onSuccess={() => window.location.href = '/password-reset-success'} />
+              </AuthWrapper>
+            }
+          />
+          <Route path="/password-reset-success" element={<AuthWrapper><PasswordResetSuccess /></AuthWrapper>} />
 
-          <Route path="/dashboard" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Dashboard user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/transactions" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Transactions user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
-          <Route path="/cards" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Cards user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/payments" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Payments user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
-          <Route path="/security" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Security user={user} onUserUpdate={handleUserUpdate} /></main></div></ProtectedRoute>} />
-          <Route path="/statements" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Statements user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/currency-exchange" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><CurrencyExchange user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/insights" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Insights user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/financial-markets" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><FinancialMarkets user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/goals" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Goals user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/budget" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Budget user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/export" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Export user={user} /></main></div></ProtectedRoute>} />
-          <Route path="/investments" element={<ProtectedRoute><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Investments user={user} /></main></div></ProtectedRoute>} />
+          {/* Protected routes with layout */}
+          <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/transactions" element={<ProtectedRoute><Layout><Transactions user={user} onUserUpdate={handleUserUpdate} /></Layout></ProtectedRoute>} />
+          <Route path="/cards" element={<ProtectedRoute><Layout><Cards user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/payments" element={<ProtectedRoute><Layout><Payments user={user} onUserUpdate={handleUserUpdate} /></Layout></ProtectedRoute>} />
+          <Route path="/security" element={<ProtectedRoute><Layout><Security user={user} onUserUpdate={handleUserUpdate} /></Layout></ProtectedRoute>} />
+          <Route path="/statements" element={<ProtectedRoute><Layout><Statements user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/currency-exchange" element={<ProtectedRoute><Layout><CurrencyExchange user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/insights" element={<ProtectedRoute><Layout><Insights user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/budget" element={<ProtectedRoute><Layout><Budget user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Layout><Settings user={user} onUserUpdate={handleUserUpdate} /></Layout></ProtectedRoute>} />
 
-          {/* Added Notifications route */}
-          <Route path="/notifications" element={
-            <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                <main className="main-content">
-                  <Notifications />
-                </main>
-              </div>
-            </ProtectedRoute>
-          } />
+          {/* Admin routes */}
+          <Route path="/admin-banks" element={<ProtectedRoute adminOnly><Layout><AdminBanks /></Layout></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute adminOnly><Layout><Users user={user} /></Layout></ProtectedRoute>} />
 
-          {/* Settings route */}
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <div className="app-layout">
-                <Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                <main className="main-content">
-                  <Settings user={user} onUserUpdate={handleUserUpdate} />
-                </main>
-              </div>
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin-banks" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><AdminBanks /></main></div></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute adminOnly={true}><div className="app-layout"><Sidebar user={user} onLogout={handleLogout} darkMode={darkMode} toggleDarkMode={toggleDarkMode} /><main className="main-content"><Users /></main></div></ProtectedRoute>} />
-
-          <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+          {/* Fallback / root */}
           <Route path="*" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
         </Routes>
       </NotificationProvider>
     </Router>
+  );
+}
+
+// ────────────────────────────────────────────────
+//  Simple presentational components (can be moved to separate files)
+// ────────────────────────────────────────────────
+
+function BackendWakeScreen({ message, attempt = null }) {
+  return (
+    <div className="backend-wake-screen">
+      <div className="backend-wake-orb backend-wake-orb-one" />
+      <div className="backend-wake-orb backend-wake-orb-two" />
+      <div className="backend-wake-card">
+        <div className="backend-wake-spinner">
+          <span /><span /><span />
+        </div>
+        <h1>{message}</h1>
+        <p>
+          {attempt
+            ? `Our services are starting up after inactivity. Attempt ${attempt} – reconnecting...`
+            : 'Please wait while we initialize your secure session.'}
+        </p>
+        {attempt && (
+          <div className="backend-wake-status">
+            Attempt {attempt} – reconnecting automatically
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SessionExpiredScreen({ onClick }) {
+  return (
+    <div className="session-expired-screen">
+      <h2>Your session has expired</h2>
+      <p>Please sign in again to continue.</p>
+      <button onClick={onClick}>Go to Login</button>
+    </div>
+  );
+}
+
+function ErrorScreen({ message, onRetry }) {
+  return (
+    <div className="error-screen">
+      <h2>Something went wrong</h2>
+      <p>{message || 'Failed to initialize application'}</p>
+      <button onClick={onRetry}>Retry</button>
+    </div>
   );
 }
 

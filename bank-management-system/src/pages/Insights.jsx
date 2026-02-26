@@ -1,5 +1,6 @@
 import { Activity, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatCurrencyByPreference } from '../utils/currency';
 import { getTransactionStats } from '../utils/transactions';
 
 const Insights = ({ user }) => {
@@ -132,11 +133,7 @@ const Insights = ({ user }) => {
     }, [user?._id, timeFrame]);
 
     const formatCurrency = (amount) =>
-        new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            minimumFractionDigits: 0
-        }).format(amount);
+        formatCurrencyByPreference(amount, user, { minimumFractionDigits: 0 });
 
     const categorySpending = calculateCategorySpending();
     const totalSpending = Object.values(categorySpending).reduce((a, b) => a + b, 0);
@@ -178,7 +175,6 @@ const Insights = ({ user }) => {
                         const tallestHeight = Math.max(incomeHeight, expenseHeight);
                         const isHovered = hoveredBar === idx;
 
-                        // Gap so tooltip sits nicely above the bar without touching it
                         const tooltipOffset = tallestHeight + 45;
 
                         return (
@@ -216,7 +212,6 @@ const Insights = ({ user }) => {
                                             minWidth: '170px'
                                         }}
                                     >
-                                        {/* Upward arrow pointing to the bar */}
                                         <div
                                             style={{
                                                 position: 'absolute',

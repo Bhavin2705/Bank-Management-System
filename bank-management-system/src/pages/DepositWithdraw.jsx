@@ -2,6 +2,7 @@ import { ArrowDownCircle, ArrowUpCircle, CreditCard, Minus, Plus } from 'lucide-
 import { useState } from 'react';
 import { useNotification } from '../components/NotificationProvider';
 import { api } from '../utils/api';
+import { formatCurrencyByPreference } from '../utils/currency';
 
 const DepositWithdraw = ({ user, onUserUpdate }) => {
     const { showError, showSuccess } = useNotification();
@@ -26,7 +27,6 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
             return;
         }
 
-        // Verify PIN and process transaction
         try {
             setLoading(true);
             setPinError('');
@@ -36,7 +36,6 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
 
             if (result && result.success) {
                 console.log('PIN verified successfully, processing transaction...');
-                // PIN is correct, proceed with the transaction
                 const transactionData = {
                     type: 'credit',
                     amount: depositAmount,
@@ -52,18 +51,15 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                     console.log('Transaction API response:', txResult);
 
                     if (txResult && txResult.success && txResult.data) {
-                        const successMsg = `Successfully deposited Rs${depositAmount.toFixed(2)}`;
+                        const successMsg = `Successfully deposited ${formatCurrency(depositAmount)}`;
                         console.log('Transaction successful:', successMsg);
                         showSuccess(successMsg);
 
-                        // Update user balance in parent component
                         const newBalance = user.balance + depositAmount;
                         onUserUpdate({ ...user, balance: newBalance });
 
-                        // Store PIN requirement preference in localStorage
                         localStorage.setItem('pinRequiredForTransactions', 'true');
 
-                        // Reset form fields
                         setAmount('');
                         setDescription('');
                         setPin('');
@@ -112,7 +108,6 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
             return;
         }
 
-        // Verify PIN and process transaction
         try {
             setLoading(true);
             setPinError('');
@@ -122,7 +117,6 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
 
             if (result && result.success) {
                 console.log('PIN verified successfully, processing transaction...');
-                // PIN is correct, proceed with the transaction
                 const transactionData = {
                     type: 'debit',
                     amount: withdrawAmount,
@@ -138,18 +132,15 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                     console.log('Transaction API response:', txResult);
 
                     if (txResult && txResult.success && txResult.data) {
-                        const successMsg = `Successfully withdrew Rs${withdrawAmount.toFixed(2)}`;
+                        const successMsg = `Successfully withdrew ${formatCurrency(withdrawAmount)}`;
                         console.log('Transaction successful:', successMsg);
                         showSuccess(successMsg);
 
-                        // Update user balance in parent component
                         const newBalance = user.balance - withdrawAmount;
                         onUserUpdate({ ...user, balance: newBalance });
 
-                        // Store PIN requirement preference in localStorage
                         localStorage.setItem('pinRequiredForTransactions', 'true');
 
-                        // Reset form fields
                         setAmount('');
                         setDescription('');
                         setPin('');
@@ -180,10 +171,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR'
-        }).format(amount);
+        return formatCurrencyByPreference(amount, user);
     };
 
     return (
@@ -197,7 +185,6 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                 </p>
             </div>
 
-            {/* Summary Cards */}
             <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
                 <div className="stat-card">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -1,6 +1,7 @@
 import { Edit, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../utils/api';
+import { formatCurrencyByPreference } from '../utils/currency';
 import { getTransactions } from '../utils/transactions';
 
 const Budget = ({ user }) => {
@@ -110,10 +111,7 @@ const Budget = ({ user }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
+    return formatCurrencyByPreference(amount, user);
   };
 
   const getCategoryExpenses = (category) => {

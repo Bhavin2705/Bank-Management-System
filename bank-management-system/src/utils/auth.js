@@ -1,28 +1,32 @@
-// Authentication utilities using API
 
 import api, { clearAuthToken } from './api.js';
-import clientData from './clientData';
 
 export const AUTH_KEY = 'bank_auth_user';
 
-// Initialize - no longer needed with API
 export const initializeUsers = () => {
-  // API handles user initialization
   return Promise.resolve();
 };
 
-export const login = async (identifier, password) => {
+export const login = async (identifier, password, otp) => {
   try {
-    const response = await api.auth.login({ identifier, password });
+    const payload = { identifier, password };
+    if (otp) payload.otp = otp;
+    const response = await api.auth.login(payload);
 
     if (response.success) {
-      // Token is stored in httpOnly cookie by backend
       return { success: true, user: response.data.user };
+    }
+
+    if (response.requiresTwoFactor) {
+      return {
+        success: false,
+        requiresTwoFactor: true,
+        message: response.message || 'Enter the OTP sent to your registered email.'
+      };
     }
 
     return { success: false, error: 'Login failed' };
   } catch (error) {
-    // Handle multiple accounts case
     if (error.status === 300 && error.data && error.data.needsAccountSelection) {
       return {
         success: false,
@@ -33,18 +37,26 @@ export const login = async (identifier, password) => {
       };
     }
 
-    // Return the actual error message from the API instead of generic message
     return { success: false, error: error.message };
   }
 };
 
-export const loginWithAccount = async (identifier, password, accountId) => {
+export const loginWithAccount = async (identifier, password, accountId, otp) => {
   try {
-    const response = await api.auth.loginWithAccount({ identifier, password, accountId });
+    const payload = { identifier, password, accountId };
+    if (otp) payload.otp = otp;
+    const response = await api.auth.loginWithAccount(payload);
 
     if (response.success) {
-      // Token is stored in httpOnly cookie by backend
       return { success: true, user: response.data.user };
+    }
+
+    if (response.requiresTwoFactor) {
+      return {
+        success: false,
+        requiresTwoFactor: true,
+        message: response.message || 'Enter the OTP sent to your registered email.'
+      };
     }
 
     return { success: false, error: 'Login failed' };
@@ -58,7 +70,6 @@ export const register = async (userData) => {
     const response = await api.auth.register(userData);
 
     if (response.success) {
-      // Token is stored in httpOnly cookie by backend
       return { success: true, user: response.data.user };
     }
 
@@ -70,7 +81,6 @@ export const register = async (userData) => {
 
 export const logout = async () => {
   try {
-    // Add timeout to logout API call
     await Promise.race([
       api.auth.logout(),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 3000))
@@ -78,34 +88,28 @@ export const logout = async () => {
   } catch (error) {
     console.warn('Logout API error:', error);
   } finally {
-    // Backend clears httpOnly cookies, remove any legacy non-httpOnly token cookies if present
     try {
       clearAuthToken();
       document.cookie = 'bank_auth_token=; path=/; max-age=0';
       document.cookie = 'bank_auth_refresh_token=; path=/; max-age=0';
-    } catch (e) {
-      // ignore
+    } catch (clearError) {
+      console.debug('Failed to clear auth cookies:', clearError?.message || 'unknown error');
     }
   }
 };
 
 export const getCurrentUser = () => {
-  // Always fetch user from backend, not localStorage
   return null;
 };
 
 export const updateUserBalance = async (userId, newBalance) => {
   try {
-    // Get current user data
     const currentUser = getCurrentUser();
     if (!currentUser) {
       console.warn('No current user found in localStorage');
-      // If no user in localStorage, just return the updated balance
-      // The frontend will handle the balance update
       return { balance: newBalance };
     }
 
-    // Handle both 'id' and '_id' formats and convert to strings for comparison
     const currentUserId = String(currentUser._id || currentUser.id || '');
     const providedUserId = String(userId || '');
     
@@ -113,17 +117,12 @@ export const updateUserBalance = async (userId, newBalance) => {
     
     if (!currentUserId || !providedUserId || currentUserId !== providedUserId) {
       console.warn('User ID mismatch or missing - current:', currentUserId, 'provided:', providedUserId);
-      // Don't throw - just return the balance update anyway
-      // The balance is being updated on the frontend
       return { ...currentUser, balance: newBalance };
     }
 
-    // Do not update localStorage for user balance. Always fetch from backend for accuracy.
-    // Optionally, trigger a UI refresh or refetch user data from backend here.
     return { ...currentUser, balance: newBalance };
   } catch (error) {
     console.error('Error updating user balance:', error);
-    // Don't re-throw - just log and continue
     return { balance: newBalance };
   }
 };
@@ -132,38 +131,29 @@ export const refreshUserData = async () => {
   try {
     const response = await api.auth.getMe();
     if (response.success) {
-      // Only update UI state, not persistent user details in localStorage
       return response.data;
     }
   } catch (error) {
-    // If we received a 401-like error (token expired, invalid, or user not found), try to refresh it.
-    // The API may return different messages for 401; handle common cases.
     const msg = (error && error.message) ? error.message : '';
     const shouldTryRefresh = msg.includes('Authentication required') || msg.includes('No user found') || msg.includes('Not authorized') || msg.toLowerCase().includes('invalid refresh');
 
     if (shouldTryRefresh) {
       try {
-        // Attempt refresh via cookie-based refresh endpoint
         const refreshResponse = await api.auth.refreshToken();
         if (refreshResponse && refreshResponse.success) {
-          // Retry getMe after refresh
           const retryResponse = await api.auth.getMe();
           if (retryResponse.success) return retryResponse.data;
           return null;
         }
-        // Refresh failed - client should treat as logged out
         return null;
       } catch (refreshError) {
-        // Only surface token refresh errors in development -- 401/refresh failures are expected when not authenticated
         if (import.meta.env && import.meta.env.DEV) {
           console.error('Token refresh error:', refreshError);
         }
-        // Refresh failed, clear tokens and force logout (no client-side tokens when using httpOnly cookies)
         return null;
       }
     }
 
-    // Other error, just return null
     return null;
   }
   return null;
@@ -174,7 +164,6 @@ export const getAllUsers = async () => {
     const response = await api.users.getAll();
     return response.success ? response.data : [];
   } catch (error) {
-    // Silently handle authorization errors - this is expected for non-admin users
     if (error.message && error.message.includes('not authorized')) {
       return [];
     }
@@ -185,12 +174,10 @@ export const getAllUsers = async () => {
 
 export const getNonAdminUsers = async () => {
   try {
-    // Use the new transfer recipients endpoint instead of the admin-only users endpoint
     const response = await api.users.getTransferRecipients();
     return response.success ? response.data : [];
   } catch (error) {
     console.error('Error fetching transfer recipients:', error);
-    // Return empty array on error to prevent UI crashes
     return [];
   }
 };
@@ -207,7 +194,6 @@ export const updateUserDetails = async (userData) => {
   try {
     const response = await api.auth.updateDetails(userData);
     if (response.success) {
-      // Only update UI state, not persistent user details in localStorage
       return { success: true, user: response.data };
     }
     return { success: false, error: 'Update failed' };

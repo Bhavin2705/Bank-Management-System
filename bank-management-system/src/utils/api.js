@@ -4,7 +4,8 @@ const AUTH_TOKEN_KEY = 'bank_auth_token';
 export const getAuthToken = () => {
     try {
         return localStorage.getItem(AUTH_TOKEN_KEY);
-    } catch {
+    } catch (storageError) {
+        console.debug('Unable to read auth token:', storageError?.message || 'unknown error');
         return null;
     }
 };
@@ -13,23 +14,25 @@ export const setAuthToken = (token) => {
     if (!token) return;
     try {
         localStorage.setItem(AUTH_TOKEN_KEY, token);
-    } catch {
-        // no-op when storage is unavailable
+    } catch (storageError) {
+        console.debug('Unable to persist auth token:', storageError?.message || 'unknown error');
     }
 };
 
 export const clearAuthToken = () => {
     try {
         localStorage.removeItem(AUTH_TOKEN_KEY);
-    } catch {
-        // no-op when storage is unavailable
+    } catch (storageError) {
+        console.debug('Unable to clear auth token:', storageError?.message || 'unknown error');
     }
 };
 const handleResponse = async (response, isLoginRequest = false) => {
     let data = {};
     try {
         data = await response.json();
-    } catch { }
+    } catch (parseError) {
+        console.debug('Response body is not JSON:', parseError?.message || 'unknown error');
+    }
 
     if (!response.ok) {
         const serverMessage = data?.error || null;
@@ -105,7 +108,10 @@ export const api = {
         getMe: () => apiRequest('/auth/me', { method: 'GET' }),
         refreshToken: () => apiRequest('/auth/refresh', { method: 'POST' }),
         updateDetails: (data) => apiRequest('/auth/updatedetails', { method: 'PUT', body: JSON.stringify(data) }),
-        updatePassword: (data) => apiRequest('/auth/updatepassword', { method: 'PUT', body: JSON.stringify(data) })
+        updatePassword: (data) => apiRequest('/auth/updatepassword', { method: 'PUT', body: JSON.stringify(data) }),
+        forgotPassword: (data) => apiRequest('/auth/forgotpassword', { method: 'POST', body: JSON.stringify(data) }),
+        resetPassword: (token, data) => apiRequest(`/auth/resetpassword/${token}`, { method: 'PUT', body: JSON.stringify(data) }),
+        verifyResetToken: (token) => apiRequest(`/auth/resetpassword/${token}`, { method: 'GET' })
     },
 
     cards: {
@@ -199,8 +205,8 @@ export const api = {
         delete: (id) => apiRequest(`/users/${id}`, { method: 'DELETE' }),
         getStats: () => apiRequest('/users/stats'),
         getBanks: () => apiRequest('/banks'),
-        updateRole: (id, data) => apiRequest(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify(data) }),
-        updateStatus: (id, data) => apiRequest(`/users/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
+        updateRole: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+        updateStatus: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
         checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
         checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
         verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) })

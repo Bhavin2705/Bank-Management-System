@@ -1,4 +1,3 @@
-// Minimal debounce utility used across the app
 export default function debounce(fn, wait = 300) {
     let timer = null;
     return function (...args) {

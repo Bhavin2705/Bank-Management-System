@@ -15,14 +15,12 @@ const AdminSupport = ({ user }) => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const responseInputRef = useRef(null);
 
-  // Initialize socket connection for admin
   useEffect(() => {
     if (user?.role !== 'admin') {
       showError('Access denied. Admin privileges required.');
       return;
     }
 
-    // Rely on cookie-based auth for sockets. Server will read httpOnly cookies.
     const newSocket = io(socketUrl, {
       auth: {
         token: getAuthToken()
@@ -41,7 +39,6 @@ const AdminSupport = ({ user }) => {
       newSocket.emit('join_support', { userId: user._id, name: user.name });
     });
 
-    // Listen for new user messages
     newSocket.on('new_user_message', (message) => {
       setUserMessages(prev => [...prev, {
         id: Date.now(),
@@ -54,11 +51,9 @@ const AdminSupport = ({ user }) => {
 
       setActiveUsers(prev => new Set([...prev, message.userId]));
 
-      // Auto-select first user if none selected
       setSelectedUserId(current => current || message.userId);
     });
 
-    // Listen for users joining
     newSocket.on('user_joined', (data) => {
       setActiveUsers(prev => new Set([...prev, data.userId]));
     });
@@ -81,7 +76,6 @@ const AdminSupport = ({ user }) => {
       content: responseText.trim()
     });
 
-    // Add response to local messages for display
     setUserMessages(prev => [...prev, {
       id: Date.now(),
       userId: selectedUserId,
@@ -140,7 +134,6 @@ const AdminSupport = ({ user }) => {
       </div>
 
       <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr 2fr', gap: '2rem' }}>
-        {/* User List */}
         <div className="card">
           <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <MessageCircle size={18} style={{ color: '#667eea' }} />
@@ -206,11 +199,9 @@ const AdminSupport = ({ user }) => {
           )}
         </div>
 
-        {/* Chat Area */}
         <div className="card chat-container">
           {selectedUserId ? (
             <>
-              {/* Chat Header */}
               <div style={{
                 padding: '1rem 1.5rem',
                 borderBottom: '1px solid var(--border-color)',
@@ -230,7 +221,6 @@ const AdminSupport = ({ user }) => {
                 </div>
               </div>
 
-              {/* Messages */}
               <div className="chat-messages" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 {selectedUserMessages.map((message) => (
                   <div
@@ -257,7 +247,6 @@ const AdminSupport = ({ user }) => {
                 ))}
               </div>
 
-              {/* Response Input */}
               <div className="chat-input-container">
                 <div className="chat-input">
                   <textarea

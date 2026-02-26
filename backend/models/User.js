@@ -119,6 +119,8 @@ const userSchema = new mongoose.Schema({
             default: false
         },
         twoFactorSecret: String,
+        twoFactorOtpHash: String,
+        twoFactorOtpExpires: Date,
         loginAttempts: {
             type: Number,
             default: 0

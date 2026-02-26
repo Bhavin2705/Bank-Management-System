@@ -1,4 +1,3 @@
-/* Custom Calendar Styles */
 .custom-calendar-container {
     position: relative;
     display: inline-block;
@@ -114,7 +113,6 @@
     min-width: 320px;
 }
 
-/* Compact Calendar Mode */
 .calendar-compact .custom-calendar-dropdown {
     width: 100%;
     min-width: auto;
@@ -378,7 +376,6 @@
     transform: translateY(-1px);
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .custom-calendar-dropdown {
         position: fixed;
@@ -403,7 +400,6 @@
     }
 }
 
-/* Dark theme support */
 [data-theme="dark"] .custom-calendar-dropdown {
     background: var(--bg-secondary);
     border-color: var(--border-color);
@@ -421,7 +417,6 @@
     color: var(--text-primary) !important;
 }
 
-/* Animation for month transitions */
 .calendar-days {
     animation: slideIn 0.2s ease-out;
 }
@@ -438,7 +433,6 @@
     }
 }
 
-/* Focus styles for accessibility */
 .calendar-day:focus {
     outline: 2px solid var(--text-accent);
     outline-offset: 2px;
@@ -449,7 +443,6 @@
     outline-offset: 2px;
 }
 
-/* Loading state */
 .calendar-loading {
     display: flex;
     align-items: center;
@@ -458,7 +451,6 @@
     color: var(--text-secondary);
 }
 
-/* Error state */
 .calendar-error {
     color: var(--error);
     text-align: center;

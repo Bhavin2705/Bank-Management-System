@@ -66,7 +66,6 @@ export const getTransactionStats = async () => {
 
     const recentTransactions = transactionsResponse.success ? transactionsResponse.data : [];
 
-    // Transform backend data to match Dashboard expectations
     return {
       totalTransactions: backendStats.transactionCount || 0,
       monthlyIncome: backendStats.totalCredits || 0,
@@ -110,9 +109,7 @@ export const transferMoney = async (transferData) => {
   }
 };
 
-// Legacy function for backward compatibility
 export const getTransactionsSync = () => {
-  // This function is deprecated, use getTransactions() instead
   console.warn('getTransactionsSync is deprecated, use getTransactions() instead');
   return [];
 };

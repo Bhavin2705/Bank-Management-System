@@ -24,6 +24,9 @@ const Login = ({ onLogin, switchToRegister }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [showAccountSelection, setShowAccountSelection] = useState(false);
   const [availableAccounts, setAvailableAccounts] = useState([]);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -44,13 +47,17 @@ const Login = ({ onLogin, switchToRegister }) => {
     setError('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = selectedAccountId
+        ? await loginWithAccount(formData.email, formData.password, selectedAccountId, twoFactorRequired ? otp : undefined)
+        : await login(formData.email, formData.password, twoFactorRequired ? otp : undefined);
 
       if (result.success) {
         onLogin(result.user);
         navigate('/dashboard', { replace: true });
+      } else if (result.requiresTwoFactor) {
+        setTwoFactorRequired(true);
+        setError(result.message || 'Enter the OTP sent to your email.');
       } else if (result.needsAccountSelection) {
-        // Multiple accounts found - show selection screen
         setAvailableAccounts(result.accounts);
         setShowAccountSelection(true);
         setError(''); // Clear any previous errors
@@ -75,6 +82,11 @@ const Login = ({ onLogin, switchToRegister }) => {
       if (result.success) {
         onLogin(result.user);
         navigate('/dashboard', { replace: true });
+      } else if (result.requiresTwoFactor) {
+        setSelectedAccountId(accountId);
+        setTwoFactorRequired(true);
+        setShowAccountSelection(false);
+        setError(result.message || 'Enter the OTP sent to your email.');
       } else {
         setError(result.error || 'Login failed');
       }
@@ -89,6 +101,9 @@ const Login = ({ onLogin, switchToRegister }) => {
   const handleBackToLogin = () => {
     setShowAccountSelection(false);
     setAvailableAccounts([]);
+    setTwoFactorRequired(false);
+    setOtp('');
+    setSelectedAccountId('');
     setShowForgotPassword(false);
     setShowResetPassword(false);
     setShowResetSuccess(false);
@@ -113,7 +128,25 @@ const Login = ({ onLogin, switchToRegister }) => {
     setShowResetSuccess(true);
   };
 
-  // Show different components based on state
+  const handleResendOtp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = selectedAccountId
+        ? await loginWithAccount(formData.email, formData.password, selectedAccountId)
+        : await login(formData.email, formData.password);
+
+      if (result.requiresTwoFactor) {
+        setError('A new OTP has been sent to your registered email.');
+      } else if (result.error) {
+        setError(result.error);
+      }
+    } catch {
+      setError('Failed to resend OTP. Please try again.');
+    }
+    setLoading(false);
+  };
+
   if (showResetSuccess) {
     return <PasswordResetSuccess onBackToLogin={handleBackToLogin} />;
   }
@@ -194,7 +227,6 @@ const Login = ({ onLogin, switchToRegister }) => {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Left side - Illustration/Info */}
       <div 
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
         style={{
@@ -228,7 +260,6 @@ const Login = ({ onLogin, switchToRegister }) => {
         </div>
       </div>
 
-      {/* Right side - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
         <div className={`w-full max-w-md transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center mb-2 lg:hidden">
@@ -265,6 +296,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                     onChange={handleChange}
                     required
                     placeholder="Enter your email address"
+                    disabled={twoFactorRequired}
                   />
                 </div>
               </div>
@@ -280,6 +312,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                     onChange={handleChange}
                     required
                     placeholder="Enter your password"
+                    disabled={twoFactorRequired}
                   />
                   <button
                     type="button"
@@ -291,15 +324,42 @@ const Login = ({ onLogin, switchToRegister }) => {
                   </button>
                 </div>
                 <div className="mt-2 text-right">
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium"
-                  >
-                    Forgot password?
-                  </button>
+                  {!twoFactorRequired && (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {twoFactorRequired && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">OTP Code</label>
+                  <input
+                    type="text"
+                    name="otp"
+                    className="w-full px-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    placeholder="Enter 6-digit OTP"
+                  />
+                  <div className="mt-2 text-right">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium"
+                      disabled={loading}
+                    >
+                      Resend OTP
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -320,7 +380,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                   </>
                 ) : (
                   <>
-                    Sign In
+                    {twoFactorRequired ? 'Verify OTP' : 'Sign In'}
                     <ArrowRight size={18} className="ml-2" />
                   </>
                 )}

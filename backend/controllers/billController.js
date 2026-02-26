@@ -2,6 +2,7 @@ const Bill = require('../models/Bill');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
+const { createInAppNotification } = require('../utils/notifications');
 
 // @desc    Get all bills for a user
 // @route   GET /api/bills
@@ -240,7 +241,23 @@ const payBill = async (req, res) => {
       date: new Date()
     };
 
-    emailHelpers.sendBillPaymentNotification(req.user.email, billDetails);
+    if (req.user?.preferences?.notifications?.email !== false) {
+      emailHelpers.sendBillPaymentNotification(req.user.email, billDetails);
+    }
+
+    await createInAppNotification({
+      userId: req.user._id,
+      type: 'bill_paid',
+      title: 'Bill Paid Successfully',
+      message: `${bill.name} bill paid for Rs${paymentAmount.toLocaleString('en-IN')}.`,
+      priority: 'medium',
+      relatedId: bill._id,
+      relatedModel: 'Bill',
+      metadata: {
+        amount: paymentAmount,
+        category: 'bill_payment'
+      }
+    });
 
     res.status(200).json({
       success: true,

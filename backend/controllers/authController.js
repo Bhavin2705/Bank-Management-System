@@ -45,6 +45,44 @@ const refreshCookieOptions = {
     maxAge: JWT_REFRESH_EXPIRE_DAYS * 24 * 60 * 60 * 1000
 };
 
+const TWO_FACTOR_OTP_TTL_MS = 10 * 60 * 1000;
+
+const generateTwoFactorOtp = () => String(Math.floor(100000 + Math.random() * 900000));
+
+const hashTwoFactorOtp = (otp) => crypto.createHash('sha256').update(String(otp)).digest('hex');
+
+const initiateTwoFactorLogin = async (user, req, res) => {
+    const otpCode = generateTwoFactorOtp();
+    user.security = user.security || {};
+    user.security.twoFactorOtpHash = hashTwoFactorOtp(otpCode);
+    user.security.twoFactorOtpExpires = new Date(Date.now() + TWO_FACTOR_OTP_TTL_MS);
+    await user.save({ validateBeforeSave: false });
+
+    const sent = await emailHelpers.sendLoginOtpEmail(user.email, user.name, otpCode);
+    if (!sent) {
+        return res.status(503).json({
+            success: false,
+            error: 'Unable to send OTP email. Please verify SMTP configuration and try again.'
+        });
+    }
+
+    return res.status(202).json({
+        success: false,
+        requiresTwoFactor: true,
+        message: 'A 6-digit OTP has been sent to your registered email.'
+    });
+};
+
+const verifyTwoFactorOtp = (user, otp) => {
+    const otpHash = user?.security?.twoFactorOtpHash;
+    const otpExpiry = user?.security?.twoFactorOtpExpires;
+
+    if (!otpHash || !otpExpiry) return false;
+    if (new Date(otpExpiry).getTime() < Date.now()) return false;
+
+    return hashTwoFactorOtp(otp) === otpHash;
+};
+
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
@@ -184,7 +222,7 @@ const register = async (req, res) => {
 // @access  Public
 const login = async (req, res) => {
     try {
-        const { identifier, password } = req.body;
+        const { identifier, password, otp } = req.body;
 
         // Check for user
         const users = await User.findByEmailOrPhone(identifier).select('+password');
@@ -251,6 +289,23 @@ const login = async (req, res) => {
                 success: false,
                 error: 'Account is temporarily locked due to too many failed attempts'
             });
+        }
+
+        if (user.security?.twoFactorEnabled) {
+            if (!otp) {
+                return initiateTwoFactorLogin(user, req, res);
+            }
+
+            const otpValid = verifyTwoFactorOtp(user, otp);
+            if (!otpValid) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Invalid or expired OTP'
+                });
+            }
+
+            user.security.twoFactorOtpHash = undefined;
+            user.security.twoFactorOtpExpires = undefined;
         }
 
         // Reset login attempts on successful login
@@ -329,7 +384,7 @@ const login = async (req, res) => {
 // @access  Public
 const loginWithAccount = async (req, res) => {
     try {
-        const { identifier, password, accountId } = req.body;
+        const { identifier, password, accountId, otp } = req.body;
 
         if (!accountId) {
             return res.status(400).json({
@@ -383,6 +438,23 @@ const loginWithAccount = async (req, res) => {
                 success: false,
                 error: 'Account is temporarily locked due to too many failed attempts'
             });
+        }
+
+        if (user.security?.twoFactorEnabled) {
+            if (!otp) {
+                return initiateTwoFactorLogin(user, req, res);
+            }
+
+            const otpValid = verifyTwoFactorOtp(user, otp);
+            if (!otpValid) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Invalid or expired OTP'
+                });
+            }
+
+            user.security.twoFactorOtpHash = undefined;
+            user.security.twoFactorOtpExpires = undefined;
         }
 
         // Reset login attempts on successful login

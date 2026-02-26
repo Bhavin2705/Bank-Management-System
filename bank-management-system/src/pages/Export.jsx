@@ -1,6 +1,7 @@
 import { Download, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CustomCalendar from '../components/UI/CustomCalendar';
+import { formatCurrencyByPreference } from '../utils/currency';
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../utils/date';
 import { getTransactions } from '../utils/transactions';
 
@@ -13,16 +14,13 @@ const Export = ({ user }) => {
   const [allTransactions, setAllTransactions] = useState([]);
 
   useEffect(() => {
-    // Only load transactions when we have a valid user object (avoid accessing undefined.id)
     if (user && (user.id || user._id)) {
       loadTransactions();
     } else {
-      // Clear transactions if user is not available
       setAllTransactions([]);
     }
   }, [user]);
 
-  // Robust parser for transaction dates (prefer createdAt ISO, fallback to local YYYY-MM-DD stored in `date`)
   const parseTransactionDate = (t) => {
     if (!t) return null;
     if (t.createdAt) return new Date(t.createdAt);
@@ -41,7 +39,6 @@ const Export = ({ user }) => {
   };
 
   const handleExport = () => {
-    // (debug logs removed) — export will run normally
 
     let filteredTransactions = allTransactions;
 
@@ -56,7 +53,6 @@ const Export = ({ user }) => {
       });
     }
 
-    // (debug logs removed)
 
     if (format === 'csv') {
       exportToCSV(filteredTransactions);
@@ -104,10 +100,7 @@ const Export = ({ user }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
+    return formatCurrencyByPreference(amount, user);
   };
 
   return (

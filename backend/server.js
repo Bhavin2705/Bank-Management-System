@@ -12,8 +12,10 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
+const path = require('path');
 
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+const emailService = require('./utils/emailService');
 
 const requiredEnv = ['MONGODB_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
 if (process.env.NODE_ENV === 'development') {
@@ -109,7 +111,8 @@ app.get('/health', (req, res) => {
         success: true,
         message: 'Bank Management API is running',
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        email: emailService.getStatus()
     });
 });
 
@@ -296,6 +299,16 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    emailService.verifyConnection().then((ok) => {
+        if (ok) {
+            console.log('SMTP verified: email delivery is ready.');
+        } else {
+            const status = emailService.getStatus();
+            console.warn(`SMTP not verified: ${status.message}`);
+        }
+    }).catch((err) => {
+        console.warn(`SMTP verification error: ${err.message}`);
+    });
 });
 
 process.on('unhandledRejection', (err, promise) => {

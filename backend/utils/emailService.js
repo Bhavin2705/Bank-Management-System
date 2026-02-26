@@ -4,21 +4,29 @@ class EmailService {
     constructor() {
         this.transporter = null;
         this.initialized = false;
+        this.lastVerification = {
+            ok: false,
+            message: 'Not verified',
+            checkedAt: null
+        };
         this.initializeTransporter();
     }
 
     initializeTransporter() {
         try {
-            const smtpHost = process.env.SMTP_HOST;
-            const smtpPort = process.env.SMTP_PORT;
-            const smtpUser = process.env.SMTP_USER;
-            const smtpPass = process.env.SMTP_PASS;
-            const smtpSecure = process.env.SMTP_SECURE === 'true';
+            const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
+            const smtpPort = process.env.SMTP_PORT || process.env.EMAIL_PORT;
+            const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+            const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+            const configuredPort = smtpPort ? parseInt(smtpPort, 10) : 587;
+            const smtpSecure = process.env.SMTP_SECURE !== undefined
+                ? process.env.SMTP_SECURE === 'true'
+                : configuredPort === 465;
 
             if (smtpHost && smtpUser && smtpPass) {
                 this.transporter = nodemailer.createTransport({
                     host: smtpHost,
-                    port: smtpPort ? parseInt(smtpPort, 10) : 587,
+                    port: configuredPort,
                     secure: smtpSecure,
                     auth: {
                         user: smtpUser,
@@ -26,15 +34,70 @@ class EmailService {
                     }
                 });
                 this.initialized = true;
+                this.verifyConnection().catch((err) => {
+                    this.lastVerification = {
+                        ok: false,
+                        message: err.message || 'SMTP verification failed',
+                        checkedAt: new Date().toISOString()
+                    };
+                });
+            } else {
+                this.lastVerification = {
+                    ok: false,
+                    message: 'Missing SMTP/EMAIL environment variables',
+                    checkedAt: new Date().toISOString()
+                };
             }
         } catch (error) {
             console.error('Email service initialization error:', error.message);
             this.initialized = false;
+            this.lastVerification = {
+                ok: false,
+                message: error.message || 'Initialization failed',
+                checkedAt: new Date().toISOString()
+            };
         }
     }
 
     isConfigured() {
-        return this.initialized && this.transporter;
+        return !!(this.initialized && this.transporter);
+    }
+
+    async verifyConnection() {
+        if (!this.isConfigured()) {
+            this.lastVerification = {
+                ok: false,
+                message: 'Email service not configured',
+                checkedAt: new Date().toISOString()
+            };
+            return false;
+        }
+
+        try {
+            await this.transporter.verify();
+            this.lastVerification = {
+                ok: true,
+                message: 'SMTP connection verified',
+                checkedAt: new Date().toISOString()
+            };
+            return true;
+        } catch (error) {
+            this.lastVerification = {
+                ok: false,
+                message: error.message || 'SMTP verification failed',
+                checkedAt: new Date().toISOString()
+            };
+            return false;
+        }
+    }
+
+    getStatus() {
+        return {
+            configured: this.isConfigured(),
+            verified: !!this.lastVerification.ok,
+            message: this.lastVerification.message,
+            checkedAt: this.lastVerification.checkedAt
+        };
     }
 
     async sendPasswordResetEmail(email, resetUrl) {
@@ -157,8 +220,23 @@ class EmailService {
         return this.transporter.sendMail(mailOptions);
     }
 
+    async sendLoginOtpEmail(email, name, otpCode) {
+        if (!this.isConfigured()) {
+            throw new Error('Email service not configured');
+        }
+
+        const mailOptions = {
+            from: this.getFromEmail(),
+            to: email,
+            subject: 'Your BankPro Login OTP Code',
+            html: this.getLoginOtpTemplate(name, otpCode)
+        };
+
+        return this.transporter.sendMail(mailOptions);
+    }
+
     getFromEmail() {
-        return process.env.EMAIL_FROM || `noreply@bankpro.com`;
+        return process.env.SMTP_FROM || process.env.EMAIL_FROM || `noreply@bankpro.com`;
     }
 
     getPasswordResetTemplate(resetUrl) {
@@ -336,6 +414,55 @@ class EmailService {
                             </div>
                         </div>
                         <p>Best regards,<br>BankPro Team</p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated message, please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
+    getLoginOtpTemplate(name, otpCode) {
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #1a237e; color: white; padding: 20px; text-align: center; border-radius: 5px; }
+                    .content { padding: 20px; background-color: #f5f5f5; margin-top: 20px; border-radius: 5px; }
+                    .otp-box {
+                        font-size: 28px;
+                        letter-spacing: 6px;
+                        font-weight: 700;
+                        text-align: center;
+                        background: #ffffff;
+                        padding: 14px;
+                        border-radius: 8px;
+                        margin: 16px 0;
+                        border: 1px solid #d1d5db;
+                    }
+                    .warning { background-color: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; margin: 15px 0; }
+                    .footer { text-align: center; font-size: 12px; color: #999; margin-top: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2>Login Verification Code</h2>
+                    </div>
+                    <div class="content">
+                        <p>Hello ${name || 'User'},</p>
+                        <p>Use this one-time password to complete your login:</p>
+                        <div class="otp-box">${otpCode}</div>
+                        <div class="warning">
+                            <strong>Security notice:</strong> This OTP is valid for 10 minutes and can be used only once.
+                        </div>
+                        <p>If you did not request this login, change your password immediately.</p>
+                        <p>BankPro Security Team</p>
                     </div>
                     <div class="footer">
                         <p>This is an automated message, please do not reply to this email.</p>

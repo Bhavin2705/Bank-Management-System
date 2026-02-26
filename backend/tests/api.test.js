@@ -1,6 +1,7 @@
 const request = require('supertest');
 
 const BASE_URL = 'http://localhost:5000';
+const uniqueSuffix = () => `${Date.now()}${Math.floor(Math.random() * 10000)}`;
 
 describe('Bank Management API Tests', () => {
     let userToken;
@@ -21,12 +22,13 @@ describe('Bank Management API Tests', () => {
 
     describe('Authentication', () => {
         it('should register a new user', async () => {
-            const timestamp = Date.now();
+            const timestamp = uniqueSuffix();
             const userData = {
                 name: 'Test User',
                 email: `test${timestamp}@example.com`,
                 phone: `98765432${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)}`,
                 password: 'Test@123',
+                pin: '1234',
                 initialDeposit: 1000
             };
 
@@ -217,12 +219,13 @@ describe('Bank Management API Tests', () => {
 
         it('should transfer money', async () => {
             // Create another user for transfer
-            const timestamp = Date.now();
+            const timestamp = uniqueSuffix();
             const recipientData = {
                 name: 'Recipient User',
                 email: `recipient${timestamp}@example.com`,
                 phone: `98765432${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10)}`,
-                password: 'Test@123'
+                password: 'Test@123',
+                pin: '1234'
             };
 
             const regRes = await request(BASE_URL)

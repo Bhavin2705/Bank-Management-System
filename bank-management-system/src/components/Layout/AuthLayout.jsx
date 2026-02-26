@@ -1,9 +1,8 @@
-import { Home, LogOut, Moon, Sun } from 'lucide-react';
+import { Home, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-const AuthLayout = ({ children, onLogout, darkMode, toggleDarkMode }) => {
-  const navigate = useNavigate();
+const AuthLayout = ({ children, darkMode, toggleDarkMode }) => {
   const [isCollapsed] = useState(false);
 
   const navItems = [
@@ -12,7 +11,6 @@ const AuthLayout = ({ children, onLogout, darkMode, toggleDarkMode }) => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
       <aside
         className="sidebar"
         style={{
@@ -29,7 +27,6 @@ const AuthLayout = ({ children, onLogout, darkMode, toggleDarkMode }) => {
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
         }}
       >
-        {/* Brand Header */}
         <div
           className="sidebar-header"
           style={{
@@ -52,7 +49,6 @@ const AuthLayout = ({ children, onLogout, darkMode, toggleDarkMode }) => {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav style={{ flex: 1, padding: '1rem 0' }}>
           <ul className="sidebar-nav" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {navItems.map(item => {
@@ -91,7 +87,6 @@ const AuthLayout = ({ children, onLogout, darkMode, toggleDarkMode }) => {
           </ul>
         </nav>
 
-        {/* Footer */}
         <div
           className="sidebar-footer"
           style={{
@@ -130,7 +125,6 @@ const AuthLayout = ({ children, onLogout, darkMode, toggleDarkMode }) => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main
         style={{
           marginLeft: '280px',

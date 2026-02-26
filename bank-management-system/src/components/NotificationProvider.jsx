@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { AlertCircle, CheckCircle, Info, X, XCircle } from 'lucide-react';
 import { createContext, useCallback, useContext, useState } from 'react';
 
@@ -29,7 +30,6 @@ export const NotificationProvider = ({ children }) => {
 
         setNotifications(prev => [...prev, notification]);
 
-        // Auto remove after duration
         if (duration > 0) {
             setTimeout(() => {
                 removeNotification(id);

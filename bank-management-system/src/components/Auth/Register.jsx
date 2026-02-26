@@ -52,7 +52,6 @@ const Register = ({ onLogin, switchToLogin }) => {
     setPasswordStrength(strength);
   }, [formData.password]);
 
-  // PIN Strength Calculation
   useEffect(() => {
     if (!formData.pin) {
       setPinStrength(0);
@@ -91,7 +90,6 @@ const Register = ({ onLogin, switchToLogin }) => {
       if (!canRegister) {
         setError(`Maximum ${response.maxAllowed} accounts allowed per phone number. Current count: ${response.count}`);
       } else {
-        // Clear any previous error if phone is available
         if (error.includes('Maximum') && error.includes('accounts allowed')) {
           setError('');
         }
@@ -251,7 +249,6 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handleNameChange = (e) => {
     const value = e.target.value;
-    // Allow only letters and spaces
     if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
       setFormData({
         ...formData,
@@ -262,7 +259,6 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handlePhoneChange = (e) => {
     const value = e.target.value;
-    // Allow only digits
     if (/^\d*$/.test(value) && value.length <= 10) {
       setFormData({
         ...formData,
@@ -273,7 +269,6 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handlePinChange = (e) => {
     const value = e.target.value;
-    // Allow only digits, max 6
     if (/^\d*$/.test(value) && value.length <= 6) {
       setFormData({
         ...formData,
@@ -284,7 +279,6 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handleConfirmPinChange = (e) => {
     const value = e.target.value;
-    // Allow only digits, max 6
     if (/^\d*$/.test(value) && value.length <= 6) {
       setFormData({
         ...formData,
@@ -295,7 +289,6 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handleInitialDepositChange = (e) => {
     const value = e.target.value;
-    // Allow only digits and decimal point
     if (/^[\d.]*$/.test(value)) {
       setFormData({
         ...formData,
@@ -439,7 +432,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     style={{ backgroundColor: '#ffffff', color: '#111827' }}
                     value={formData.phone}
-                    onChange={handleChange}
+                    onChange={handlePhoneChange}
                     required
                     placeholder="Enter your phone number"
                     pattern="[0-9]{10}"
@@ -458,7 +451,6 @@ const Register = ({ onLogin, switchToLogin }) => {
                   </p>
                 )}
               </div>
-              {/* Duplicate initialDeposit input removed - kept the first occurrence earlier in the form */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                 <div className="relative">

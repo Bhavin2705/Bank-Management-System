@@ -1,6 +1,7 @@
 const Investment = require('../models/Investment');
 const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
+const { createInAppNotification } = require('../utils/notifications');
 
 // @desc    Get all investments for a user
 // @route   GET /api/investments
@@ -209,7 +210,23 @@ const updateInvestment = async (req, res) => {
       updatedAt: new Date()
     };
 
-    emailHelpers.sendInvestmentNotification(user.email, investmentDetails);
+    if (user?.preferences?.notifications?.email !== false) {
+      emailHelpers.sendInvestmentNotification(user.email, investmentDetails);
+    }
+
+    await createInAppNotification({
+      userId: req.user._id,
+      type: 'investment_update',
+      title: 'Investment Updated',
+      message: `${investment.name} is now valued at Rs${investment.totalValue.toLocaleString('en-IN')}.`,
+      priority: 'medium',
+      relatedId: investment._id,
+      relatedModel: 'Investment',
+      metadata: {
+        amount: investment.totalValue,
+        category: investment.type
+      }
+    });
 
     res.status(200).json({ success: true, data: investment });
   } catch (err) {

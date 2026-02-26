@@ -20,15 +20,12 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
       const response = await api.auth.forgotPassword({ email });
 
       if (response.success) {
-        // If backend returned a token (development/demo), pass it to parent to show reset UI
         if (response.data) {
           if (typeof onResetTokenGenerated === 'function') {
             onResetTokenGenerated(response.data, email);
           }
-          // show demo note only when a token was returned
           setShowDemoNote(true);
         } else {
-          // Normal flow: no token returned, just show the generic submitted screen
           setIsSubmitted(true);
           setShowDemoNote(false);
         }
@@ -54,7 +51,6 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
   if (isSubmitted) {
     return (
       <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
-        {/* Left side - Illustration/Info */}
         <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
           <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-bold">BankPro</h1>
@@ -83,7 +79,6 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
           </div>
         </div>
 
-        {/* Right side - Success Message */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
             <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100">
@@ -127,7 +122,6 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Left side - Illustration/Info */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold">BankPro</h1>
@@ -156,7 +150,6 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
         </div>
       </div>
 
-      {/* Right side - Forgot Password Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="text-center mb-2 lg:hidden">

@@ -1,6 +1,5 @@
 import api from './api.js';
 
-// Helpers to get and set client-persisted data stored in backend `user.clientData`
 export const getClientData = async () => {
     try {
         const res = await api.userData.getClientData();

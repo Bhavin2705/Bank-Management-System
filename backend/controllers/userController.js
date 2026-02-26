@@ -88,6 +88,9 @@ const updateUser = async (req, res) => {
         }
 
         const allowed = ['name', 'email', 'phone', 'profile', 'preferences', 'status'];
+        if (req.user.role === 'admin') {
+            allowed.push('role');
+        }
         if (req.user.role !== 'admin') {
             const index = allowed.indexOf('status');
             if (index !== -1) allowed.splice(index, 1);

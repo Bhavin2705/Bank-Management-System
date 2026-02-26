@@ -5,7 +5,6 @@ const PasswordResetSuccess = ({ onBackToLogin }) => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Left side - Illustration/Info */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-700 text-white">
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold">BankPro</h1>
@@ -34,7 +33,6 @@ const PasswordResetSuccess = ({ onBackToLogin }) => {
         </div>
       </div>
 
-      {/* Right side - Success Message */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="text-center mb-2 lg:hidden">
