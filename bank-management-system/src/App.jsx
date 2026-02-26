@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
 import ForgotPassword from './components/Auth/ForgotPassword';
 import Login from './components/Auth/Login';
@@ -42,6 +42,9 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [error, setError] = useState(null);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [backendWaking, setBackendWaking] = useState(false);
+  const [wakeAttempt, setWakeAttempt] = useState(0);
+  const retryTimeoutRef = useRef(null);
 
   const LoginWrapper = () => {
     const navigate = useNavigate();
@@ -60,19 +63,37 @@ function App() {
 
   useEffect(() => {
     initializeApp();
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
   }, []);
 
-  const initializeApp = async () => {
+  const scheduleHealthRetry = () => {
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    setBackendWaking(true);
+    setWakeAttempt(prev => prev + 1);
+    retryTimeoutRef.current = setTimeout(() => initializeApp({ silent: true }), 5000);
+  };
+
+  const initializeApp = async ({ silent = false } = {}) => {
     try {
+      if (!silent) setLoading(true);
       setError(null);
       const pathname = window.location.pathname;
       const authPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/password-reset-success'];
-      const isOnAuthPage = authPaths.some(p => pathname.startsWith(p));
+      const isOnAuthPage = authPaths.some((p) => pathname.startsWith(p));
 
       const backendHealthy = await checkBackendHealth();
-      if (!backendHealthy && !isOnAuthPage) {
-        throw new Error('Backend server is not available');
+      if (!backendHealthy) {
+        scheduleHealthRetry();
+        setLoading(false);
+        return;
       }
+
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      setBackendWaking(false);
+      setWakeAttempt(0);
+
       try {
         await Promise.race([
           initializeUsers(),
@@ -101,9 +122,9 @@ function App() {
         setDarkMode(true);
         document.documentElement.setAttribute('data-theme', 'dark');
       }
+      setLoading(false);
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -173,6 +194,27 @@ function App() {
         >
           Go to Login
         </button>
+      </div>
+    );
+  }
+
+  if (backendWaking) {
+    return (
+      <div className="backend-wake-screen">
+        <div className="backend-wake-orb backend-wake-orb-one" />
+        <div className="backend-wake-orb backend-wake-orb-two" />
+        <div className="backend-wake-card">
+          <div className="backend-wake-spinner">
+            <span />
+            <span />
+            <span />
+          </div>
+          <h1>Waking Secure Banking Services</h1>
+          <p>
+            Our services are starting up after inactivity. This can take a short while.
+          </p>
+          <div className="backend-wake-status">Attempt {wakeAttempt} - reconnecting automatically</div>
+        </div>
       </div>
     );
   }
