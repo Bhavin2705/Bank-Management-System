@@ -175,8 +175,19 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '20px' }}>
-        <div>Loading…</div>
+      <div className="backend-wake-screen">
+        <div className="backend-wake-orb backend-wake-orb-one" />
+        <div className="backend-wake-orb backend-wake-orb-two" />
+        <div className="backend-wake-card">
+          <div className="backend-wake-spinner">
+            <span />
+            <span />
+            <span />
+          </div>
+          <h1>Preparing Your Workspace</h1>
+          <p>Please wait while we initialize your secure session.</p>
+          <div className="backend-wake-status">Loading application</div>
+        </div>
       </div>
     );
   }
