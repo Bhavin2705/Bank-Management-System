@@ -1,0 +1,198 @@
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import clientData from '../../utils/clientData';
+import debounce from '../../utils/debounce';
+import { DataStatus, LoadingState } from '../../shared/components/feedback';
+import { ConverterCard, KeyRates, PopularPairs } from './components';
+import { MIN_REFRESH_INTERVAL, popularCurrencies, popularPairs } from './constants';
+import { formatCurrency, getCurrencyInfo } from './utils';
+
+const CACHE_SECTION = 'exchangeCache';
+const LIVE_API_ENDPOINT = '/api/exchange/rates';
+
+const CurrencyExchangePage = () => {
+  const [exchangeRates, setExchangeRates] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [useLiveData, setUseLiveData] = useState(true);
+  const [conversion, setConversion] = useState({ fromCurrency: 'USD', toCurrency: 'EUR', amount: 1 });
+  const [result, setResult] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshDisabled, setRefreshDisabled] = useState(false);
+
+  const getCurrencyDetails = useCallback(
+    (code) => getCurrencyInfo(code, popularCurrencies),
+    [],
+  );
+
+  const formatCurrencyValue = useCallback(
+    (amount, currencyCode) => formatCurrency(amount, currencyCode, popularCurrencies),
+    [],
+  );
+
+  const readCachedRates = useCallback(async () => {
+    const cached = await clientData.getSection(CACHE_SECTION);
+    if (!cached?.rates || !cached?.timestamp) {
+      return null;
+    }
+
+    return {
+      rates: cached.rates,
+      timestamp: cached.timestamp,
+    };
+  }, []);
+
+  const fetchLiveRates = useCallback(async () => {
+    const response = await fetch(LIVE_API_ENDPOINT);
+    if (!response.ok) {
+      throw new Error('Unable to fetch live rates right now.');
+    }
+
+    const data = await response.json();
+    if (!data?.rates) {
+      throw new Error('Invalid exchange-rate response.');
+    }
+
+    const payload = {
+      rates: data.rates,
+      timestamp: Date.now(),
+    };
+
+    await clientData.setSection(CACHE_SECTION, payload).catch(() => {});
+    return payload;
+  }, []);
+
+  const applyRates = useCallback((payload) => {
+    setExchangeRates(payload.rates);
+    setLastUpdated(new Date(payload.timestamp));
+  }, []);
+
+  const loadRates = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
+    setError('');
+
+    try {
+      let payload;
+      if (useLiveData) {
+        try {
+          payload = await fetchLiveRates();
+        } catch {
+          payload = await readCachedRates();
+          if (!payload) {
+            throw new Error('Exchange rates are currently unavailable.');
+          }
+          setError('Showing cached rates. Live data is temporarily unavailable.');
+        }
+      } else {
+        payload = await readCachedRates();
+        if (!payload) {
+          throw new Error('No cached rates available yet. Switch to Live and refresh once.');
+        }
+      }
+
+      applyRates(payload);
+    } catch (loadError) {
+      setError(loadError.message || 'Failed to load exchange rates.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [applyRates, fetchLiveRates, readCachedRates, useLiveData]);
+
+  const debouncedLoadRef = useRef(debounce((isRefresh) => loadRates(isRefresh), 250));
+
+  useEffect(() => {
+    debouncedLoadRef.current(false);
+  }, [loadRates]);
+
+  useEffect(() => {
+    const fromRate = exchangeRates[conversion.fromCurrency];
+    const toRate = exchangeRates[conversion.toCurrency];
+    if (!fromRate || !toRate) return;
+
+    const amount = parseFloat(conversion.amount) || 0;
+    const amountInUSD = amount / fromRate;
+    const convertedAmount = amountInUSD * toRate;
+    const rate = toRate / fromRate;
+
+    setResult({
+      originalAmount: amount,
+      convertedAmount,
+      rate,
+      fromCurrency: conversion.fromCurrency,
+      toCurrency: conversion.toCurrency,
+    });
+  }, [exchangeRates, conversion]);
+
+  const sortedCodes = useMemo(() => Object.keys(exchangeRates).sort(), [exchangeRates]);
+
+  const handleToggleMode = () => {
+    setUseLiveData((prev) => !prev);
+  };
+
+  const handleRefresh = () => {
+    if (refreshDisabled) return;
+    loadRates(true);
+    setRefreshDisabled(true);
+    setTimeout(() => setRefreshDisabled(false), MIN_REFRESH_INTERVAL);
+  };
+
+  const handleSwapCurrencies = () => {
+    setConversion((prev) => ({
+      ...prev,
+      fromCurrency: prev.toCurrency,
+      toCurrency: prev.fromCurrency,
+    }));
+  };
+
+  const handleConversionChange = (updates) => {
+    setConversion((prev) => ({ ...prev, ...updates }));
+  };
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  return (
+    <div className="container">
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Currency Exchange</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Convert between currencies using {useLiveData ? 'real-time' : 'stable'} exchange rates
+          {useLiveData && ' (rates may fluctuate)'}
+        </p>
+      </div>
+
+      {error && <div className="error-message" style={{ marginBottom: '2rem' }}>{error}</div>}
+
+      <KeyRates popularCurrencies={popularCurrencies} exchangeRates={exchangeRates} />
+
+      <ConverterCard
+        conversion={conversion}
+        exchangeRates={exchangeRates}
+        sortedCodes={sortedCodes}
+        useLiveData={useLiveData}
+        result={result}
+        refreshing={refreshing}
+        refreshDisabled={refreshDisabled}
+        onToggleMode={handleToggleMode}
+        onRefresh={handleRefresh}
+        onSwapCurrencies={handleSwapCurrencies}
+        onConversionChange={handleConversionChange}
+        getCurrencyInfo={getCurrencyDetails}
+        formatCurrency={formatCurrencyValue}
+      />
+
+      <PopularPairs popularPairs={popularPairs} exchangeRates={exchangeRates} getCurrencyInfo={getCurrencyDetails} />
+      <DataStatus lastUpdated={lastUpdated} useLiveData={useLiveData} />
+    </div>
+  );
+};
+
+export default CurrencyExchangePage;
+
