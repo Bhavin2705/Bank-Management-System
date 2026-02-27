@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const emailService = require('../utils/emailService');
 const emailHelpers = require('../utils/emailHelpers');
+const { createInAppNotification } = require('../utils/notifications');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_me';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev_jwt_refresh_secret_change_me';
@@ -586,6 +587,15 @@ const updateDetails = async (req, res) => {
             runValidators: true
         });
 
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'account_update',
+            title: 'Profile Updated',
+            message: 'Your profile details were updated successfully.',
+            priority: 'low',
+            metadata: { category: 'settings' }
+        });
+
         res.status(200).json({
             success: true,
             data: user
@@ -615,6 +625,15 @@ const updatePassword = async (req, res) => {
 
         user.password = req.body.newPassword;
         await user.save();
+
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'security_alert',
+            title: 'Password Changed',
+            message: 'Your account password was changed successfully.',
+            priority: 'high',
+            metadata: { category: 'security' }
+        });
 
         const token = generateToken(user._id);
         res.cookie('token', token, cookieOptions);

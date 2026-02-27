@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { createInAppNotification } = require('../utils/notifications');
 
 // @desc    Get user settings/preferences
 // @route   GET /api/settings
@@ -83,6 +84,15 @@ const updatePreferences = async (req, res) => {
             runValidators: true
         });
 
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'account_update',
+            title: 'Preferences Updated',
+            message: 'Your notification or display preferences were updated.',
+            priority: 'low',
+            metadata: { category: 'settings' }
+        });
+
         res.status(200).json({
             success: true,
             data: user.preferences,
@@ -114,6 +124,15 @@ const updateTwoFactor = async (req, res) => {
 
         const user = await User.findByIdAndUpdate(req.user._id, updateData, {
             new: true
+        });
+
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'security_alert',
+            title: 'Two-Factor Authentication Updated',
+            message: `Two-factor authentication was ${enable ? 'enabled' : 'disabled'} on your account.`,
+            priority: 'high',
+            metadata: { category: 'security' }
         });
 
         res.status(200).json({

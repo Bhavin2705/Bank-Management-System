@@ -3,6 +3,11 @@ import { useEffect, useState } from 'react';
 import { useNotification } from '../../components/providers/NotificationProvider';
 import { api } from '../../utils/api';
 
+const isLikelyDummyNotification = (item) => {
+  const text = `${item?.title || ''} ${item?.message || ''}`.toLowerCase();
+  return /dummy|sample|placeholder|mock notification|test notification/.test(text);
+};
+
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +24,7 @@ const Notifications = () => {
         const normalized = list
           .filter((item) => item && (item.id || item._id))
           .filter((item) => typeof item.message === 'string' && item.message.trim().length > 0)
+          .filter((item) => !isLikelyDummyNotification(item))
           .map((item) => ({
             ...item,
             id: item.id || item._id,

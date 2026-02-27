@@ -1,6 +1,7 @@
 const Card = require('../models/Card');
 const Account = require('../models/Account');
 const crypto = require('crypto');
+const { createInAppNotification } = require('../utils/notifications');
 
 // Get all cards for authenticated user
 const getUserCards = async (req, res) => {
@@ -138,6 +139,17 @@ const createCard = async (req, res) => {
         const safeCard = await Card.findById(newCard._id).select('-pin -cvvEncrypted -cvvIv -cvvTag');
         // Return the newly created card and the one-time CVV so the user can note it.
         // The CVV is not stored in plaintext and will not be returned in subsequent requests.
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'account_update',
+            title: 'New Card Created',
+            message: `${cardName || 'Your card'} ending with ${String(safeCard.cardNumber || '').slice(-4)} has been created.`,
+            priority: 'medium',
+            relatedId: safeCard._id,
+            relatedModel: 'Card',
+            metadata: { category: 'card' }
+        });
+
         res.status(201).json({ success: true, data: safeCard, oneTimeCvv: defaultCvv });
     } catch (error) {
         console.error('Create card error:', error);
@@ -174,6 +186,17 @@ const updateCardPin = async (req, res) => {
         card.setPin(newPin);
         await card.save();
 
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'security_alert',
+            title: 'Card PIN Updated',
+            message: `PIN updated for card ending with ${String(card.cardNumber || '').slice(-4)}.`,
+            priority: 'high',
+            relatedId: card._id,
+            relatedModel: 'Card',
+            metadata: { category: 'security' }
+        });
+
         res.status(200).json({ success: true, message: 'PIN updated successfully' });
     } catch (error) {
         console.error('Update card PIN error:', error);
@@ -200,6 +223,17 @@ const updateCardStatus = async (req, res) => {
 
         card.status = status;
         await card.save();
+
+        await createInAppNotification({
+            userId: req.user._id,
+            type: status === 'blocked' || status === 'lost' ? 'card_blocked' : 'account_update',
+            title: 'Card Status Updated',
+            message: `Card ending with ${String(card.cardNumber || '').slice(-4)} is now ${status}.`,
+            priority: status === 'blocked' || status === 'lost' ? 'high' : 'medium',
+            relatedId: card._id,
+            relatedModel: 'Card',
+            metadata: { category: 'card' }
+        });
 
         res.status(200).json({ success: true, message: `Card status updated to ${status}` });
     } catch (error) {
