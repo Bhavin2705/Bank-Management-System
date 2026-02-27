@@ -60,7 +60,7 @@ export default function VirtualCardModal({
         </div>
 
         <div className="virtual-card-stage">
-          <div className={`virtual-card-face ${showBack ? 'is-back' : ''}`} style={{ background: cardTheme }}>
+          <div className="virtual-card-face" style={{ background: cardTheme }}>
             {!showBack ? (
               <>
                 <div className="virtual-card-top-row">

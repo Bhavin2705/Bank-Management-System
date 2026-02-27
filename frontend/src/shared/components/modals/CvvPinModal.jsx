@@ -20,7 +20,7 @@ const CvvPinModal = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 1700,
     }}>
       <div style={{
         backgroundColor: 'white',

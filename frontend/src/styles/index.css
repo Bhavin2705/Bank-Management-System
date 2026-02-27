@@ -2280,7 +2280,7 @@ option {
 }
 
 .virtual-card-face.is-back {
-  transform: rotateY(180deg);
+  transform: none;
 }
 
 .virtual-card-top-row {
@@ -2443,7 +2443,7 @@ option {
 .virtual-card-modal {
   width: min(560px, 100%);
   border-radius: 22px;
-  padding: 1.35rem;
+  padding: 1.1rem;
   border: 1px solid rgba(255, 255, 255, 0.28);
   box-shadow: 0 28px 60px rgba(7, 11, 24, 0.45);
 }
@@ -2479,6 +2479,7 @@ option {
   border-radius: 20px;
   padding: 1.1rem;
   box-shadow: 0 24px 40px rgba(8, 14, 34, 0.42);
+  aspect-ratio: 1.72 / 1;
 }
 
 .virtual-card-face::before {
@@ -2585,7 +2586,7 @@ option {
 
 .virtual-card-controls {
   gap: 0.65rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.55rem;
 }
 
 .virtual-card-controls .btn {

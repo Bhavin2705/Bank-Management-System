@@ -14,7 +14,7 @@ export default function PinModal({ show, pinError, pendingTransaction, pin, setP
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000
+        zIndex: 1700
       }}
     >
       <div
