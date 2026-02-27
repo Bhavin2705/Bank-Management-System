@@ -4,6 +4,16 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { createInAppNotification } = require('../utils/notifications');
 
+const getGeneratedExpiry = () => {
+    const now = new Date();
+    const monthsAhead = crypto.randomInt(36, 61); // 3 to 5 years
+    const expiry = new Date(now.getFullYear(), now.getMonth() + monthsAhead, 1);
+    return {
+        month: expiry.getMonth() + 1,
+        year: expiry.getFullYear()
+    };
+};
+
 const getUserCards = async (req, res) => {
     try {
         const cards = await Card.find({ userId: req.user._id, status: { $ne: 'closed' } }).select('-pin +cvvEncrypted +cvvIv +cvvTag').sort({ createdAt: -1 });
@@ -64,9 +74,9 @@ const createCard = async (req, res) => {
             }
         }
 
-        const now = new Date();
-        const defaultExpiryMonth = now.getMonth() + 1; // 1-12
-        const defaultExpiryYear = now.getFullYear() + 3;
+        const generatedExpiry = getGeneratedExpiry();
+        const defaultExpiryMonth = generatedExpiry.month;
+        const defaultExpiryYear = generatedExpiry.year;
         const defaultCvv = ('' + crypto.randomInt(100, 999)).padStart(3, '0');
 
         const brand = cardBrand || (cardType === 'credit' ? 'mastercard' : 'visa');

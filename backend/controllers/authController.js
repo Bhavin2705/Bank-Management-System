@@ -50,6 +50,14 @@ const refreshCookieOptions = {
     maxAge: JWT_REFRESH_EXPIRE_DAYS * 24 * 60 * 60 * 1000
 };
 
+const getClearCookieOptions = (options) => {
+    const { maxAge, ...clearOptions } = options;
+    return clearOptions;
+};
+
+const clearTokenCookieOptions = getClearCookieOptions(cookieOptions);
+const clearRefreshCookieOptions = getClearCookieOptions(refreshCookieOptions);
+
 const TWO_FACTOR_OTP_TTL_MS = 10 * 60 * 1000;
 
 const generateTwoFactorOtp = () => String(Math.floor(100000 + Math.random() * 900000));
@@ -465,8 +473,8 @@ const loginWithAccount = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        res.clearCookie('token', cookieOptions);
-        res.clearCookie('refreshToken', refreshCookieOptions);
+        res.clearCookie('token', clearTokenCookieOptions);
+        res.clearCookie('refreshToken', clearRefreshCookieOptions);
 
         res.status(200).json({
             success: true,

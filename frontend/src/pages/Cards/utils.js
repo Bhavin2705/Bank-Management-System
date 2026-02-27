@@ -6,8 +6,11 @@ export const generateCardNumber = () => {
 
 export const generateExpiryDate = () => {
   const now = new Date();
-  const expiry = new Date(now.getFullYear() + 3, now.getMonth(), 1);
-  return expiry.toLocaleDateString('en-US', { month: '2-digit', year: '2-digit' });
+  const monthsAhead = Math.floor(Math.random() * 25) + 36; // 3 to 5 years
+  const expiry = new Date(now.getFullYear(), now.getMonth() + monthsAhead, 1);
+  const month = String(expiry.getMonth() + 1).padStart(2, '0');
+  const year = String(expiry.getFullYear());
+  return `${month}/${year}`;
 };
 
 export const formatCardNumber = (number) => number.replace(/(\d{4})(?=\d)/g, '$1 ');
