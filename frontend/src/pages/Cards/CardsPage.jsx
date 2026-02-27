@@ -46,7 +46,7 @@ const Cards = ({ user }) => {
 
   useEffect(() => {
     loadCards();
-  }, [user.id]);
+  }, [user?._id, user?.id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -127,9 +127,23 @@ const Cards = ({ user }) => {
     try {
       setCvvPinVerifying(true);
       setCvvPinError('');
-      const result = await api.users.verifyPin(cvvPin);
+      const result = await api.cards.revealCvv(pendingCvvCardId, { pin: cvvPin });
 
       if (result?.success) {
+        const revealedCvv = result?.data?.cvv;
+        if (!revealedCvv) {
+          setCvvPinError('Unable to reveal CVV. Please try again.');
+          return;
+        }
+
+        setCards((prevCards) => (
+          prevCards.map((card) => {
+            const currentId = getCardId(card);
+            if (currentId !== pendingCvvCardId) return card;
+            return { ...card, cvv: revealedCvv };
+          })
+        ));
+
         const updatedVisibleCvvs = new Set(visibleCvvs);
         updatedVisibleCvvs.add(pendingCvvCardId);
         setVisibleCvvs(updatedVisibleCvvs);

@@ -41,9 +41,9 @@ export const validatePinForm = ({ selectedCardId, cards, pinForm }) => {
     return 'Please select a card to change its PIN.';
   }
 
-  const targetCard = cards.find((card) => String(card.id) === selectedCardId);
-  if (targetCard && targetCard.status === 'locked') {
-    return 'The selected card is locked. Unlock the card before changing its PIN.';
+  const targetCard = cards.find((card) => String(card._id || card.id) === selectedCardId);
+  if (targetCard && targetCard.status !== 'active') {
+    return 'The selected card is not active. Activate the card before changing its PIN.';
   }
 
   if (pinForm.newPin.length !== 4 || !/^\d+$/.test(pinForm.newPin)) {

@@ -44,7 +44,7 @@ const Payments = ({ user, onUserUpdate }) => {
 
   useEffect(() => {
     loadBills();
-  }, [user?.id, loadBills]);
+  }, [user?._id, user?.id, loadBills]);
 
   const handleBillChange = (e) => {
     setBillFormData({ ...billFormData, [e.target.name]: e.target.value });
@@ -187,29 +187,47 @@ const Payments = ({ user, onUserUpdate }) => {
       status: 'active',
     };
 
+    let createdRecurringId = null;
     try {
-      await api.recurring.create(recurringPayload);
+      const recurringRes = await api.recurring.create(recurringPayload);
+      if (!recurringRes?.success || !recurringRes?.data?._id) {
+        showRecurringError('Failed to create recurring payment');
+        return;
+      }
+      createdRecurringId = recurringRes.data._id;
     } catch {
       showRecurringError('Failed to create recurring payment');
       return;
     }
 
     try {
-      await addTransaction({
+      const transactionResult = await addTransaction({
         type: 'debit',
         amount,
         description: `Recurring Payment: ${recurringFormData.recipientName}`,
-        category: 'bills',
+        category: 'bill_payment',
         transferType: 'external',
         recipientName: recurringFormData.recipientName,
         recipientAccount: recurringFormData.recipientAccount || recurringFormData.recipientPhone,
       });
+      if (!transactionResult) {
+        throw new Error('Transaction was not created');
+      }
       onUserUpdate({ ...user, balance: user.balance - amount });
+      showRecurringSuccess('Recurring payment created successfully! First payment deducted from your account.');
     } catch (err) {
       console.error('Error creating transaction:', err);
+      if (createdRecurringId) {
+        try {
+          await api.recurring.delete(createdRecurringId);
+        } catch (rollbackError) {
+          console.error('Error rolling back recurring payment after transaction failure:', rollbackError);
+        }
+      }
+      showRecurringError('Recurring payment was not saved because first payment failed.');
+      return;
     }
 
-    showRecurringSuccess('Recurring payment created successfully! First payment deducted from your account.');
     setRecurringFormData(initialRecurringFormData);
     setBalanceWarning('');
     setShowRecurringForm(false);

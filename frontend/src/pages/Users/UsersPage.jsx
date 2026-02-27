@@ -8,6 +8,7 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import { calculateTotalBalance, getBlockModalConfig, getDeleteModalConfig } from './utils';
 
 const Users = ({ user }) => {
+  const getUserId = (listedUser) => listedUser?._id || listedUser?.id || '';
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ open: false });
@@ -134,9 +135,10 @@ const Users = ({ user }) => {
           ) : (
             users.map((listedUser) => {
               const isAdmin = listedUser.role === 'admin';
-              const isSelf = listedUser._id === currentUserId || listedUser.id === currentUserId;
+              const listedUserId = getUserId(listedUser);
+              const isSelf = listedUserId === currentUserId;
               return (
-                <div key={listedUser.id} className="transaction-item">
+                <div key={listedUserId} className="transaction-item">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
                     <div style={{
                       padding: '12px',
@@ -177,14 +179,14 @@ const Users = ({ user }) => {
                         <button
                           disabled={loading}
                           style={{ background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.85rem' }}
-                          onClick={() => handleDelete(listedUser.id, listedUser.name)}
+                          onClick={() => handleDelete(listedUserId, listedUser.name)}
                         >
                           Delete
                         </button>
                         <button
                           disabled={loading}
                           style={{ background: listedUser.status === 'active' ? '#ffc107' : '#28a745', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.85rem' }}
-                          onClick={() => handleBlock(listedUser.id, listedUser.status, listedUser.name)}
+                          onClick={() => handleBlock(listedUserId, listedUser.status, listedUser.name)}
                         >
                           {listedUser.status === 'active' ? 'Block' : 'Unblock'}
                         </button>

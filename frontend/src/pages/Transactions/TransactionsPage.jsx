@@ -64,7 +64,7 @@ export default function Transactions({ user, onUserUpdate }) {
   const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const txs = await getTransactions(user.id);
+      const txs = await getTransactions();
       setTransactions(txs || []);
     } catch (err) {
       showError('Failed to load transactions');
@@ -72,7 +72,7 @@ export default function Transactions({ user, onUserUpdate }) {
     } finally {
       setLoading(false);
     }
-  }, [user.id, showError]);
+  }, [showError]);
 
   useEffect(() => {
     loadTransactions();

@@ -22,7 +22,7 @@ const Budget = ({ user }) => {
   useEffect(() => {
     loadBudgets();
     loadTransactions();
-  }, [user?.id]);
+  }, [user?._id, user?.id]);
 
   const loadBudgets = async () => {
     try {

@@ -14,6 +14,7 @@ import {
 } from './utils';
 
 const Security = ({ user }) => {
+  const getCardId = (card) => String(card?._id || card?.id || '');
   const { showSuccess, showError } = useNotification();
   const [activeTab, setActiveTab] = useState('password');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -64,7 +65,7 @@ const Security = ({ user }) => {
       .then((res) => {
         if (res.success && Array.isArray(res.data)) {
           setCards(res.data);
-          if (res.data.length > 0 && !selectedCardId) setSelectedCardId(String(res.data[0].id));
+          if (res.data.length > 0 && !selectedCardId) setSelectedCardId(getCardId(res.data[0]));
         } else {
           setCards([]);
         }
@@ -125,11 +126,11 @@ const Security = ({ user }) => {
     return () => {
       mounted = false;
     };
-  }, [user.id]);
+  }, [user?._id, user?.id]);
 
   useEffect(() => {
     loadCards();
-  }, [user.id, loadCards]);
+  }, [user?._id, user?.id, loadCards]);
 
   const formatDate = (dateString) => new Date(dateString).toLocaleString('en-US', {
     year: 'numeric',
@@ -245,8 +246,12 @@ const Security = ({ user }) => {
                 <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No cards found. Add a card first.</div>
               ) : (
                 <div className="card-selection">
-                  {cards.map((card, idx) => (
-                    <div key={card.id} className={`card-tile${String(card.id) === selectedCardId ? ' selected' : ''}`}>
+                  {cards.map((card, idx) => {
+                    const cardId = getCardId(card);
+                    const isActive = card.status === 'active';
+                    const isSelected = cardId === selectedCardId;
+                    return (
+                    <div key={cardId} className={`card-tile${isSelected ? ' selected' : ''}`}>
                       <div className="card-index">{idx + 1}</div>
                       <div className="card-meta">
                         <div className="card-name">{card.cardName}</div>
@@ -256,15 +261,16 @@ const Security = ({ user }) => {
                         <button
                           type="button"
                           className="choose-btn"
-                          onClick={() => setSelectedCardId(String(card.id))}
-                          disabled={card.status === 'locked'}
-                          title={card.status === 'locked' ? 'This card is locked and cannot be selected for PIN changes' : (String(card.id) === selectedCardId ? 'Selected' : 'Choose this card')}
+                          onClick={() => setSelectedCardId(cardId)}
+                          disabled={!isActive}
+                          title={!isActive ? 'This card is not active and cannot be selected for PIN changes' : (isSelected ? 'Selected' : 'Choose this card')}
                         >
-                          {card.status === 'locked' ? 'Locked' : (String(card.id) === selectedCardId ? 'Chosen' : 'Choose')}
+                          {!isActive ? card.status : (isSelected ? 'Chosen' : 'Choose')}
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
