@@ -69,48 +69,52 @@ const CardsList = ({
                 </div>
               </div>
 
-              <div className="card-item-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => toggleCardVisibility(cardId)}
-                  className="card-item-action-btn card-item-icon-btn"
-                  style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: 'var(--bg-secondary)', cursor: 'pointer' }}
-                  title={visibleCards.has(cardId) ? 'Hide card number' : 'Show card number'}
-                >
-                  {visibleCards.has(cardId) ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+              <div className="card-item-actions">
+                <div className="card-item-quick-actions">
+                  <button
+                    onClick={() => toggleCardVisibility(cardId)}
+                    className="card-item-action-btn card-item-icon-btn"
+                    style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: 'var(--bg-secondary)', cursor: 'pointer' }}
+                    title={visibleCards.has(cardId) ? 'Hide card number' : 'Show card number'}
+                  >
+                    {visibleCards.has(cardId) ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
 
-                <button
-                  onClick={() => toggleCardLock(cardId)}
-                  className={`card-item-action-btn ${card.status === 'active' ? 'card-lock-btn lock' : 'card-lock-btn unlock'}`}
-                  style={{
-                    padding: '0.5rem',
-                    border: 'none',
-                    borderRadius: '4px',
-                    color: 'white',
-                    cursor: 'pointer',
-                  }}
-                  title={card.status === 'active' ? 'Lock card' : 'Unlock card'}
-                >
-                  {card.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
-                </button>
+                  <button
+                    onClick={() => toggleCardLock(cardId)}
+                    className={`card-item-action-btn card-item-icon-btn ${card.status === 'active' ? 'card-lock-btn lock' : 'card-lock-btn unlock'}`}
+                    style={{
+                      padding: '0.5rem',
+                      border: 'none',
+                      borderRadius: '4px',
+                      color: 'white',
+                      cursor: 'pointer',
+                    }}
+                    title={card.status === 'active' ? 'Lock card' : 'Unlock card'}
+                  >
+                    {card.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
+                  </button>
+                </div>
 
-                <button
-                  onClick={() => showVirtualCard(cardId)}
-                  className="card-item-action-btn"
-                  style={{ padding: '0.5rem 0.6rem', border: 'none', borderRadius: '4px', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                  title="Open virtual card view"
-                >
-                  Virtual
-                </button>
+                <div className="card-item-main-actions">
+                  <button
+                    onClick={() => showVirtualCard(cardId)}
+                    className="card-item-action-btn"
+                    style={{ padding: '0.5rem 0.6rem', border: 'none', borderRadius: '4px', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                    title="Open virtual card view"
+                  >
+                    Virtual View
+                  </button>
 
-                <button
-                  onClick={() => closeCard(cardId, card.cardNumber)}
-                  className="card-item-action-btn"
-                  style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: '#6c757d', color: 'white', cursor: 'pointer' }}
-                  title="Close card"
-                >
-                  Close
-                </button>
+                  <button
+                    onClick={() => closeCard(cardId, card.cardNumber)}
+                    className="card-item-action-btn"
+                    style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: '#6c757d', color: 'white', cursor: 'pointer' }}
+                    title="Close card"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
