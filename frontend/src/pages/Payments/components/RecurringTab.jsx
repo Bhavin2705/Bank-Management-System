@@ -27,7 +27,7 @@ const RecurringTab = ({
   monthlyTotal,
 }) => (
   <>
-    <div style={{ marginBottom: '2rem' }}>
+    <div className="recurring-header" style={{ marginBottom: '2rem' }}>
       <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Recurring Payments</h1>
       <p style={{ color: 'var(--text-secondary)' }}>Set up automatic recurring payments and standing orders</p>
     </div>

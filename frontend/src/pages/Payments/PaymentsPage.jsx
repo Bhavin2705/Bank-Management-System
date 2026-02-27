@@ -245,7 +245,7 @@ const Payments = ({ user, onUserUpdate }) => {
 
   return (
     <div className="container">
-      <div className="payments-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="payments-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
         <button className={activeTab === 'bills' ? 'btn btn-primary' : 'btn btn-secondary'} onClick={() => setActiveTab('bills')}>One-time Bills</button>
         <button className={activeTab === 'recurring' ? 'btn btn-primary' : 'btn btn-secondary'} onClick={() => setActiveTab('recurring')}>Recurring Payments</button>
       </div>

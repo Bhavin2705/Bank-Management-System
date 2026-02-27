@@ -15,7 +15,7 @@ const BillsTab = ({
   formatDate,
 }) => (
   <>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="bills-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '0.75rem', flexWrap: 'wrap' }}>
       <div>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Bill Payments</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Manage and pay your bills</p>
