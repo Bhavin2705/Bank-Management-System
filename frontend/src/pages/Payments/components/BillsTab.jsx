@@ -1,5 +1,5 @@
 ﻿import { Plus, Receipt } from 'lucide-react';
-import CustomCalendar from '../../../components/ui';
+import CustomCalendar from '../../../components/ui/Calendar/CustomCalendar';
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../../../utils/date';
 
 const BillsTab = ({
@@ -91,3 +91,4 @@ const BillsTab = ({
 );
 
 export default BillsTab;
+

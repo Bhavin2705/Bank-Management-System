@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import { api } from '../../utils/api';
 import { getNonAdminUsers } from '../../utils/auth';
 import { formatCurrencyByPreference } from '../../utils/currency';
@@ -377,6 +377,7 @@ export default function Transactions({ user, onUserUpdate }) {
     </div>
   );
 }
+
 
 
 

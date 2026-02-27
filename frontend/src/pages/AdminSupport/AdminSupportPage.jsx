@@ -1,7 +1,7 @@
 ﻿import { Bot, MessageCircle, Send, User, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import { getAuthToken } from '../../utils/api';
 
 const AdminSupport = ({ user }) => {
@@ -288,4 +288,5 @@ const AdminSupport = ({ user }) => {
 };
 
 export default AdminSupport;
+
 

@@ -1,5 +1,5 @@
 ﻿import { Plus, Repeat, Trash2, User } from 'lucide-react';
-import CustomCalendar from '../../../components/ui';
+import CustomCalendar from '../../../components/ui/Calendar/CustomCalendar';
 
 const warningStyles = (balanceWarning) => ({
   padding: '1rem',
@@ -152,3 +152,4 @@ const RecurringTab = ({
 );
 
 export default RecurringTab;
+

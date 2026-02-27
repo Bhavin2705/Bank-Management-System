@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { Navigate, Route, Routes, BrowserRouter as Router } from 'react-router-dom';
 
-import { NotificationProvider } from './components/providers';
+import { NotificationProvider } from './components/providers/NotificationProvider';
 import Sidebar from './components/Layout/Sidebar';
 
 import Login from './components/Auth/Login';
@@ -357,3 +357,4 @@ function ErrorScreen({ message, onRetry }) {
 }
 
 export default App;
+

@@ -1,6 +1,6 @@
 ﻿import { AlertTriangle, Bell, CheckCircle, CreditCard, ShieldAlert, ShoppingBag } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import { api } from '../../utils/api';
 
 const Notifications = () => {
@@ -238,4 +238,5 @@ const Notifications = () => {
 };
 
 export default Notifications;
+
 

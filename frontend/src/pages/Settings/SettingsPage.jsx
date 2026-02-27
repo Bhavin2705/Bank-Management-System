@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import { api } from '../../utils/api';
 import AccountsTab from './components/AccountsTab';
 import BankTab from './components/BankTab';
@@ -464,4 +464,5 @@ const Settings = ({ user, onUserUpdate }) => {
 };
 
 export default Settings;
+
 

@@ -1,6 +1,6 @@
 ﻿import { ArrowDownCircle, ArrowUpCircle, CreditCard, Minus, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import { api } from '../../utils/api';
 import { formatCurrencyByPreference } from '../../utils/currency';
 
@@ -348,4 +348,5 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
 };
 
 export default DepositWithdraw;
+
 

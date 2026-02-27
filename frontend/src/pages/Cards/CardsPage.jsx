@@ -1,6 +1,6 @@
 ﻿import { Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import api from '../../utils/api';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { CvvPinModal } from '../../shared/components/modals';
@@ -268,5 +268,6 @@ const Cards = ({ user }) => {
 };
 
 export default Cards;
+
 
 

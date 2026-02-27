@@ -1,6 +1,6 @@
 ﻿import { AlertTriangle, ArrowRightLeft, Users } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import { api } from '../../utils/api';
 import { getNonAdminUsers } from '../../utils/auth';
 import { formatCurrencyByPreference } from '../../utils/currency';
@@ -440,4 +440,5 @@ const Transfer = ({ user, onUserUpdate }) => {
 };
 
 export default Transfer;
+
 

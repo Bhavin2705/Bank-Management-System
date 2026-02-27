@@ -1,6 +1,6 @@
 ﻿import { Calendar, Download, FileText, Filter, Printer, Receipt, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import CustomCalendar from '../../components/ui';
+import CustomCalendar from '../../components/ui/Calendar/CustomCalendar';
 import { formatCurrencyByPreference } from '../../utils/currency';
 import { fromLocalYYYYMMDD, toLocalYYYYMMDD } from '../../utils/date';
 import { generateAccountStatementPDF, generateMiniStatementPDF } from '../../utils/pdfGenerator';
@@ -384,4 +384,5 @@ const Statements = ({ user }) => {
 };
 
 export default Statements;
+
 

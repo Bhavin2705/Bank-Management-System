@@ -1,5 +1,5 @@
 ﻿import { Mail, MapPin, Phone, User } from 'lucide-react';
-import CustomCalendar from '../../../components/ui';
+import CustomCalendar from '../../../components/ui/Calendar/CustomCalendar';
 import { toLocalYYYYMMDD } from '../../../utils/date';
 
 const ProfileTab = ({
@@ -158,4 +158,5 @@ const ProfileTab = ({
 );
 
 export default ProfileTab;
+
 

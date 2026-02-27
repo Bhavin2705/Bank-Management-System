@@ -1,4 +1,4 @@
-﻿import { useNotification } from '../../components/providers';
+﻿import { useNotification } from '../../components/providers/NotificationProvider';
 import AddBankForm from './components/AddBankForm';
 import BanksList from './components/BanksList';
 import { useBanksManagement } from './hooks/useBanksManagement';
@@ -21,4 +21,5 @@ export default function AdminBanks() {
     </div>
   );
 }
+
 

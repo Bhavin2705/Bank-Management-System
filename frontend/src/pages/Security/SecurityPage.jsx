@@ -1,6 +1,6 @@
 ﻿import { Eye, EyeOff, Key, Lock, Shield } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 import api from '../../utils/api';
 import clientData from '../../utils/clientData';
 import {
@@ -380,4 +380,5 @@ const Security = ({ user }) => {
 };
 
 export default Security;
+
 

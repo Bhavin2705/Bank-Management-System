@@ -14,7 +14,7 @@ import {
   initialRecurringFormData,
 } from './constants';
 import { formatDate, getNextDueDate } from './utils';
-import { useNotification } from '../../components/providers';
+import { useNotification } from '../../components/providers/NotificationProvider';
 
 const Payments = ({ user, onUserUpdate }) => {
   const [activeTab, setActiveTab] = useState('bills');
@@ -287,3 +287,4 @@ const Payments = ({ user, onUserUpdate }) => {
 };
 
 export default Payments;
+
