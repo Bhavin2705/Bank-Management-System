@@ -4,6 +4,11 @@ import { useNotification } from '../../components/providers/NotificationProvider
 import { api } from '../../utils/api';
 import { formatCurrencyByPreference } from '../../utils/currency';
 
+const createClientRequestId = () => (
+    globalThis.crypto?.randomUUID?.()
+    || `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+);
+
 const DepositWithdraw = ({ user, onUserUpdate }) => {
     const { showError, showSuccess } = useNotification();
     const [activeTab, setActiveTab] = useState('deposit');
@@ -41,6 +46,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                     amount: depositAmount,
                     description: description || 'Cash Deposit',
                     category: 'deposit',
+                    clientRequestId: createClientRequestId(),
                     cardId: null
                 };
 
@@ -122,6 +128,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                     amount: withdrawAmount,
                     description: description || 'Cash Withdrawal',
                     category: 'withdrawal',
+                    clientRequestId: createClientRequestId(),
                     cardId: null
                 };
 

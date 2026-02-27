@@ -104,10 +104,35 @@ const getTransaction = async (req, res) => {
 const createTransaction = async (req, res) => {
     console.log('[Transaction Controller] Creating transaction for user:', req.user._id);
     try {
-        const { type, amount, description, category, recipientId, recipientAccount, recipientName } = req.body;
+        const {
+            type,
+            amount,
+            description,
+            category,
+            recipientId,
+            recipientAccount,
+            recipientName,
+            clientRequestId
+        } = req.body;
+
+        if (clientRequestId) {
+            const existingTransaction = await Transaction.findOne({
+                userId: req.user._id,
+                clientRequestId
+            });
+            if (existingTransaction) {
+                return res.status(200).json({ success: true, data: existingTransaction, duplicateIgnored: true });
+            }
+        }
 
         const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
         const numericAmount = roundTwo(Number(amount));
+        if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+            return res.status(400).json({ success: false, error: 'Invalid amount' });
+        }
         let newBalance = roundTwo(Number(user.balance));
 
         if (type === 'credit') {
@@ -123,7 +148,9 @@ const createTransaction = async (req, res) => {
         }
 
         const finalDescription = description && description.trim().length > 0 ? description.trim() : (type === 'credit' ? 'Credit transaction' : 'Debit transaction');
-        const finalCategory = type === 'credit' ? 'salary' : (category || 'other');
+        const normalizedCategory = typeof category === 'string' ? category.trim() : '';
+        const defaultCategory = type === 'credit' ? 'deposit' : type === 'debit' ? 'withdrawal' : 'transfer';
+        const finalCategory = normalizedCategory || defaultCategory;
 
         const transaction = await Transaction.create({
             userId: req.user._id,
@@ -132,6 +159,7 @@ const createTransaction = async (req, res) => {
             balance: newBalance,
             description: finalDescription,
             category: finalCategory,
+            clientRequestId,
             recipientId,
             recipientAccount,
             recipientName
@@ -148,7 +176,7 @@ const createTransaction = async (req, res) => {
             timestamp: transaction.createdAt
         };
 
-        await createInAppNotification({
+        const createdNotification = await createInAppNotification({
             userId: req.user._id,
             type: 'transaction',
             title: type === 'credit' ? 'Deposit Successful' : 'Withdrawal Successful',
@@ -160,20 +188,23 @@ const createTransaction = async (req, res) => {
                 category: finalCategory
             }
         });
+        if (!createdNotification) {
+            console.warn('In-app notification was not created for transaction:', transaction._id.toString());
+        }
 
         if (user?.preferences?.notifications?.email !== false) {
-            emailHelpers.sendTransactionNotification(user.email, transactionDetails);
+            await emailHelpers.sendTransactionNotification(user.email, transactionDetails);
         }
 
         if (type === 'transfer' && recipientId) {
             const recipient = await User.findById(recipientId);
             if (recipient) {
-                const recipientNewBalance = recipient.balance + amount;
+                const recipientNewBalance = roundTwo(Number(recipient.balance) + numericAmount);
 
                 await Transaction.create({
                     userId: recipientId,
                     type: 'credit',
-                    amount,
+                    amount: numericAmount,
                     balance: recipientNewBalance,
                     description: `Transfer from ${user.name}`,
                     category: 'transfer'
@@ -183,14 +214,14 @@ const createTransaction = async (req, res) => {
 
                 const recipientTransactionDetails = {
                     type: 'credit',
-                    amount: amount,
+                    amount: numericAmount,
                     currency: 'INR',
                     description: `Transfer from ${user.name}`,
                     timestamp: new Date()
                 };
 
                 if (recipient?.preferences?.notifications?.email !== false) {
-                    emailHelpers.sendTransactionNotification(recipient.email, recipientTransactionDetails);
+                    await emailHelpers.sendTransactionNotification(recipient.email, recipientTransactionDetails);
                 }
             }
         }
@@ -350,9 +381,9 @@ const getTransactionStats = async (req, res) => {
 const getTransactionCategories = async (req, res) => {
     try {
         const categories = [
-            'withdrawal', 'transfer', 'bill_payment', 'shopping',
-            'food', 'transport', 'entertainment', 'utilities', 'salary',
-            'investment', 'loan', 'fee', 'interest', 'other'
+            'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
+            'food', 'transport', 'transportation', 'entertainment', 'utilities', 'salary',
+            'healthcare', 'investment', 'loan', 'fee', 'interest', 'other'
         ];
 
         res.status(200).json({
@@ -481,8 +512,31 @@ const transferMoney = async (req, res) => {
             recipientPhone,
             recipientBank,
             amount,
-            description
+            description,
+            clientRequestId
         } = req.body;
+
+        if (clientRequestId) {
+            const existingTransfer = await Transaction.findOne({
+                userId: req.user._id,
+                clientRequestId,
+                category: 'transfer'
+            });
+            if (existingTransfer) {
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        transaction: existingTransfer,
+                        message: 'Transfer already processed.',
+                        transferType: existingTransfer.transferType || 'internal',
+                        transferAmount: existingTransfer.amount,
+                        processingFee: 0,
+                        totalDebited: existingTransfer.amount
+                    },
+                    duplicateIgnored: true
+                });
+            }
+        }
         let recipient = null;
         if (recipientAccount) {
             recipient = await User.findOne({ accountNumber: recipientAccount });
@@ -546,6 +600,12 @@ const transferMoney = async (req, res) => {
 
         // Check sender balance (use rounded amount)
         const sender = await User.findById(req.user._id);
+        if (!sender) {
+            return res.status(404).json({
+                success: false,
+                error: 'Sender not found'
+            });
+        }
         const amt = roundTwo(Number(amount));
         if (sender.balance < amt) {
             return res.status(400).json({
@@ -580,6 +640,7 @@ const transferMoney = async (req, res) => {
             transferType,
             amount: isInternalTransfer ? amt : totalDebit, // For external, include fee in amount
             balance: senderNewBalance,
+            clientRequestId,
             description: isInternalTransfer
                 ? (description || `Transfer to ${recipient ? recipient.name : recipientAccount}`)
                 : `${description || `Transfer to ${recipient ? recipient.name : recipientAccount}`} (includes processing fee Rs${processingFee.toLocaleString('en-IN')})`,
@@ -590,7 +651,7 @@ const transferMoney = async (req, res) => {
             recipientBank: recipientBank || null
         });
 
-        await createInAppNotification({
+        const senderNotification = await createInAppNotification({
             userId: req.user._id,
             type: 'transaction',
             title: 'Transfer Sent',
@@ -602,18 +663,31 @@ const transferMoney = async (req, res) => {
                 category: 'transfer'
             }
         });
+        if (!senderNotification) {
+            console.warn('In-app notification was not created for transfer sender transaction:', senderTransaction._id.toString());
+        }
+
+        if (sender?.preferences?.notifications?.email !== false) {
+            await emailHelpers.sendTransactionNotification(sender.email, {
+                type: 'debit',
+                amount: amt,
+                currency: 'INR',
+                description: senderTransaction.description,
+                timestamp: senderTransaction.createdAt
+            });
+        }
 
         // No separate fee transaction; fee is included in main debit transaction
 
         // For internal transfers, create corresponding credit transaction for recipient
         if (isInternalTransfer && recipient) {
-            const recipientNewBalance = recipient.balance + amount;
+            const recipientNewBalance = roundTwo(Number(recipient.balance) + amt);
 
             const recipientTransaction = await Transaction.create({
                 userId: recipient._id,
                 type: 'credit',
                 transferType: 'internal',
-                amount,
+                amount: amt,
                 balance: recipientNewBalance,
                 description: `Transfer from ${sender.name}`,
                 category: 'transfer',
@@ -622,7 +696,7 @@ const transferMoney = async (req, res) => {
                 recipientName: sender.name
             });
 
-            await createInAppNotification({
+            const recipientNotification = await createInAppNotification({
                 userId: recipient._id,
                 type: 'transaction',
                 title: 'Money Received',
@@ -634,13 +708,26 @@ const transferMoney = async (req, res) => {
                     category: 'transfer'
                 }
             });
+            if (!recipientNotification) {
+                console.warn('In-app notification was not created for transfer recipient transaction:', recipientTransaction._id.toString());
+            }
+
+            if (recipient?.preferences?.notifications?.email !== false) {
+                await emailHelpers.sendTransactionNotification(recipient.email, {
+                    type: 'credit',
+                    amount: amt,
+                    currency: 'INR',
+                    description: recipientTransaction.description,
+                    timestamp: recipientTransaction.createdAt
+                });
+            }
 
             // Update recipient balance
             recipient.balance = recipientNewBalance;
             await recipient.save({ validateBeforeSave: false });
         }
 
-        let message = `Successfully transferred Rs${amount.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
+        let message = `Successfully transferred Rs${amt.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
         if (!isInternalTransfer) {
             message += ` (${recipientBank ? recipientBank.bankName : 'External Bank'})`;
             if (processingFee > 0) {
@@ -657,9 +744,9 @@ const transferMoney = async (req, res) => {
                 transaction: senderTransaction,
                 message,
                 transferType,
-                transferAmount: amount,
+                transferAmount: amt,
                 processingFee: isInternalTransfer ? 0 : processingFee,
-                totalDebited: isInternalTransfer ? amount : totalDebit
+                totalDebited: isInternalTransfer ? amt : totalDebit
             }
         });
     } catch (error) {

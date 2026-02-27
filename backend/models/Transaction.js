@@ -33,9 +33,9 @@ const transactionSchema = new mongoose.Schema({
     category: {
         type: String,
         enum: [
-            'withdrawal', 'transfer', 'bill_payment', 'shopping',
-            'food', 'transport', 'entertainment', 'utilities', 'salary',
-            'investment', 'loan', 'fee', 'interest', 'other'
+            'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
+            'food', 'transport', 'transportation', 'entertainment', 'utilities', 'salary',
+            'healthcare', 'investment', 'loan', 'fee', 'interest', 'other'
         ],
         default: 'other'
     },
@@ -48,6 +48,10 @@ const transactionSchema = new mongoose.Schema({
         type: String,
         unique: true,
         sparse: true
+    },
+    clientRequestId: {
+        type: String,
+        trim: true
     },
     // For transfers
     recipientId: {
@@ -113,6 +117,7 @@ const transactionSchema = new mongoose.Schema({
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ userId: 1, type: 1 });
 transactionSchema.index({ userId: 1, category: 1 });
+transactionSchema.index({ userId: 1, clientRequestId: 1 }, { unique: true, sparse: true });
 transactionSchema.index({ recipientId: 1 });
 transactionSchema.index({ status: 1 });
 

@@ -104,6 +104,11 @@ const validateTransaction = [
         .isString()
         .trim()
         .withMessage('Invalid card ID'),
+    body('clientRequestId')
+        .optional()
+        .isString()
+        .isLength({ min: 8, max: 100 })
+        .withMessage('Invalid client request ID'),
     handleValidationErrors
 ];
 
@@ -142,6 +147,11 @@ const validateTransfer = [
         .trim()
         .isLength({ min: 1, max: 200 })
         .withMessage('Description must be less than 200 characters'),
+    body('clientRequestId')
+        .optional()
+        .isString()
+        .isLength({ min: 8, max: 100 })
+        .withMessage('Invalid client request ID'),
     handleValidationErrors
 ];
 

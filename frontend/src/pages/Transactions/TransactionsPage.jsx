@@ -17,6 +17,10 @@ import { getVisibleTransactions } from './utils';
 
 const getCardIdentifier = (card) => card?.id || card?._id || '';
 const isValidCardId = (cardId) => typeof cardId === 'string' && /^[a-f\d]{24}$/i.test(cardId);
+const createClientRequestId = () => (
+  globalThis.crypto?.randomUUID?.()
+  || `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+);
 
 export default function Transactions({ user, onUserUpdate }) {
   const { showError, showSuccess } = useNotification();
@@ -121,6 +125,7 @@ export default function Transactions({ user, onUserUpdate }) {
         amount: transaction.amount,
         description: transaction.description,
         category: transaction.category,
+        clientRequestId: transaction.clientRequestId || createClientRequestId(),
         ...(isValidCardId(transaction.cardId) ? { cardId: transaction.cardId } : {}),
       };
 
@@ -249,6 +254,7 @@ export default function Transactions({ user, onUserUpdate }) {
           amount,
           description: formData.description.trim() || (isDeposit ? 'Cash Deposit' : 'Cash Withdrawal'),
           category: isDeposit ? 'deposit' : 'withdrawal',
+          clientRequestId: createClientRequestId(),
           cardId: selectedCardId || (cards.length > 0 ? getCardIdentifier(cards[0]) : ''),
         };
 
@@ -293,6 +299,7 @@ export default function Transactions({ user, onUserUpdate }) {
       const payload = {
         amount,
         description: (transferData.description || formData.description).trim() || 'Money transfer',
+        clientRequestId: createClientRequestId(),
       };
 
       if (transferData.transferMethod === 'phone') {

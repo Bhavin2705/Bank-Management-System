@@ -13,6 +13,11 @@ import {
   isExternalBank
 } from './utils';
 
+const createClientRequestId = () => (
+  globalThis.crypto?.randomUUID?.()
+  || `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+);
+
 const Transfer = ({ user, onUserUpdate }) => {
   const { showSuccess } = useNotification();
   const [formData, setFormData] = useState(createInitialTransferForm);
@@ -89,7 +94,10 @@ const Transfer = ({ user, onUserUpdate }) => {
 
     try {
       const amount = parseFloat(formData.amount);
-      const transferData = buildTransferPayload(formData);
+      const transferData = {
+        ...buildTransferPayload(formData),
+        clientRequestId: createClientRequestId()
+      };
       const result = await api.transactions.transfer(transferData);
 
       if (result.success) {
