@@ -1,8 +1,9 @@
-const nodemailer = require('nodemailer');
+﻿const nodemailer = require('nodemailer');
 
 class EmailService {
     constructor() {
         this.transporter = null;
+        this.provider = null;
         this.initialized = false;
         this.lastVerification = {
             ok: false,
@@ -14,6 +15,7 @@ class EmailService {
 
     initializeTransporter() {
         try {
+            const resendApiKey = process.env.RESEND_API_KEY;
             const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
             const smtpPort = process.env.SMTP_PORT || process.env.EMAIL_PORT;
             const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
@@ -23,16 +25,30 @@ class EmailService {
                 ? process.env.SMTP_SECURE === 'true'
                 : configuredPort === 465;
 
-            if (smtpHost && smtpUser && smtpPass) {
+            if (resendApiKey) {
+                this.provider = 'resend';
+                this.initialized = true;
+                this.verifyConnection().catch((err) => {
+                    this.lastVerification = {
+                        ok: false,
+                        message: err.message || 'Resend verification failed',
+                        checkedAt: new Date().toISOString()
+                    };
+                });
+            } else if (smtpHost && smtpUser && smtpPass) {
                 this.transporter = nodemailer.createTransport({
                     host: smtpHost,
                     port: configuredPort,
                     secure: smtpSecure,
+                    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 10000),
+                    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
+                    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 15000),
                     auth: {
                         user: smtpUser,
                         pass: smtpPass
                     }
                 });
+                this.provider = 'smtp';
                 this.initialized = true;
                 this.verifyConnection().catch((err) => {
                     this.lastVerification = {
@@ -60,7 +76,7 @@ class EmailService {
     }
 
     isConfigured() {
-        return !!(this.initialized && this.transporter);
+        return !!(this.initialized && (this.provider === 'resend' || this.transporter));
     }
 
     async verifyConnection() {
@@ -74,6 +90,16 @@ class EmailService {
         }
 
         try {
+            if (this.provider === 'resend') {
+                const verificationResult = await this.verifyResendConnection();
+                this.lastVerification = {
+                    ok: verificationResult.ok,
+                    message: verificationResult.message,
+                    checkedAt: new Date().toISOString()
+                };
+                return verificationResult.ok;
+            }
+
             await this.transporter.verify();
             this.lastVerification = {
                 ok: true,
@@ -94,10 +120,90 @@ class EmailService {
     getStatus() {
         return {
             configured: this.isConfigured(),
+            provider: this.provider || 'none',
             verified: !!this.lastVerification.ok,
             message: this.lastVerification.message,
             checkedAt: this.lastVerification.checkedAt
         };
+    }
+
+    async verifyResendConnection() {
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+            return { ok: false, message: 'RESEND_API_KEY is missing' };
+        }
+
+        const controller = new AbortController();
+        const timeoutMs = Number(process.env.RESEND_TIMEOUT_MS || 10000);
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            const response = await fetch('https://api.resend.com/domains', {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${apiKey}`
+                },
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                return { ok: false, message: `Resend verify failed: ${response.status} ${text}` };
+            }
+
+            return { ok: true, message: 'Resend API verified' };
+        } catch (error) {
+            const message = error?.name === 'AbortError' ? 'Resend connection timeout' : (error.message || 'Resend verification failed');
+            return { ok: false, message };
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    async sendMail(mailOptions) {
+        if (this.provider === 'resend') {
+            return this.sendMailViaResend(mailOptions);
+        }
+
+        return this.sendMail(mailOptions);
+    }
+
+    async sendMailViaResend(mailOptions) {
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+            throw new Error('Resend API key is not configured');
+        }
+
+        const from = process.env.RESEND_FROM || mailOptions.from || this.getFromEmail();
+        const controller = new AbortController();
+        const timeoutMs = Number(process.env.RESEND_TIMEOUT_MS || 10000);
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            const response = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    from,
+                    to: Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to],
+                    subject: mailOptions.subject,
+                    html: mailOptions.html
+                }),
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Resend send failed: ${response.status} ${text}`);
+            }
+
+            return response.json();
+        } finally {
+            clearTimeout(timeout);
+        }
     }
 
     async sendPasswordResetEmail(email, resetUrl) {
@@ -112,7 +218,7 @@ class EmailService {
             html: this.getPasswordResetTemplate(resetUrl)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendWelcomeEmail(email, name) {
@@ -127,7 +233,7 @@ class EmailService {
             html: this.getWelcomeTemplate(name)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendAccountCreatedEmail(email, name, accountNumber) {
@@ -142,7 +248,7 @@ class EmailService {
             html: this.getAccountCreatedTemplate(name, accountNumber)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendTransactionNotification(email, transactionDetails) {
@@ -157,7 +263,7 @@ class EmailService {
             html: this.getTransactionTemplate(transactionDetails)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendBillPaymentNotification(email, billDetails) {
@@ -172,7 +278,7 @@ class EmailService {
             html: this.getBillPaymentTemplate(billDetails)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendGoalUpdateNotification(email, goalDetails) {
@@ -187,7 +293,7 @@ class EmailService {
             html: this.getGoalUpdateTemplate(goalDetails)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendInvestmentNotification(email, investmentDetails) {
@@ -202,7 +308,7 @@ class EmailService {
             html: this.getInvestmentTemplate(investmentDetails)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendSecurityAlert(email, alertDetails) {
@@ -217,7 +323,7 @@ class EmailService {
             html: this.getSecurityAlertTemplate(alertDetails)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     async sendLoginOtpEmail(email, name, otpCode) {
@@ -232,7 +338,7 @@ class EmailService {
             html: this.getLoginOtpTemplate(name, otpCode)
         };
 
-        return this.transporter.sendMail(mailOptions);
+        return this.sendMail(mailOptions);
     }
 
     getFromEmail() {
@@ -304,12 +410,12 @@ class EmailService {
                         <p>Thank you for joining BankPro! We're excited to have you on board.</p>
                         <p><strong>Key Features You Can Now Access:</strong></p>
                         <div class="feature-list">
-                            <div class="feature">✓ Manage multiple bank accounts</div>
-                            <div class="feature">✓ Track transactions and budgets</div>
-                            <div class="feature">✓ Pay bills easily and securely</div>
-                            <div class="feature">✓ Set and monitor financial goals</div>
-                            <div class="feature">✓ Monitor investments</div>
-                            <div class="feature">✓ Exchange currencies</div>
+                            <div class="feature">âœ“ Manage multiple bank accounts</div>
+                            <div class="feature">âœ“ Track transactions and budgets</div>
+                            <div class="feature">âœ“ Pay bills easily and securely</div>
+                            <div class="feature">âœ“ Set and monitor financial goals</div>
+                            <div class="feature">âœ“ Monitor investments</div>
+                            <div class="feature">âœ“ Exchange currencies</div>
                         </div>
                         <p>Start exploring your dashboard to make the most of BankPro.</p>
                         <p>Best regards,<br>BankPro Team</p>
@@ -497,7 +603,7 @@ class EmailService {
                     </div>
                     <div class="content">
                         <p>Hello,</p>
-                        <p><span class="success-badge">✓ Payment Successful</span></p>
+                        <p><span class="success-badge">âœ“ Payment Successful</span></p>
                         <div class="details">
                             <div class="detail-row">
                                 <span><strong>Bill:</strong></span>
@@ -676,7 +782,7 @@ class EmailService {
                         <h2>Security Alert</h2>
                     </div>
                     <div class="alert-box">
-                        <strong>⚠️ Unusual Activity Detected</strong>
+                        <strong>âš ï¸ Unusual Activity Detected</strong>
                         <p>We noticed unusual activity on your account. Please review the details below.</p>
                     </div>
                     <div class="content">
@@ -714,3 +820,4 @@ class EmailService {
 }
 
 module.exports = new EmailService();
+
