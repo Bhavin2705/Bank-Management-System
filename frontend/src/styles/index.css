@@ -1202,6 +1202,29 @@ option {
   text-decoration: none;
 }
 
+.auth-page {
+  overflow-x: hidden;
+}
+
+.auth-page-main {
+  width: 100%;
+}
+
+.auth-form-wrap {
+  width: min(100%, 460px);
+  margin: 0 auto;
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 100%;
+}
+
+.auth-scroll-body {
+  max-height: 52vh;
+  padding-right: 0.35rem;
+}
+
 .error-message {
   background: #f8d7da;
   color: #721c24;
@@ -1372,6 +1395,19 @@ option {
 }
 
 @media (max-width: 768px) {
+  .auth-page-main {
+    padding: 1rem 0.9rem 1.2rem !important;
+  }
+
+  .auth-form-card {
+    padding: 1.2rem !important;
+    border-radius: 18px !important;
+  }
+
+  .auth-form-card h2 {
+    line-height: 1.2;
+  }
+
   .transactions-header {
     flex-direction: column;
     align-items: stretch;
@@ -1434,6 +1470,19 @@ option {
 }
 
 @media (max-width: 480px) {
+  .auth-form-wrap {
+    width: 100%;
+  }
+
+  .auth-form-card {
+    padding: 1rem !important;
+  }
+
+  .auth-scroll-body {
+    max-height: 58vh;
+    padding-right: 0.15rem;
+  }
+
   .transactions-title {
     font-size: 1.5rem !important;
   }
@@ -2449,7 +2498,7 @@ option {
     gap: 0.55rem;
   }
 
-  .virtual-card-brand {
+  .virtual-card-brand-block {
     grid-column: 1 / -1;
   }
 }
@@ -2666,6 +2715,62 @@ option {
 
   .virtual-card-product {
     display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .virtual-card-overlay {
+    padding: 0.7rem;
+  }
+
+  .virtual-card-modal {
+    max-height: calc(100vh - 1.4rem);
+    overflow-y: auto;
+    padding: 0.9rem;
+  }
+
+  .virtual-card-face {
+    aspect-ratio: 1.62 / 1;
+    padding: 0.8rem;
+  }
+
+  .virtual-card-top-row {
+    margin-bottom: 0.5rem;
+  }
+
+  .virtual-card-chip {
+    width: 40px;
+    height: 28px;
+    margin-bottom: 0.45rem;
+  }
+
+  .virtual-card-number {
+    font-size: 0.97rem;
+    letter-spacing: 0.11em;
+    margin-bottom: 0.55rem;
+  }
+
+  .virtual-card-bottom-row {
+    gap: 0.5rem;
+    padding-top: 0.3rem;
+  }
+
+  .virtual-card-label {
+    font-size: 0.63rem;
+  }
+
+  .virtual-card-value {
+    font-size: 0.86rem;
+  }
+
+  .virtual-card-brand-block {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .virtual-card-meta {
+    flex-wrap: wrap;
+    row-gap: 0.3rem;
   }
 }
 
@@ -3041,6 +3146,7 @@ option {
 .card-item-quick-actions {
   display: flex;
   gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .card-item-main-actions {
@@ -3113,7 +3219,7 @@ option {
   }
 
   .card-item-quick-actions {
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
 
   .card-item-main-actions {

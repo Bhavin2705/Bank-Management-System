@@ -306,7 +306,7 @@ const Register = ({ onLogin, switchToLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="auth-page min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       <div 
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
         style={{
@@ -347,8 +347,8 @@ const Register = ({ onLogin, switchToLogin }) => {
           © {new Date().getFullYear()} BankPro. All rights reserved.
         </div>
       </div>
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 lg:bg-none">
-        <div className={`w-full max-w-md transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className="auth-page-main w-full lg:w-1/2 flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 lg:bg-none">
+        <div className={`auth-form-wrap w-full max-w-md transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center mb-2 lg:hidden">
             <div className="flex items-center justify-center space-x-2 mb-2">
               <Building2 size={32} className="text-blue-600" />
@@ -356,7 +356,7 @@ const Register = ({ onLogin, switchToLogin }) => {
             </div>
             <p className="text-gray-600">Secure Banking Made Simple</p>
           </div>
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100 flex flex-col max-h-[75vh]">
+          <div className="auth-form-card bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100 flex flex-col max-h-[75vh]">
             <div className="text-center mb-8 flex-shrink-0">
               <h2 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h2>
               <p className="text-gray-500">Join thousands of secure users today</p>
@@ -378,7 +378,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                 {error}
               </div>
             )}
-            <div className="overflow-y-auto flex-1 pr-2">
+            <div className="auth-scroll-body overflow-y-auto flex-1 pr-2">
               <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
