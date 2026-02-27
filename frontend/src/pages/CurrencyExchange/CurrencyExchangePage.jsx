@@ -1,13 +1,13 @@
 ﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import clientData from '../../utils/clientData';
 import debounce from '../../utils/debounce';
+import { api } from '../../utils/api';
 import { DataStatus, LoadingState } from '../../shared/components/feedback';
 import { ConverterCard, KeyRates, PopularPairs } from './components';
 import { MIN_REFRESH_INTERVAL, popularCurrencies, popularPairs } from './constants';
 import { formatCurrency, getCurrencyInfo } from './utils';
 
 const CACHE_SECTION = 'exchangeCache';
-const LIVE_API_ENDPOINT = '/api/exchange/rates';
 
 const CurrencyExchangePage = () => {
   const [exchangeRates, setExchangeRates] = useState({});
@@ -43,13 +43,8 @@ const CurrencyExchangePage = () => {
   }, []);
 
   const fetchLiveRates = useCallback(async () => {
-    const response = await fetch(LIVE_API_ENDPOINT);
-    if (!response.ok) {
-      throw new Error('Unable to fetch live rates right now.');
-    }
-
-    const data = await response.json();
-    if (!data?.rates) {
+    const data = await api.exchange.getRates();
+    if (!data?.success || !data?.rates) {
       throw new Error('Invalid exchange-rate response.');
     }
 
