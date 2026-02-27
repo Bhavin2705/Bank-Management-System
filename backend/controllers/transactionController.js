@@ -192,8 +192,9 @@ const createTransaction = async (req, res) => {
             console.warn('In-app notification was not created for transaction:', transaction._id.toString());
         }
 
+        let emailSent = false;
         if (user?.preferences?.notifications?.email !== false) {
-            await emailHelpers.sendTransactionNotification(user.email, transactionDetails);
+            emailSent = await emailHelpers.sendTransactionNotification(user.email, transactionDetails);
         }
 
         if (type === 'transfer' && recipientId) {
@@ -239,7 +240,13 @@ const createTransaction = async (req, res) => {
             console.error('Error checking raw collection:', rawErr);
         }
 
-        res.status(201).json({ success: true, data: transaction });
+        const transactionData = transaction.toObject();
+        transactionData.delivery = {
+            notificationCreated: !!createdNotification,
+            emailSent
+        };
+
+        res.status(201).json({ success: true, data: transactionData });
     } catch (error) {
         console.error('Error creating transaction:', error);
         res.status(500).json({
@@ -667,8 +674,9 @@ const transferMoney = async (req, res) => {
             console.warn('In-app notification was not created for transfer sender transaction:', senderTransaction._id.toString());
         }
 
+        let senderEmailSent = false;
         if (sender?.preferences?.notifications?.email !== false) {
-            await emailHelpers.sendTransactionNotification(sender.email, {
+            senderEmailSent = await emailHelpers.sendTransactionNotification(sender.email, {
                 type: 'debit',
                 amount: amt,
                 currency: 'INR',
@@ -680,6 +688,9 @@ const transferMoney = async (req, res) => {
         // No separate fee transaction; fee is included in main debit transaction
 
         // For internal transfers, create corresponding credit transaction for recipient
+        let recipientNotificationCreated = false;
+        let recipientEmailSent = false;
+
         if (isInternalTransfer && recipient) {
             const recipientNewBalance = roundTwo(Number(recipient.balance) + amt);
 
@@ -711,9 +722,10 @@ const transferMoney = async (req, res) => {
             if (!recipientNotification) {
                 console.warn('In-app notification was not created for transfer recipient transaction:', recipientTransaction._id.toString());
             }
+            recipientNotificationCreated = !!recipientNotification;
 
             if (recipient?.preferences?.notifications?.email !== false) {
-                await emailHelpers.sendTransactionNotification(recipient.email, {
+                recipientEmailSent = await emailHelpers.sendTransactionNotification(recipient.email, {
                     type: 'credit',
                     amount: amt,
                     currency: 'INR',
@@ -746,7 +758,17 @@ const transferMoney = async (req, res) => {
                 transferType,
                 transferAmount: amt,
                 processingFee: isInternalTransfer ? 0 : processingFee,
-                totalDebited: isInternalTransfer ? amt : totalDebit
+                totalDebited: isInternalTransfer ? amt : totalDebit,
+                delivery: {
+                    sender: {
+                        notificationCreated: !!senderNotification,
+                        emailSent: senderEmailSent
+                    },
+                    recipient: {
+                        notificationCreated: recipientNotificationCreated,
+                        emailSent: recipientEmailSent
+                    }
+                }
             }
         });
     } catch (error) {
