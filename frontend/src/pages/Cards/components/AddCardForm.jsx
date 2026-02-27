@@ -1,6 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react';
 
-const AddCardForm = ({ formData, setFormData, showPin, setShowPin, handleSubmit }) => (
+const AddCardForm = ({ formData, setFormData, showPin, setShowPin, handleSubmit, isSubmitting = false }) => (
   <div className="card" style={{ marginBottom: '2rem' }}>
     <h3 style={{ marginBottom: '1.5rem' }}>Add New Card</h3>
     <form onSubmit={handleSubmit}>
@@ -42,7 +42,9 @@ const AddCardForm = ({ formData, setFormData, showPin, setShowPin, handleSubmit 
             onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
             placeholder="Enter 4-digit PIN"
             maxLength="4"
+            inputMode="numeric"
             required
+            disabled={isSubmitting}
           />
           <button
             type="button"
@@ -56,14 +58,15 @@ const AddCardForm = ({ formData, setFormData, showPin, setShowPin, handleSubmit 
               cursor: 'pointer',
             }}
             title={showPin ? 'Hide PIN' : 'Show PIN'}
+            disabled={isSubmitting}
           >
             {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
 
-      <button type="submit" className="btn btn-primary">
-        Create Card
+      <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+        {isSubmitting ? 'Creating Card...' : 'Create Card'}
       </button>
     </form>
   </div>

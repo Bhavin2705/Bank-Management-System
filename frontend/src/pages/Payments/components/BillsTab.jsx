@@ -13,6 +13,7 @@ const BillsTab = ({
   billCategories,
   formatCurrency,
   formatDate,
+  submittingBill = false,
 }) => (
   <>
     <div className="bills-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -20,8 +21,8 @@ const BillsTab = ({
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Bill Payments</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Manage and pay your bills</p>
       </div>
-      <button onClick={() => setShowBillForm(!showBillForm)} className="btn btn-primary">
-        <Plus size={16} /> Pay Bill
+      <button onClick={() => setShowBillForm(!showBillForm)} className="btn btn-primary" disabled={submittingBill}>
+        <Plus size={16} /> {submittingBill ? 'Processing...' : 'Pay Bill'}
       </button>
     </div>
 
@@ -59,8 +60,10 @@ const BillsTab = ({
             </div>
           </div>
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button type="submit" className="btn btn-primary">Pay Bill</button>
-            <button type="button" onClick={() => setShowBillForm(false)} className="btn btn-secondary">Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={submittingBill}>
+              {submittingBill ? 'Paying Bill...' : 'Pay Bill'}
+            </button>
+            <button type="button" onClick={() => setShowBillForm(false)} className="btn btn-secondary" disabled={submittingBill}>Cancel</button>
           </div>
         </form>
       </div>

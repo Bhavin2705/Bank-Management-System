@@ -25,6 +25,9 @@ const RecurringTab = ({
   formatCurrency,
   getFrequencyLabel,
   monthlyTotal,
+  submittingRecurring = false,
+  updatingRecurringId = null,
+  deletingRecurringId = null,
 }) => (
   <>
     <div className="recurring-header" style={{ marginBottom: '2rem' }}>
@@ -63,8 +66,13 @@ const RecurringTab = ({
     </div>
 
     <div style={{ marginBottom: '2rem' }}>
-      <button onClick={() => setShowRecurringForm(!showRecurringForm)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Plus size={20} />{showRecurringForm ? 'Cancel' : 'Add Recurring Payment'}
+      <button
+        onClick={() => setShowRecurringForm(!showRecurringForm)}
+        className="btn btn-primary"
+        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        disabled={submittingRecurring}
+      >
+        <Plus size={20} />{submittingRecurring ? 'Processing...' : (showRecurringForm ? 'Cancel' : 'Add Recurring Payment')}
       </button>
     </div>
 
@@ -108,7 +116,9 @@ const RecurringTab = ({
 
           {balanceWarning && <div style={warningStyles(balanceWarning)}>{balanceWarning}</div>}
 
-          <button type="submit" className="btn btn-primary" disabled={balanceWarning.includes('INSUFFICIENT')}>Create Recurring Payment</button>
+          <button type="submit" className="btn btn-primary" disabled={balanceWarning.includes('INSUFFICIENT') || submittingRecurring}>
+            {submittingRecurring ? 'Creating Recurring Payment...' : 'Create Recurring Payment'}
+          </button>
         </form>
       </div>
     )}
@@ -123,7 +133,10 @@ const RecurringTab = ({
         </div>
       ) : (
         <div className="transaction-list">
-          {recurringPayments.map((payment) => (
+          {recurringPayments.map((payment) => {
+            const isUpdating = updatingRecurringId === payment._id;
+            const isDeleting = deletingRecurringId === payment._id;
+            return (
             <div key={payment._id} className="transaction-item">
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
                 <div style={{ padding: '12px', borderRadius: '50%', background: payment.status === 'active' ? 'rgba(40, 167, 69, 0.14)' : 'rgba(108, 117, 125, 0.16)', border: `2px solid ${payment.status === 'active' ? 'var(--success)' : 'var(--text-secondary)'}` }}>
@@ -139,12 +152,13 @@ const RecurringTab = ({
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: '600', fontSize: '1.1rem', color: 'var(--success)', marginBottom: '0.5rem' }}>{formatCurrency(payment.amount)}</div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => toggleRecurringStatus(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: payment.status === 'active' ? 'var(--error)' : 'var(--success)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label={payment.status === 'active' ? 'Pause payment' : 'Resume payment'}>{payment.status === 'active' ? 'Pause' : 'Resume'}</button>
-                  <button onClick={() => deleteRecurringPayment(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: 'var(--error)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label="Delete payment"><Trash2 size={14} /></button>
+                  <button onClick={() => toggleRecurringStatus(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: payment.status === 'active' ? 'var(--error)' : 'var(--success)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label={payment.status === 'active' ? 'Pause payment' : 'Resume payment'} disabled={isUpdating || isDeleting}>{isUpdating ? 'Updating...' : (payment.status === 'active' ? 'Pause' : 'Resume')}</button>
+                  <button onClick={() => deleteRecurringPayment(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: 'var(--error)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label="Delete payment" disabled={isUpdating || isDeleting}>{isDeleting ? 'Deleting...' : <Trash2 size={14} />}</button>
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

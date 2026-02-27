@@ -23,6 +23,9 @@ const Cards = ({ user }) => {
   const [formData, setFormData] = useState(initialFormData);
   const [showPin, setShowPin] = useState(false);
   const [modal, setModal] = useState({ open: false });
+  const [creatingCard, setCreatingCard] = useState(false);
+  const [updatingCardId, setUpdatingCardId] = useState(null);
+  const [closingCardId, setClosingCardId] = useState(null);
   const [showCvvPinModal, setShowCvvPinModal] = useState(false);
   const [cvvPin, setCvvPin] = useState('');
   const [cvvPinError, setCvvPinError] = useState('');
@@ -50,6 +53,7 @@ const Cards = ({ user }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (creatingCard) return;
 
     if (!formData.cardName || formData.cardName.trim().length === 0) {
       showError('Card name is required');
@@ -73,6 +77,7 @@ const Cards = ({ user }) => {
     };
 
     try {
+      setCreatingCard(true);
       const result = await api.cards.create(newCard);
       if (result.success) {
         await loadCards();
@@ -84,6 +89,8 @@ const Cards = ({ user }) => {
     } catch (err) {
       console.error('Create card error:', err);
       showError(err.message || 'Create card failed');
+    } finally {
+      setCreatingCard(false);
     }
   };
 
@@ -160,11 +167,13 @@ const Cards = ({ user }) => {
   };
 
   const toggleCardLock = async (cardId) => {
+    if (updatingCardId) return;
     const card = cards.find((c) => getCardId(c) === cardId);
     if (!card) return;
 
     const newStatus = card.status === 'active' ? 'inactive' : 'active';
     try {
+      setUpdatingCardId(cardId);
       const res = await api.cards.updateStatus(cardId, { status: newStatus });
       if (res.success) {
         await loadCards();
@@ -172,6 +181,8 @@ const Cards = ({ user }) => {
     } catch (err) {
       console.error('Toggle lock error:', err);
       showError(err.message || 'Failed to update card status');
+    } finally {
+      setUpdatingCardId(null);
     }
   };
 
@@ -204,6 +215,7 @@ const Cards = ({ user }) => {
     }
 
     try {
+      setClosingCardId(modal.cardId);
       const res = await api.cards.updateStatus(modal.cardId, { status: 'closed' });
       if (res.success) {
         setModal({ open: false });
@@ -216,6 +228,8 @@ const Cards = ({ user }) => {
       console.error('Close card error:', err);
       showError(err.message || 'Failed to close card');
       setModal({ open: false });
+    } finally {
+      setClosingCardId(null);
     }
   };
 
@@ -254,6 +268,7 @@ const Cards = ({ user }) => {
           showPin={showPin}
           setShowPin={setShowPin}
           handleSubmit={handleSubmit}
+          isSubmitting={creatingCard}
         />
       )}
 
@@ -269,6 +284,8 @@ const Cards = ({ user }) => {
           toggleCvvVisibility={toggleCvvVisibility}
           showVirtualCard={openVirtualCard}
           closeCard={closeCard}
+          updatingCardId={updatingCardId}
+          closingCardId={closingCardId}
         />
       </div>
 

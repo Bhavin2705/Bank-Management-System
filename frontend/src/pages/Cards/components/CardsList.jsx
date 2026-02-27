@@ -10,6 +10,8 @@ const CardsList = ({
   toggleCvvVisibility,
   showVirtualCard,
   closeCard,
+  updatingCardId,
+  closingCardId,
 }) => {
   if (cards.length === 0) {
     return (
@@ -25,6 +27,8 @@ const CardsList = ({
     <div className="cards-list" style={{ display: 'grid', gap: '1rem' }}>
       {cards.map((card) => {
         const cardId = card.id || card._id;
+        const isUpdatingCard = updatingCardId === cardId;
+        const isClosingCard = closingCardId === cardId;
         return (
           <div key={cardId} className="card-item" style={{
             padding: '1.5rem',
@@ -71,14 +75,15 @@ const CardsList = ({
 
               <div className="card-item-actions">
                 <div className="card-item-quick-actions">
-                  <button
-                    onClick={() => toggleCardVisibility(cardId)}
-                    className="card-item-action-btn card-item-icon-btn"
-                    style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: 'var(--bg-secondary)', cursor: 'pointer' }}
-                    title={visibleCards.has(cardId) ? 'Hide card number' : 'Show card number'}
-                  >
-                    {visibleCards.has(cardId) ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                    <button
+                      onClick={() => toggleCardVisibility(cardId)}
+                      className="card-item-action-btn card-item-icon-btn"
+                      style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: 'var(--bg-secondary)', cursor: 'pointer' }}
+                      title={visibleCards.has(cardId) ? 'Hide card number' : 'Show card number'}
+                      disabled={isUpdatingCard || isClosingCard}
+                    >
+                      {visibleCards.has(cardId) ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
 
                   <button
                     onClick={() => toggleCardLock(cardId)}
@@ -91,6 +96,7 @@ const CardsList = ({
                       cursor: 'pointer',
                     }}
                     title={card.status === 'active' ? 'Lock card' : 'Unlock card'}
+                    disabled={isUpdatingCard || isClosingCard}
                   >
                     {card.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
                   </button>
@@ -102,6 +108,7 @@ const CardsList = ({
                     className="card-item-action-btn"
                     style={{ padding: '0.5rem 0.6rem', border: 'none', borderRadius: '4px', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
                     title="Open virtual card view"
+                    disabled={isUpdatingCard || isClosingCard}
                   >
                     Virtual View
                   </button>
@@ -111,8 +118,9 @@ const CardsList = ({
                     className="card-item-action-btn"
                     style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: '#6c757d', color: 'white', cursor: 'pointer' }}
                     title="Close card"
+                    disabled={isUpdatingCard || isClosingCard}
                   >
-                    Close
+                    {isClosingCard ? 'Closing...' : 'Close'}
                   </button>
                 </div>
               </div>

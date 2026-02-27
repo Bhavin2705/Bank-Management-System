@@ -25,11 +25,15 @@ const Payments = ({ user, onUserUpdate }) => {
   const [bills, setBills] = useState([]);
   const [showBillForm, setShowBillForm] = useState(false);
   const [billFormData, setBillFormData] = useState(initialBillFormData);
+  const [submittingBill, setSubmittingBill] = useState(false);
 
   const [recurringPayments, setRecurringPayments] = useState([]);
   const [showRecurringForm, setShowRecurringForm] = useState(false);
   const [recurringFormData, setRecurringFormData] = useState(initialRecurringFormData);
   const [balanceWarning, setBalanceWarning] = useState('');
+  const [submittingRecurring, setSubmittingRecurring] = useState(false);
+  const [updatingRecurringId, setUpdatingRecurringId] = useState(null);
+  const [deletingRecurringId, setDeletingRecurringId] = useState(null);
 
   const formatCurrency = (amount) => formatCurrencyByPreference(amount, user);
 
@@ -52,6 +56,7 @@ const Payments = ({ user, onUserUpdate }) => {
 
   const handleBillSubmit = async (e) => {
     e.preventDefault();
+    if (submittingBill) return;
 
     const amount = parseFloat(billFormData.amount);
     if (amount <= 0) return;
@@ -77,9 +82,11 @@ const Payments = ({ user, onUserUpdate }) => {
 
     let billRes;
     try {
+      setSubmittingBill(true);
       billRes = await api.bills.create(billPayload);
     } catch {
       showBillError('Failed to create bill');
+      setSubmittingBill(false);
       return;
     }
 
@@ -101,6 +108,8 @@ const Payments = ({ user, onUserUpdate }) => {
     } catch (err) {
       console.error('Error processing bill payment:', err);
       showBillError('Error processing bill payment');
+    } finally {
+      setSubmittingBill(false);
     }
   };
 
@@ -140,6 +149,7 @@ const Payments = ({ user, onUserUpdate }) => {
 
   const handleRecurringSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRecurring) return;
 
     const amount = parseFloat(recurringFormData.amount);
     if (amount <= 0) {
@@ -189,14 +199,17 @@ const Payments = ({ user, onUserUpdate }) => {
 
     let createdRecurringId = null;
     try {
+      setSubmittingRecurring(true);
       const recurringRes = await api.recurring.create(recurringPayload);
       if (!recurringRes?.success || !recurringRes?.data?._id) {
         showRecurringError('Failed to create recurring payment');
+        setSubmittingRecurring(false);
         return;
       }
       createdRecurringId = recurringRes.data._id;
     } catch {
       showRecurringError('Failed to create recurring payment');
+      setSubmittingRecurring(false);
       return;
     }
 
@@ -225,6 +238,7 @@ const Payments = ({ user, onUserUpdate }) => {
         }
       }
       showRecurringError('Recurring payment was not saved because first payment failed.');
+      setSubmittingRecurring(false);
       return;
     }
 
@@ -232,30 +246,39 @@ const Payments = ({ user, onUserUpdate }) => {
     setBalanceWarning('');
     setShowRecurringForm(false);
     await loadRecurringPayments();
+    setSubmittingRecurring(false);
   };
 
   const deleteRecurringPayment = async (paymentId) => {
+    if (deletingRecurringId) return;
     try {
+      setDeletingRecurringId(paymentId);
       await api.recurring.delete(paymentId);
       showRecurringSuccess('Recurring payment deleted successfully!');
       await loadRecurringPayments();
     } catch {
       showRecurringError('Failed to delete recurring payment');
+    } finally {
+      setDeletingRecurringId(null);
     }
   };
 
   const toggleRecurringStatus = async (paymentId) => {
+    if (updatingRecurringId) return;
     const payment = recurringPayments.find((p) => p._id === paymentId);
     if (!payment) return;
 
     const newStatus = payment.status === 'active' ? 'paused' : 'active';
 
     try {
+      setUpdatingRecurringId(paymentId);
       await api.recurring.update(paymentId, { status: newStatus });
       showRecurringSuccess(`Recurring payment ${newStatus === 'active' ? 'resumed' : 'paused'} successfully!`);
       await loadRecurringPayments();
     } catch {
       showRecurringError('Failed to update recurring payment');
+    } finally {
+      setUpdatingRecurringId(null);
     }
   };
 
@@ -280,6 +303,7 @@ const Payments = ({ user, onUserUpdate }) => {
           billCategories={billCategories}
           formatCurrency={formatCurrency}
           formatDate={formatDate}
+          submittingBill={submittingBill}
         />
       )}
 
@@ -298,6 +322,9 @@ const Payments = ({ user, onUserUpdate }) => {
           formatCurrency={formatCurrency}
           getFrequencyLabel={getFrequencyLabel}
           monthlyTotal={monthlyTotal}
+          submittingRecurring={submittingRecurring}
+          updatingRecurringId={updatingRecurringId}
+          deletingRecurringId={deletingRecurringId}
         />
       )}
     </div>
