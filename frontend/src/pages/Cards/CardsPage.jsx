@@ -228,7 +228,7 @@ const Cards = ({ user }) => {
   }
 
   return (
-    <div className="container">
+    <div className="container cards-page">
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Card Management</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Manage your debit and credit cards</p>
@@ -257,7 +257,7 @@ const Cards = ({ user }) => {
         />
       )}
 
-      <div className="card">
+      <div className="card cards-list-card">
         <h3 style={{ marginBottom: '1.5rem' }}>Your Cards</h3>
         <CardsList
           cards={cards}

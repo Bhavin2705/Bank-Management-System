@@ -22,7 +22,7 @@ const CardsList = ({
   }
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="cards-list" style={{ display: 'grid', gap: '1rem' }}>
       {cards.map((card) => {
         const cardId = card.id || card._id;
         return (
@@ -33,9 +33,9 @@ const CardsList = ({
             background: card.status === 'inactive' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
             opacity: card.status === 'inactive' ? 0.78 : 1,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <div className="card-item-main" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div className="card-item-content" style={{ flex: 1, minWidth: 0 }}>
+                <div className="card-item-heading" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <CreditCard size={20} />
                   <span style={{ fontWeight: '500' }}>{card.cardName}</span>
                   <span className={`cards-type-chip ${card.cardType === 'debit' ? 'is-debit' : 'is-credit'}`} style={{
@@ -47,16 +47,16 @@ const CardsList = ({
                   </span>
                 </div>
 
-                <div style={{ fontSize: '1.2rem', fontFamily: 'monospace', marginBottom: '0.5rem' }}>
+                <div className="card-item-number" style={{ fontSize: '1.2rem', fontFamily: 'monospace', marginBottom: '0.5rem' }}>
                   {visibleCards.has(cardId)
                     ? formatCardNumber(card.cardNumber)
                     : `**** **** **** ${card.cardNumber.slice(-4)}`}
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)', alignItems: 'center' }}>
-                  <span>Expires: {card.expiryDate}</span>
-                    <span>Status: <span style={{ color: card.status === 'active' ? 'var(--success)' : 'var(--error)', fontWeight: '500' }}>{card.status}</span></span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>CVV:
+                <div className="card-item-meta" style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="card-item-meta-value">Expires: {card.expiryDate}</span>
+                  <span className="card-item-meta-value">Status: <span style={{ color: card.status === 'active' ? 'var(--success)' : 'var(--error)', fontWeight: '500' }}>{card.status}</span></span>
+                  <span className="card-item-meta-value" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>CVV:
                     <strong style={{ letterSpacing: '2px' }}>{visibleCvvs.has(cardId) ? (card.cvv || '---') : '• • •'}</strong>
                     <button
                       onClick={() => toggleCvvVisibility(cardId)}
@@ -69,9 +69,10 @@ const CardsList = ({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className="card-item-actions" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => toggleCardVisibility(cardId)}
+                  className="card-item-action-btn card-item-icon-btn"
                   style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: 'var(--bg-secondary)', cursor: 'pointer' }}
                   title={visibleCards.has(cardId) ? 'Hide card number' : 'Show card number'}
                 >
@@ -80,7 +81,7 @@ const CardsList = ({
 
                 <button
                   onClick={() => toggleCardLock(cardId)}
-                  className={card.status === 'active' ? 'card-lock-btn lock' : 'card-lock-btn unlock'}
+                  className={`card-item-action-btn ${card.status === 'active' ? 'card-lock-btn lock' : 'card-lock-btn unlock'}`}
                   style={{
                     padding: '0.5rem',
                     border: 'none',
@@ -95,6 +96,7 @@ const CardsList = ({
 
                 <button
                   onClick={() => showVirtualCard(cardId)}
+                  className="card-item-action-btn"
                   style={{ padding: '0.5rem 0.6rem', border: 'none', borderRadius: '4px', background: 'var(--primary-color)', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
                   title="Open virtual card view"
                 >
@@ -103,6 +105,7 @@ const CardsList = ({
 
                 <button
                   onClick={() => closeCard(cardId, card.cardNumber)}
+                  className="card-item-action-btn"
                   style={{ padding: '0.5rem', border: 'none', borderRadius: '4px', background: '#6c757d', color: 'white', cursor: 'pointer' }}
                   title="Close card"
                 >

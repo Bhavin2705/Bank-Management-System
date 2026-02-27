@@ -6,11 +6,11 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --bg-primary: #f2f6ff;
   --bg-secondary: white;
   --bg-tertiary: #f8f9fa;
-  --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --primary-color: #667eea;
+  --primary: linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%);
+  --primary-color: #1E3A8A;
   --bg-hover: #f0f0f0;
   --text-primary: #333;
   --text-secondary: #6c757d;
@@ -427,8 +427,16 @@ body {
   overflow-x: hidden;
 }
 
+#root,
+.app-layout,
+.main-content {
+  width: 100%;
+  max-width: 100%;
+}
+
 html,
 body,
+.app-layout,
 .main-content,
 .card,
 .stat-card,
@@ -1143,7 +1151,7 @@ option {
 .brand-title {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1811,7 +1819,7 @@ option {
 }
 
 .message.user .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%);
   color: white;
   border: none;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
@@ -1919,7 +1927,7 @@ option {
 
 .send-button {
   padding: 12px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%);
   color: white;
   border: none;
   border-radius: 24px;
@@ -2123,7 +2131,7 @@ option {
 .backend-wake-orb-two {
   width: 240px;
   height: 240px;
-  background: linear-gradient(135deg, #764ba2, #667eea);
+  background: linear-gradient(135deg, #1E3A8A, #00D4FF);
   bottom: -70px;
   left: -70px;
   animation-delay: 1.5s;
@@ -2988,8 +2996,8 @@ option {
 }
 
 .cards-type-chip.is-credit {
-  background: rgba(139, 92, 246, 0.16);
-  color: #6d28d9;
+  background: rgba(30, 58, 138, 0.14);
+  color: #1e3a8a;
 }
 
 .card-lock-btn.lock {
@@ -3006,8 +3014,80 @@ option {
 }
 
 [data-theme="dark"] .cards-type-chip.is-credit {
-  background: rgba(167, 139, 250, 0.2);
-  color: #d4c3ff;
+  background: rgba(103, 204, 255, 0.2);
+  color: #9edfff;
+}
+
+.cards-page {
+  overflow-x: hidden;
+}
+
+.cards-list {
+  width: 100%;
+}
+
+.card-item-main {
+  gap: 0.9rem;
+}
+
+.card-item-actions {
+  min-width: 0;
+}
+
+.card-item-number {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .cards-page .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cards-list-card {
+    padding: 1rem;
+  }
+
+  .card-item {
+    padding: 1rem !important;
+  }
+
+  .card-item-main {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .card-item-content {
+    width: 100%;
+  }
+
+  .card-item-heading {
+    flex-wrap: wrap;
+  }
+
+  .card-item-number {
+    font-size: 1.02rem !important;
+    letter-spacing: 0.02em;
+  }
+
+  .card-item-meta {
+    gap: 0.6rem !important;
+    font-size: 0.84rem !important;
+    align-items: flex-start !important;
+  }
+
+  .card-item-actions {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem !important;
+  }
+
+  .card-item-actions .card-item-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 [data-theme="dark"] .card-item {
