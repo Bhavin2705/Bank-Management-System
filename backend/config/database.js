@@ -11,7 +11,6 @@ const connectDB = async () => {
     }
 
     try {
-        // Connect to MongoDB with explicit dbName for clarity
         const conn = await mongoose.connect(mongoURI, {
             dbName: 'bank_management_system'
         });
@@ -20,7 +19,6 @@ const connectDB = async () => {
         console.log(`MongoDB Database: ${conn.connection.name}`);
     } catch (error) {
         console.error('Database connection error:', error.message);
-        console.error('Tried to connect to:', mongoURI);
         console.error('Please check your MongoDB connection string and network access');
         process.exit(1);
     }

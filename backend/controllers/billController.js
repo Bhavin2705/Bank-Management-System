@@ -4,9 +4,6 @@ const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
 const { createInAppNotification } = require('../utils/notifications');
 
-// @desc    Get all bills for a user
-// @route   GET /api/bills
-// @access  Private
 const getBills = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -42,13 +39,10 @@ const getBills = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching bills:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-// @desc    Get bill by ID
-// @route   GET /api/bills/:id
-// @access  Private
 const getBill = async (req, res) => {
   try {
     const bill = await Bill.findOne({
@@ -63,20 +57,16 @@ const getBill = async (req, res) => {
     res.status(200).json({ success: true, data: bill });
   } catch (err) {
     console.error('Error fetching bill:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-// @desc    Create a new bill
-// @route   POST /api/bills
-// @access  Private
 const createBill = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
       return res.status(401).json({ success: false, message: 'User not authenticated' });
     }
 
-    // Validate required fields
     if (!req.body.name || req.body.name.trim() === '') {
       return res.status(400).json({ success: false, message: 'Bill name is required' });
     }
@@ -84,7 +74,6 @@ const createBill = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid amount is required' });
     }
 
-    // Map category to valid bill type
     const categoryTypeMap = {
       utilities: 'electricity',
       electricity: 'electricity',
@@ -106,7 +95,6 @@ const createBill = async (req, res) => {
 
     const billType = categoryTypeMap[req.body.category] || categoryTypeMap[req.body.type] || 'other';
 
-    // Provide defaults for required fields if not supplied
     const billData = {
       userId: req.user._id,
       type: billType,
@@ -124,13 +112,10 @@ const createBill = async (req, res) => {
     res.status(201).json({ success: true, data: bill });
   } catch (err) {
     console.error('Error creating bill:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to create bill' });
+    res.status(400).json({ success: false, message: 'Failed to create bill' });
   }
 };
 
-// @desc    Update a bill
-// @route   PUT /api/bills/:id
-// @access  Private
 const updateBill = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -146,20 +131,16 @@ const updateBill = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Bill not found' });
     }
 
-    // Update bill fields
     Object.assign(bill, req.body);
     bill = await bill.save();
 
     res.status(200).json({ success: true, data: bill });
   } catch (err) {
     console.error('Error updating bill:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to update bill' });
+    res.status(400).json({ success: false, message: 'Failed to update bill' });
   }
 };
 
-// @desc    Delete a bill
-// @route   DELETE /api/bills/:id
-// @access  Private
 const deleteBill = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -178,13 +159,10 @@ const deleteBill = async (req, res) => {
     res.status(200).json({ success: true, message: 'Bill deleted successfully' });
   } catch (err) {
     console.error('Error deleting bill:', err);
-    res.status(500).json({ success: false, message: err.message || 'Failed to delete bill' });
+    res.status(500).json({ success: false, message: 'Failed to delete bill' });
   }
 };
 
-// @desc    Pay a bill
-// @route   POST /api/bills/:id/pay
-// @access  Private
 const payBill = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -269,13 +247,10 @@ const payBill = async (req, res) => {
     });
   } catch (err) {
     console.error('Error paying bill:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to pay bill' });
+    res.status(400).json({ success: false, message: 'Failed to pay bill' });
   }
 };
 
-// @desc    Get bill statistics
-// @route   GET /api/bills/stats
-// @access  Private
 const getBillStats = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -314,7 +289,7 @@ const getBillStats = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching bill stats:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

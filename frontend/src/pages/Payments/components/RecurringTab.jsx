@@ -5,9 +5,9 @@ const warningStyles = (balanceWarning) => ({
   padding: '1rem',
   marginBottom: '1rem',
   borderRadius: '6px',
-  background: balanceWarning.includes('INSUFFICIENT') ? '#ffebee' : '#fff3cd',
-  border: `1px solid ${balanceWarning.includes('INSUFFICIENT') ? '#ef5350' : '#ffc107'}`,
-  color: balanceWarning.includes('INSUFFICIENT') ? '#c62828' : '#856404',
+  background: balanceWarning.includes('INSUFFICIENT') ? 'rgba(220, 53, 69, 0.14)' : 'rgba(255, 193, 7, 0.14)',
+  border: `1px solid ${balanceWarning.includes('INSUFFICIENT') ? 'rgba(220, 53, 69, 0.45)' : 'rgba(255, 193, 7, 0.5)'}`,
+  color: balanceWarning.includes('INSUFFICIENT') ? 'var(--error)' : '#b78900',
   fontSize: '0.9rem',
 });
 
@@ -126,21 +126,21 @@ const RecurringTab = ({
           {recurringPayments.map((payment) => (
             <div key={payment._id} className="transaction-item">
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                <div style={{ padding: '12px', borderRadius: '50%', background: payment.status === 'active' ? '#e8f5e8' : '#f5f5f5', border: `2px solid ${payment.status === 'active' ? '#28a745' : '#6c757d'}` }}>
-                  <Repeat size={20} style={{ color: payment.status === 'active' ? '#28a745' : '#6c757d' }} />
+                <div style={{ padding: '12px', borderRadius: '50%', background: payment.status === 'active' ? 'rgba(40, 167, 69, 0.14)' : 'rgba(108, 117, 125, 0.16)', border: `2px solid ${payment.status === 'active' ? 'var(--success)' : 'var(--text-secondary)'}` }}>
+                  <Repeat size={20} style={{ color: payment.status === 'active' ? 'var(--success)' : 'var(--text-secondary)' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{payment.description}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>To: {payment.beneficiaryName}{payment.toAccount ? ` (A/C: ${payment.toAccount})` : ''}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{getFrequencyLabel(payment.frequency)}</div>
-                  <div style={{ fontSize: '0.75rem', color: payment.status === 'active' ? '#28a745' : '#dc3545', fontWeight: '500', textTransform: 'uppercase' }}>{payment.status}</div>
+                  <div style={{ fontSize: '0.75rem', color: payment.status === 'active' ? 'var(--success)' : 'var(--error)', fontWeight: '500', textTransform: 'uppercase' }}>{payment.status}</div>
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: '600', fontSize: '1.1rem', color: '#28a745', marginBottom: '0.5rem' }}>{formatCurrency(payment.amount)}</div>
+                <div style={{ fontWeight: '600', fontSize: '1.1rem', color: 'var(--success)', marginBottom: '0.5rem' }}>{formatCurrency(payment.amount)}</div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => toggleRecurringStatus(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: payment.status === 'active' ? '#dc3545' : '#28a745', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label={payment.status === 'active' ? 'Pause payment' : 'Resume payment'}>{payment.status === 'active' ? 'Pause' : 'Resume'}</button>
-                  <button onClick={() => deleteRecurringPayment(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: '#dc3545', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label="Delete payment"><Trash2 size={14} /></button>
+                  <button onClick={() => toggleRecurringStatus(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: payment.status === 'active' ? 'var(--error)' : 'var(--success)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label={payment.status === 'active' ? 'Pause payment' : 'Resume payment'}>{payment.status === 'active' ? 'Pause' : 'Resume'}</button>
+                  <button onClick={() => deleteRecurringPayment(payment._id)} style={{ padding: '0.25rem 0.5rem', border: 'none', borderRadius: '4px', background: 'var(--error)', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }} aria-label="Delete payment"><Trash2 size={14} /></button>
                 </div>
               </div>
             </div>

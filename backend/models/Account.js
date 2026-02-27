@@ -22,7 +22,6 @@ const accountSchema = new mongoose.Schema({
         maxlength: [50, 'Account name cannot be more than 50 characters'],
         validate: {
             validator: function (v) {
-                // Only allow letters, numbers, and spaces
                 return /^[A-Za-z0-9 ]+$/.test(v);
             },
             message: 'Account name must not contain special characters.'
@@ -43,7 +42,6 @@ const accountSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'frozen', 'closed'],
         default: 'active'
     },
-    // For fixed deposits
     fixedDeposit: {
         principal: Number,
         interestRate: Number,
@@ -51,7 +49,6 @@ const accountSchema = new mongoose.Schema({
         maturityAmount: Number,
         isMatured: { type: Boolean, default: false }
     },
-    // For recurring deposits
     recurringDeposit: {
         monthlyDeposit: Number,
         interestRate: Number,
@@ -59,14 +56,12 @@ const accountSchema = new mongoose.Schema({
         maturityAmount: Number,
         isMatured: { type: Boolean, default: false }
     },
-    // Account limits
     limits: {
         dailyWithdrawal: { type: Number, default: 50000 },
         monthlyWithdrawal: { type: Number, default: 500000 },
         dailyTransfer: { type: Number, default: 100000 },
         monthlyTransfer: { type: Number, default: 1000000 }
     },
-    // Account features
     features: {
         onlineBanking: { type: Boolean, default: true },
         mobileBanking: { type: Boolean, default: true },
@@ -74,7 +69,6 @@ const accountSchema = new mongoose.Schema({
         chequeBook: { type: Boolean, default: false },
         internetBanking: { type: Boolean, default: true }
     },
-    // Branch information
     branch: {
         name: String,
         code: String,
@@ -87,24 +81,18 @@ const accountSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexes
 accountSchema.index({ userId: 1 });
 accountSchema.index({ accountType: 1 });
 accountSchema.index({ status: 1 });
 
-// Virtual for account age
 accountSchema.virtual('accountAge').get(function () {
     return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60 * 24));
 });
 
-// Virtual for available balance (considering limits)
 accountSchema.virtual('availableBalance').get(function () {
-    // This would be calculated based on daily/monthly limits
-    // For now, return the current balance
     return this.balance;
 });
 
-// Pre-save middleware to generate account number
 accountSchema.pre('save', function (next) {
     if (!this.accountNumber) {
         const typeCode = this.accountType.substring(0, 2).toUpperCase();
@@ -113,10 +101,7 @@ accountSchema.pre('save', function (next) {
     next();
 });
 
-// Instance method to check withdrawal limits
 accountSchema.methods.canWithdraw = function (amount, period = 'daily') {
-    // This would check against transaction history
-    // For now, return true if amount is within limits
     if (period === 'daily') {
         return amount <= this.limits.dailyWithdrawal;
     } else if (period === 'monthly') {
@@ -125,7 +110,6 @@ accountSchema.methods.canWithdraw = function (amount, period = 'daily') {
     return false;
 };
 
-// Instance method to check transfer limits
 accountSchema.methods.canTransfer = function (amount, period = 'daily') {
     if (period === 'daily') {
         return amount <= this.limits.dailyTransfer;
@@ -135,12 +119,10 @@ accountSchema.methods.canTransfer = function (amount, period = 'daily') {
     return false;
 };
 
-// Static method to get user accounts
 accountSchema.statics.getUserAccounts = function (userId) {
     return this.find({ userId, status: 'active' }).sort({ createdAt: -1 });
 };
 
-// Static method to get account by number
 accountSchema.statics.findByAccountNumber = function (accountNumber) {
     return this.findOne({ accountNumber, status: 'active' });
 };

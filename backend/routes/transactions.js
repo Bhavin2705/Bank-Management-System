@@ -21,10 +21,8 @@ const { apiLimiter, transactionLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-// All routes require authentication
 router.use(protect);
 
-// Transaction routes
 router.get('/categories', getTransactionCategories);
 router.get('/stats', getTransactionStats);
 router.post('/validate-transfer', validateTransfer, validateTransferDetails); // Preview transfer details

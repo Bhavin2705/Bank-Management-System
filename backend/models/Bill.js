@@ -24,7 +24,6 @@ const billSchema = new mongoose.Schema({
         type: String,
         maxlength: [200, 'Description cannot be more than 200 characters']
     },
-    // Bill details
     billNumber: {
         type: String,
         required: [true, 'Bill number is required']
@@ -42,7 +41,6 @@ const billSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Due date is required']
     },
-    // Payment information
     status: {
         type: String,
         enum: ['pending', 'paid', 'overdue', 'cancelled'],
@@ -61,7 +59,6 @@ const billSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Transaction'
     },
-    // Recurring bill settings
     isRecurring: {
         type: Boolean,
         default: false
@@ -72,7 +69,6 @@ const billSchema = new mongoose.Schema({
         default: 'monthly'
     },
     nextDueDate: Date,
-    // Auto payment settings
     autoPay: {
         type: Boolean,
         default: false
@@ -81,26 +77,22 @@ const billSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Account'
     },
-    // Bill provider information
     provider: {
         name: String,
         contact: String,
         website: String,
         customerId: String
     },
-    // Alerts and reminders
     reminders: {
         email: { type: Boolean, default: true },
         sms: { type: Boolean, default: false },
         daysBefore: { type: Number, default: 3 }
     },
-    // Bill attachments/documents
     documents: [{
         name: String,
         url: String,
         uploadedAt: { type: Date, default: Date.now }
     }],
-    // Notes
     notes: [{
         content: String,
         date: { type: Date, default: Date.now }
@@ -111,25 +103,21 @@ const billSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexes
 billSchema.index({ userId: 1, status: 1 });
 billSchema.index({ userId: 1, dueDate: 1 });
 billSchema.index({ userId: 1, type: 1 });
 billSchema.index({ billNumber: 1 });
 
-// Virtual for days until due
 billSchema.virtual('daysUntilDue').get(function () {
     const now = new Date();
     const diffTime = this.dueDate - now;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-// Virtual for overdue status
 billSchema.virtual('isOverdue').get(function () {
     return this.status === 'pending' && this.daysUntilDue < 0;
 });
 
-// Virtual for payment status
 billSchema.virtual('paymentStatus').get(function () {
     if (this.status === 'paid') return 'paid';
     if (this.isOverdue) return 'overdue';
@@ -137,14 +125,11 @@ billSchema.virtual('paymentStatus').get(function () {
     return 'pending';
 });
 
-// Pre-save middleware
 billSchema.pre('save', function (next) {
-    // Set next due date for recurring bills
     if (this.isRecurring && !this.nextDueDate) {
         this.nextDueDate = this.dueDate;
     }
 
-    // Update status based on payment
     if (this.paidAmount >= this.amount && this.status === 'pending') {
         this.status = 'paid';
         this.paidDate = new Date();
@@ -153,7 +138,6 @@ billSchema.pre('save', function (next) {
     next();
 });
 
-// Instance method to mark as paid
 billSchema.methods.markAsPaid = function (paymentAmount, paymentMethod = 'online', transactionId = null) {
     this.paidAmount = paymentAmount;
     this.status = 'paid';
@@ -164,12 +148,10 @@ billSchema.methods.markAsPaid = function (paymentAmount, paymentMethod = 'online
         this.transactionId = transactionId;
     }
 
-    // Add payment note
     this.notes.push({
         content: `Bill paid: Rs${paymentAmount.toLocaleString('en-IN')} via ${paymentMethod}`
     });
 
-    // Create next bill if recurring
     if (this.isRecurring) {
         return this.createNextBill();
     }
@@ -177,7 +159,6 @@ billSchema.methods.markAsPaid = function (paymentAmount, paymentMethod = 'online
     return this.save();
 };
 
-// Instance method to create next recurring bill
 billSchema.methods.createNextBill = function () {
     const nextBill = new mongoose.model('Bill')({
         userId: this.userId,
@@ -199,13 +180,11 @@ billSchema.methods.createNextBill = function () {
     return nextBill.save();
 };
 
-// Instance method to generate next bill number
 billSchema.methods.generateNextBillNumber = function () {
     const now = new Date();
     return `${this.billNumber.split('-')[0]}-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 };
 
-// Instance method to calculate next due date
 billSchema.methods.calculateNextDueDate = function () {
     const currentDue = new Date(this.dueDate);
 
@@ -227,7 +206,6 @@ billSchema.methods.calculateNextDueDate = function () {
     return currentDue;
 };
 
-// Static method to get user bills
 billSchema.statics.getUserBills = function (userId, status = 'all') {
     let query = { userId };
 
@@ -238,7 +216,6 @@ billSchema.statics.getUserBills = function (userId, status = 'all') {
     return this.find(query).sort({ dueDate: 1 });
 };
 
-// Static method to get bills due soon
 billSchema.statics.getBillsDueSoon = function (userId, days = 7) {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
@@ -250,7 +227,6 @@ billSchema.statics.getBillsDueSoon = function (userId, days = 7) {
     }).sort({ dueDate: 1 });
 };
 
-// Static method to get bill statistics
 billSchema.statics.getBillStats = function (userId) {
     return this.aggregate([
         { $match: { userId: mongoose.Types.ObjectId(userId) } },

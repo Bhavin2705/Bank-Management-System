@@ -28,7 +28,6 @@ const isAllowedOrigin = (origin) => {
             return true;
         }
 
-        // Allow Vercel preview and production domains by default
         if (parsed.hostname.endsWith('.vercel.app')) {
             return true;
         }

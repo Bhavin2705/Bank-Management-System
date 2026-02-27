@@ -10,37 +10,13 @@ const CvvPinModal = ({
   if (!show) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1700,
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        padding: '2rem',
-        maxWidth: '400px',
-        width: '90%',
-        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-      }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>Verify PIN</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Enter your PIN to reveal the CVV</p>
+    <div className="cvv-pin-modal-overlay">
+      <div className="cvv-pin-modal">
+        <h2 className="cvv-pin-modal-title">Verify PIN</h2>
+        <p className="cvv-pin-modal-subtitle">Enter your PIN to reveal the CVV</p>
 
         {cvvPinError && (
-          <div style={{
-            backgroundColor: '#fee2e2',
-            color: '#991b1b',
-            padding: '0.75rem',
-            borderRadius: '4px',
-            marginBottom: '1rem',
-          }}>
+          <div className="cvv-pin-modal-error">
             {cvvPinError}
           </div>
         )}
@@ -53,50 +29,21 @@ const CvvPinModal = ({
           placeholder="Enter 4-6 digit PIN"
           pattern="[0-9]{4,6}"
           autoComplete="off"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            marginBottom: '1.5rem',
-            fontSize: '1rem',
-            letterSpacing: '0.2em',
-          }}
+          className="cvv-pin-modal-input"
           autoFocus
         />
 
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div className="cvv-pin-modal-actions">
           <button
             onClick={onClose}
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              border: '1px solid var(--border)',
-              backgroundColor: 'transparent',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: '500',
-              color: 'var(--text-primary)',
-              fontSize: '1rem',
-            }}
+            className="cvv-pin-btn cvv-pin-btn-cancel"
             disabled={cvvPinVerifying}
           >
             Cancel
           </button>
           <button
             onClick={onVerify}
-            style={{
-              flex: 1,
-              padding: '0.75rem',
-              backgroundColor: '#667eea',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: cvvPinVerifying || !cvvPin.trim() ? 'not-allowed' : 'pointer',
-              fontWeight: '600',
-              fontSize: '1rem',
-              opacity: cvvPinVerifying || !cvvPin.trim() ? 0.6 : 1,
-            }}
+            className="cvv-pin-btn cvv-pin-btn-confirm"
             disabled={!cvvPin.trim() || cvvPinVerifying}
           >
             {cvvPinVerifying ? 'Verifying...' : 'Reveal CVV'}

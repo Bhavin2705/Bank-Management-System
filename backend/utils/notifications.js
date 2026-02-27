@@ -1,5 +1,16 @@
 const Notification = require('../models/Notification');
 
+const MONEY_NOTIFICATION_TYPES = new Set(['transaction', 'bill_paid']);
+
+const isMoneyMovementNotification = ({ type, metadata }) => {
+  if (!MONEY_NOTIFICATION_TYPES.has(type)) {
+    return false;
+  }
+
+  const amount = Number(metadata?.amount);
+  return Number.isFinite(amount) && amount > 0;
+};
+
 const createInAppNotification = async ({
   userId,
   type = 'other',
@@ -8,11 +19,42 @@ const createInAppNotification = async ({
   priority = 'medium',
   relatedId,
   relatedModel,
-  metadata = {}
+  metadata = {},
+  dedupe = true,
+  dedupeWindowMs = 5 * 60 * 1000
 }) => {
   if (!userId || !title || !message) return null;
+  if (!isMoneyMovementNotification({ type, metadata })) return null;
 
   try {
+    if (dedupe) {
+      const dedupeSince = new Date(Date.now() - Math.max(0, dedupeWindowMs));
+      const query = {
+        userId,
+        type,
+        title,
+        message,
+        status: { $ne: 'archived' },
+        createdAt: { $gte: dedupeSince }
+      };
+
+      if (relatedId) {
+        query.relatedId = relatedId;
+      }
+
+      const existing = await Notification.findOne(query).sort({ createdAt: -1 });
+      if (existing) {
+        existing.status = 'unread';
+        existing.metadata = {
+          ...(existing.metadata || {}),
+          ...(metadata || {}),
+          dedupeCount: ((existing.metadata && existing.metadata.dedupeCount) || 1) + 1
+        };
+        await existing.save();
+        return existing;
+      }
+    }
+
     return await Notification.create({
       userId,
       type,

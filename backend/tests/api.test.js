@@ -140,7 +140,6 @@ describe('Bank Management API Tests', () => {
 
     describe('Transaction Routes', () => {
         beforeAll(async () => {
-            // Re-login to get fresh token
             const loginData = {
                 identifier: testUser.email,
                 password: 'Test@123'
@@ -218,7 +217,6 @@ describe('Bank Management API Tests', () => {
         });
 
         it('should transfer money', async () => {
-            // Create another user for transfer
             const timestamp = uniqueSuffix();
             const recipientData = {
                 name: 'Recipient User',
@@ -250,7 +248,6 @@ describe('Bank Management API Tests', () => {
         });
 
         it('should delete transaction', async () => {
-            // Get transactions first
             const getRes = await request(BASE_URL)
                 .get('/api/transactions')
                 .set('Authorization', `Bearer ${userToken}`);

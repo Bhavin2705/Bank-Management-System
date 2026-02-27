@@ -3,7 +3,6 @@ const router = express.Router();
 const RecurringPayment = require('../models/RecurringPayment');
 const { protect } = require('../middleware/auth');
 
-// Get all recurring payments for a user
 router.get('/', protect, async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -13,11 +12,10 @@ router.get('/', protect, async (req, res) => {
     res.json({ success: true, data: payments });
   } catch (err) {
     console.error('Error fetching recurring payments:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
-// Create a new recurring payment
 router.post('/', protect, async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -27,11 +25,10 @@ router.post('/', protect, async (req, res) => {
     res.status(201).json({ success: true, data: payment });
   } catch (err) {
     console.error('Error creating recurring payment:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to create recurring payment' });
+    res.status(400).json({ success: false, message: 'Failed to create recurring payment' });
   }
 });
 
-// Update a recurring payment
 router.put('/:id', protect, async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -46,11 +43,10 @@ router.put('/:id', protect, async (req, res) => {
     res.json({ success: true, data: payment });
   } catch (err) {
     console.error('Error updating recurring payment:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to update recurring payment' });
+    res.status(400).json({ success: false, message: 'Failed to update recurring payment' });
   }
 });
 
-// Delete a recurring payment
 router.delete('/:id', protect, async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -61,7 +57,7 @@ router.delete('/:id', protect, async (req, res) => {
     res.json({ success: true, data: payment });
   } catch (err) {
     console.error('Error deleting recurring payment:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to delete recurring payment' });
+    res.status(400).json({ success: false, message: 'Failed to delete recurring payment' });
   }
 });
 

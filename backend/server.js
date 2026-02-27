@@ -1,12 +1,13 @@
 const http = require('http');
-const connectDB = require('./config/database');
 const { loadEnv, validateEnv } = require('./config/env');
-const createApp = require('./app');
-const configureSocket = require('./socket');
-const emailService = require('./utils/emailService');
 
 loadEnv();
 validateEnv();
+
+const connectDB = require('./config/database');
+const createApp = require('./app');
+const configureSocket = require('./socket');
+const emailService = require('./utils/emailService');
 
 connectDB();
 

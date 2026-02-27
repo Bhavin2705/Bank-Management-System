@@ -53,7 +53,6 @@ const transactionSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    // For transfers
     recipientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -64,41 +63,34 @@ const transactionSchema = new mongoose.Schema({
         bankName: String,
         ifscCode: String,
         branchName: String
-        // IFSC code is now optional, no validation
     },
 
-    // For bill payments
     billId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Bill'
     },
 
-    // For card transactions
     cardId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Card'
     },
 
-    // For investments
     investmentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Investment'
     },
 
-    // Location data (if available)
     location: {
         latitude: Number,
         longitude: Number,
         address: String
     },
 
-    // Device information
     deviceInfo: {
         userAgent: String,
         ipAddress: String
     },
 
-    // For recurring transactions
     isRecurring: {
         type: Boolean,
         default: false
@@ -113,7 +105,6 @@ const transactionSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexes for better query performance
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ userId: 1, type: 1 });
 transactionSchema.index({ userId: 1, category: 1 });
@@ -121,7 +112,6 @@ transactionSchema.index({ userId: 1, clientRequestId: 1 }, { unique: true, spars
 transactionSchema.index({ recipientId: 1 });
 transactionSchema.index({ status: 1 });
 
-// Virtual for formatted amount
 transactionSchema.virtual('formattedAmount').get(function () {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -129,21 +119,20 @@ transactionSchema.virtual('formattedAmount').get(function () {
     }).format(this.amount);
 });
 
-// Virtual for transaction direction
 transactionSchema.virtual('direction').get(function () {
     return this.type === 'credit' ? 'received' : 'sent';
 });
 
-// Pre-save middleware to generate reference
 transactionSchema.pre('save', function (next) {
-    console.log('[Transaction Model] Pre-save hook called for:', this);
+    if (!this.clientRequestId) {
+        this.clientRequestId = `auto_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    }
     if (!this.reference) {
         this.reference = 'TXN' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
     }
     next();
 });
 
-// Static method to get user transactions
 transactionSchema.statics.getUserTransactions = function (userId, options = {}) {
     const { limit = 50, skip = 0, type, category, startDate, endDate } = options;
 
@@ -166,7 +155,6 @@ transactionSchema.statics.getUserTransactions = function (userId, options = {}) 
         .populate('investmentId', 'type name');
 };
 
-// Static method to get transaction statistics
 transactionSchema.statics.getTransactionStats = function (userId, period = 'month') {
     const now = new Date();
     let startDate;

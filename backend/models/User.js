@@ -160,7 +160,6 @@ const userSchema = new mongoose.Schema({
         default: true
     }
     ,
-    // Client-side persistent data migrated from frontend localStorage
     clientData: {
         securityQuestions: {
             type: Object,
@@ -192,7 +191,6 @@ const userSchema = new mongoose.Schema({
             data: { type: Object, default: {} }
         }
     },
-    // Stored tokens (e.g., JWT issued to client) and their expiry timestamps
     tokens: [
         {
             token: String,
@@ -206,26 +204,20 @@ const userSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Remove duplicate index calls. unique: true on the fields already creates them.
 userSchema.index({ role: 1 }); // Role is not unique, so this is a valid index.
 
-// Virtual for account age
 userSchema.virtual('accountAge').get(function () {
     return Math.floor((Date.now() - this.createdAt) / (1000 * 60 * 60 * 24));
 });
 
-// Pre-save middleware to hash password and PIN, and generate account number
 userSchema.pre('save', async function (next) {
-    // Generate account number if not present
     if (!this.accountNumber) {
         this.generateAccountNumber();
     }
 
-    // Only hash the password if it has been modified (or is new)
     let passwordHashPromise = Promise.resolve();
     if (this.isModified('password')) {
         try {
-            // Hash password with cost of 12
             const salt = await bcrypt.genSalt(12);
             this.password = await bcrypt.hash(this.password, salt);
         } catch (error) {
@@ -233,10 +225,8 @@ userSchema.pre('save', async function (next) {
         }
     }
 
-    // Hash PIN if it has been modified (or is new)
     if (this.isModified('pin')) {
         try {
-            // Hash PIN with cost of 10
             const salt = await bcrypt.genSalt(10);
             this.pin = await bcrypt.hash(this.pin, salt);
         } catch (error) {
@@ -247,20 +237,15 @@ userSchema.pre('save', async function (next) {
     next();
 });
 
-// Instance method to check password
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Instance method to compare PIN
 userSchema.methods.comparePin = async function (candidatePin) {
     return await bcrypt.compare(candidatePin, this.pin);
 };
 
-// Instance method to generate account number
 userSchema.methods.generateAccountNumber = function () {
-    // Always generate a unique 11-digit numeric account number
-    // Use current timestamp (last 6 digits) + 5 random digits
     const ts = Date.now().toString().slice(-6); // last 6 digits of ms timestamp
     const rand = Math.floor(10000 + Math.random() * 90000).toString(); // 5 random digits
     const accountNumber = ts + rand;
@@ -268,7 +253,6 @@ userSchema.methods.generateAccountNumber = function () {
     return accountNumber;
 };
 
-// Instance method for password reset
 userSchema.methods.createPasswordResetToken = function () {
     const resetToken = crypto.randomBytes(32).toString('hex');
 
@@ -283,21 +267,16 @@ userSchema.methods.createPasswordResetToken = function () {
     return resetToken;
 };
 
-// Static method to find users by email or phone (returns array for phone, single for email)
 userSchema.statics.findByEmailOrPhone = function (identifier) {
-    // Check if identifier is an email
     const isEmail = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(identifier);
 
     if (isEmail) {
-        // For email, return single user (email is unique)
         return this.findOne({ email: identifier });
     } else {
-        // For phone, return all users with that phone (up to 3)
         return this.find({ phone: identifier });
     }
 };
 
-// Add method to check phone number account limit
 userSchema.statics.checkPhoneAccountLimit = async function (phone) {
     const count = await this.countDocuments({ phone });
     return {

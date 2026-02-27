@@ -204,7 +204,6 @@ const verifyPin = async (req, res) => {
             });
         }
 
-        // Fetch user with PIN field (select('+pin'))
         const user = await User.findById(userId).select('+pin');
 
         if (!user) {
@@ -214,7 +213,6 @@ const verifyPin = async (req, res) => {
             });
         }
 
-        // Compare PIN
         const isPinValid = await user.comparePin(pin);
 
         if (!isPinValid) {

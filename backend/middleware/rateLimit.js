@@ -6,7 +6,6 @@ const toInt = (value, fallback) => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-// General API rate limiter
 const apiLimiter = rateLimit({
     windowMs: toInt(process.env.RATE_LIMIT_WINDOW, 15) * 60 * 1000,
     max: toInt(process.env.RATE_LIMIT_MAX_REQUESTS, 100),
@@ -19,7 +18,6 @@ const apiLimiter = rateLimit({
     skip: () => inTestMode
 });
 
-// Stricter limiter for authentication routes
 const authLimiter = rateLimit({
     windowMs: toInt(process.env.AUTH_RATE_LIMIT_WINDOW_MINUTES, 15) * 60 * 1000,
     max: toInt(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS, 30),
@@ -32,7 +30,6 @@ const authLimiter = rateLimit({
     skip: () => inTestMode
 });
 
-// Limiter for password reset
 const passwordResetLimiter = rateLimit({
     windowMs: toInt(process.env.PASSWORD_RESET_RATE_LIMIT_WINDOW_MINUTES, 60) * 60 * 1000,
     max: toInt(process.env.PASSWORD_RESET_RATE_LIMIT_MAX_REQUESTS, 5),
@@ -45,7 +42,6 @@ const passwordResetLimiter = rateLimit({
     skip: () => inTestMode
 });
 
-// Limiter for transaction operations
 const transactionLimiter = rateLimit({
     windowMs: toInt(process.env.TRANSACTION_RATE_LIMIT_WINDOW_MINUTES, 15) * 60 * 1000,
     max: toInt(process.env.TRANSACTION_RATE_LIMIT_MAX_REQUESTS, 40),
@@ -58,7 +54,6 @@ const transactionLimiter = rateLimit({
     skip: () => inTestMode
 });
 
-// Limiter for file uploads
 const uploadLimiter = rateLimit({
     windowMs: toInt(process.env.UPLOAD_RATE_LIMIT_WINDOW_MINUTES, 60) * 60 * 1000,
     max: toInt(process.env.UPLOAD_RATE_LIMIT_MAX_REQUESTS, 10),

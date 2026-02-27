@@ -4,6 +4,7 @@ const Notification = require('../models/Notification');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
+const MONEY_NOTIFICATION_TYPES = ['transaction', 'bill_paid'];
 
 router.use(protect);
 
@@ -23,7 +24,8 @@ router.get('/', async (req, res) => {
   try {
     const notifications = await Notification.find({
       userId: req.user._id,
-      status: { $ne: 'archived' }
+      status: { $ne: 'archived' },
+      type: { $in: MONEY_NOTIFICATION_TYPES }
     })
       .sort({ createdAt: -1 })
       .limit(100);
@@ -33,7 +35,7 @@ router.get('/', async (req, res) => {
       data: notifications.map(mapNotification)
     });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'Server error fetching notifications' });
   }
 });
 
@@ -45,7 +47,8 @@ router.get('/:id', async (req, res) => {
 
     const notification = await Notification.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
+      type: { $in: MONEY_NOTIFICATION_TYPES }
     });
 
     if (!notification) {
@@ -54,7 +57,7 @@ router.get('/:id', async (req, res) => {
 
     return res.status(200).json({ success: true, data: mapNotification(notification) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server error fetching notification' });
   }
 });
 
@@ -65,7 +68,7 @@ router.put('/:id/read', async (req, res) => {
     }
 
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+      { _id: req.params.id, userId: req.user._id, type: { $in: MONEY_NOTIFICATION_TYPES } },
       { status: 'read' },
       { new: true }
     );
@@ -80,31 +83,31 @@ router.put('/:id/read', async (req, res) => {
       message: 'Notification marked as read'
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server error updating notification' });
   }
 });
 
 router.put('/read-all', async (req, res) => {
   try {
     await Notification.updateMany(
-      { userId: req.user._id, status: 'unread' },
+      { userId: req.user._id, status: 'unread', type: { $in: MONEY_NOTIFICATION_TYPES } },
       { status: 'read' }
     );
     return res.status(200).json({ success: true, message: 'All notifications marked as read' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server error updating notifications' });
   }
 });
 
 router.post('/mark-all-read', async (req, res) => {
   try {
     await Notification.updateMany(
-      { userId: req.user._id, status: 'unread' },
+      { userId: req.user._id, status: 'unread', type: { $in: MONEY_NOTIFICATION_TYPES } },
       { status: 'read' }
     );
     return res.status(200).json({ success: true, message: 'All notifications marked as read' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server error updating notifications' });
   }
 });
 
@@ -116,7 +119,8 @@ router.delete('/:id', async (req, res) => {
 
     const deleted = await Notification.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
+      type: { $in: MONEY_NOTIFICATION_TYPES }
     });
 
     if (!deleted) {
@@ -125,16 +129,16 @@ router.delete('/:id', async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Notification deleted' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server error deleting notification' });
   }
 });
 
 router.delete('/', async (req, res) => {
   try {
-    await Notification.deleteMany({ userId: req.user._id });
+    await Notification.deleteMany({ userId: req.user._id, type: { $in: MONEY_NOTIFICATION_TYPES } });
     return res.status(200).json({ success: true, message: 'All notifications deleted' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server error deleting notifications' });
   }
 });
 

@@ -35,7 +35,6 @@ const notificationSchema = new mongoose.Schema({
         enum: ['unread', 'read', 'archived'],
         default: 'unread'
     },
-    // Related entities
     relatedId: {
         type: mongoose.Schema.Types.ObjectId,
         refPath: 'relatedModel'
@@ -44,14 +43,12 @@ const notificationSchema = new mongoose.Schema({
         type: String,
         enum: ['Transaction', 'Bill', 'Goal', 'Budget', 'Card', 'Account', 'Investment']
     },
-    // Delivery channels
     channels: {
         inApp: { type: Boolean, default: true },
         email: { type: Boolean, default: false },
         sms: { type: Boolean, default: false },
         push: { type: Boolean, default: false }
     },
-    // Delivery status
     deliveryStatus: {
         emailSent: { type: Boolean, default: false },
         smsSent: { type: Boolean, default: false },
@@ -60,16 +57,13 @@ const notificationSchema = new mongoose.Schema({
         smsSentAt: Date,
         pushSentAt: Date
     },
-    // Scheduling
     scheduledFor: Date,
     expiresAt: Date,
-    // Actions (for interactive notifications)
     actions: [{
         label: String,
         action: String,
         url: String
     }],
-    // Metadata
     metadata: {
         amount: Number,
         currency: { type: String, default: 'INR' },
@@ -83,19 +77,16 @@ const notificationSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexes
 notificationSchema.index({ userId: 1, status: 1 });
 notificationSchema.index({ userId: 1, createdAt: -1 });
 notificationSchema.index({ userId: 1, type: 1 });
 notificationSchema.index({ scheduledFor: 1 });
 notificationSchema.index({ expiresAt: 1 });
 
-// Virtual for is expired
 notificationSchema.virtual('isExpired').get(function () {
     return this.expiresAt && new Date() > this.expiresAt;
 });
 
-// Virtual for time ago
 notificationSchema.virtual('timeAgo').get(function () {
     const now = new Date();
     const diffTime = now - this.createdAt;
@@ -109,14 +100,11 @@ notificationSchema.virtual('timeAgo').get(function () {
     return 'Just now';
 });
 
-// Pre-save middleware
 notificationSchema.pre('save', function (next) {
-    // Set expiration date if not set (default 30 days)
     if (!this.expiresAt) {
         this.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     }
 
-    // Set scheduled time if not set
     if (!this.scheduledFor) {
         this.scheduledFor = new Date();
     }
@@ -124,27 +112,20 @@ notificationSchema.pre('save', function (next) {
     next();
 });
 
-// Instance method to mark as read
 notificationSchema.methods.markAsRead = function () {
     this.status = 'read';
     return this.save();
 };
 
-// Instance method to archive
 notificationSchema.methods.archive = function () {
     this.status = 'archived';
     return this.save();
 };
 
-// Instance method to send via email
 notificationSchema.methods.sendEmail = async function () {
     if (!this.channels.email || this.deliveryStatus.emailSent) return;
 
     try {
-        // Email sending logic would go here
-        // This is a placeholder for the actual email service integration
-        console.log(`Sending email notification: ${this.title}`);
-
         this.deliveryStatus.emailSent = true;
         this.deliveryStatus.emailSentAt = new Date();
         await this.save();
@@ -153,14 +134,10 @@ notificationSchema.methods.sendEmail = async function () {
     }
 };
 
-// Instance method to send via SMS
 notificationSchema.methods.sendSMS = async function () {
     if (!this.channels.sms || this.deliveryStatus.smsSent) return;
 
     try {
-        // SMS sending logic would go here
-        console.log(`Sending SMS notification: ${this.title}`);
-
         this.deliveryStatus.smsSent = true;
         this.deliveryStatus.smsSentAt = new Date();
         await this.save();
@@ -169,7 +146,6 @@ notificationSchema.methods.sendSMS = async function () {
     }
 };
 
-// Static method to get user notifications
 notificationSchema.statics.getUserNotifications = function (userId, status = 'unread', limit = 50) {
     return this.find({ userId, status })
         .sort({ createdAt: -1 })
@@ -177,12 +153,10 @@ notificationSchema.statics.getUserNotifications = function (userId, status = 'un
         .populate('relatedId');
 };
 
-// Static method to get unread count
 notificationSchema.statics.getUnreadCount = function (userId) {
     return this.countDocuments({ userId, status: 'unread' });
 };
 
-// Static method to mark all as read
 notificationSchema.statics.markAllAsRead = function (userId) {
     return this.updateMany(
         { userId, status: 'unread' },
@@ -190,7 +164,6 @@ notificationSchema.statics.markAllAsRead = function (userId) {
     );
 };
 
-// Static method to create transaction notification
 notificationSchema.statics.createTransactionNotification = function (userId, transaction) {
     const title = transaction.type === 'credit' ? 'Money Received' : 'Money Sent';
     const message = `Rs${transaction.amount.toLocaleString('en-IN')} ${transaction.type === 'credit' ? 'credited to' : 'debited from'} your account`;
@@ -209,7 +182,6 @@ notificationSchema.statics.createTransactionNotification = function (userId, tra
     });
 };
 
-// Static method to create bill due notification
 notificationSchema.statics.createBillDueNotification = function (userId, bill) {
     const title = 'Bill Due Soon';
     const message = `Your ${bill.name} bill of Rs${bill.amount.toLocaleString('en-IN')} is due on ${bill.dueDate.toDateString()}`;
@@ -229,7 +201,6 @@ notificationSchema.statics.createBillDueNotification = function (userId, bill) {
     });
 };
 
-// Static method to create low balance notification
 notificationSchema.statics.createLowBalanceNotification = function (userId, account, balance) {
     const title = 'Low Balance Alert';
     const message = `Your account balance is Rs${balance.toLocaleString('en-IN')}. Consider adding funds to avoid transaction failures.`;

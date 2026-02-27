@@ -27,6 +27,7 @@
   --sidebar-bg: #2c3e50;
   --sidebar-text: #ecf0f1;
   --sidebar-hover: #34495e;
+  color-scheme: light;
 }
 
 @keyframes spin {
@@ -333,6 +334,7 @@
   --info-bg: #2c3e50;
   --info-border: #52708a;
   --info-text: #bdc3c7;
+  color-scheme: dark;
 }
 
 [data-theme="dark"] .form-input select {
@@ -423,6 +425,22 @@ body {
   color: var(--text-primary);
   transition: background 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
+}
+
+html,
+body,
+.main-content,
+.card,
+.stat-card,
+.form-input,
+select,
+textarea,
+input,
+.tab-btn,
+.sidebar,
+.transaction-item,
+.notification-item {
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
 .app-layout {
@@ -901,31 +919,20 @@ select.form-input:focus {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-select {
-  color: black !important;
-  background: white !important;
-}
-
-select[name="selectedBank"] {
-  color: black !important;
-  background: white !important;
-}
-
 select option {
-  background: white !important;
-  color: black !important;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   padding: 8px 12px;
 }
 
 select option:hover {
-  background: #f0f0f0 !important;
-  color: black !important;
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
-select option:checked,
-select option:selected {
-  background: #e0e7ff !important;
-  color: black !important;
+select option:checked {
+  background: color-mix(in srgb, var(--text-accent) 18%, var(--bg-secondary));
+  color: var(--text-primary);
 }
 
 select[name="selectedBank"] option {
@@ -933,7 +940,6 @@ select[name="selectedBank"] option {
   color: var(--text-primary);
 }
 
-select[name="selectedBank"] option:selected,
 select[name="selectedBank"] option:checked {
   background: var(--text-accent);
   color: white;
@@ -956,7 +962,6 @@ select[name="selectedBank"] option:checked {
   color: var(--text-primary) !important;
 }
 
-[data-theme="dark"] select[name="selectedBank"] option:selected,
 [data-theme="dark"] select[name="selectedBank"] option:checked {
   background: var(--bg-quaternary) !important;
   color: var(--text-primary) !important;
@@ -1078,7 +1083,7 @@ option {
 }
 
 .dashboard-welcome-banner h3,
-.dashboard-empty-state > div:first-child {
+.dashboard-empty-state>div:first-child {
   overflow-wrap: anywhere;
 }
 
@@ -1086,7 +1091,7 @@ option {
   gap: 0.85rem;
 }
 
-.dashboard-stat-row > div {
+.dashboard-stat-row>div {
   min-width: 0;
 }
 
@@ -1094,7 +1099,7 @@ option {
   min-width: 0;
 }
 
-.transaction-main > div:first-child {
+.transaction-main>div:first-child {
   overflow-wrap: anywhere;
 }
 
@@ -1209,7 +1214,7 @@ option {
 
 .theme-toggle {
   position: fixed;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -1351,7 +1356,7 @@ option {
   }
 
   .theme-toggle {
-    top: 1rem;
+    bottom: 1rem;
     right: 1rem;
     width: 44px;
     height: 44px;
@@ -2194,16 +2199,20 @@ option {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
 }
 
 @keyframes wakePulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(0.8);
     opacity: 0.65;
   }
+
   50% {
     transform: scale(1.15);
     opacity: 1;
@@ -2211,9 +2220,12 @@ option {
 }
 
 @keyframes wakeFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-20px);
   }
@@ -2477,11 +2489,19 @@ option {
 
 .virtual-card-face {
   border-radius: 20px;
-  padding: 1.1rem;
+  padding: 0.95rem;
   box-shadow: 0 24px 40px rgba(8, 14, 34, 0.42);
-  aspect-ratio: 1.92 / 1;
+  aspect-ratio: 1.95 / 1;
   display: flex;
   flex-direction: column;
+  width: min(100%, 520px);
+  margin: 0 auto;
+}
+
+.virtual-card-face-back {
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.01)),
+    repeating-linear-gradient(35deg, rgba(255, 255, 255, 0.06) 0 9px, transparent 9px 20px);
 }
 
 .virtual-card-face::before {
@@ -2507,28 +2527,38 @@ option {
 }
 
 .virtual-card-bank {
-  font-size: 1.02rem;
+  font-size: 0.95rem;
   letter-spacing: 0.25px;
 }
 
+.virtual-card-product {
+  margin-left: auto;
+  margin-right: 0.55rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+}
+
 .virtual-card-chip {
-  width: 50px;
-  height: 36px;
-  border-radius: 9px;
+  width: 46px;
+  height: 32px;
+  border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.2);
+  margin-bottom: 0.6rem;
 }
 
 .virtual-card-number {
-  font-size: clamp(1.06rem, 2.5vw, 1.45rem);
-  letter-spacing: 0.18em;
+  font-size: clamp(1rem, 2.3vw, 1.3rem);
+  letter-spacing: 0.14em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  margin-top: 0.15rem;
-  margin-bottom: 0.6rem;
+  margin-top: 0.08rem;
+  margin-bottom: 0.42rem;
 }
 
 .virtual-card-bottom-row {
   margin-top: auto;
-  padding-top: 0.75rem;
+  padding-top: 0.45rem;
 }
 
 .virtual-card-label {
@@ -2570,11 +2600,13 @@ option {
 
 .virtual-card-strip {
   height: 46px;
-  margin-top: 0.45rem;
+  margin-top: 0.2rem;
 }
 
 .virtual-card-signature-row {
-  margin-top: 1.15rem;
+  margin-top: 0.75rem;
+  grid-template-columns: 1fr 88px;
+  align-items: center;
 }
 
 .virtual-card-signature {
@@ -2585,12 +2617,13 @@ option {
   height: 36px;
   min-width: 70px;
   border: 1px solid rgba(17, 24, 39, 0.12);
+  font-size: 1rem;
 }
 
 .virtual-card-back-help {
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   font-size: 0.75rem;
-  opacity: 0.75;
+  opacity: 0.88;
 }
 
 .virtual-card-controls {
@@ -2622,4 +2655,397 @@ option {
   .virtual-card-number {
     letter-spacing: 0.13em;
   }
+
+  .virtual-card-product {
+    display: none;
+  }
+}
+
+/* =========================================================
+   Dark Theme V2 (Website-grade palette, light mode untouched)
+   ========================================================= */
+[data-theme="dark"] {
+  --bg-primary: radial-gradient(1200px 600px at 10% -10%, #1b2c49 0%, #0b1424 45%, #070d18 100%);
+  --bg-secondary: #0f1b2d;
+  --bg-tertiary: #16243a;
+  --bg-quaternary: #1b2d46;
+  --bg-hover: #223754;
+  --primary-color: #45b6ff;
+  --text-accent: #52c6ff;
+  --text-primary: #e7eefb;
+  --text-secondary: #a7b7cf;
+  --border-color: #294260;
+  --border: #294260;
+  --border-light: #36557a;
+  --shadow: rgba(1, 8, 20, 0.55);
+  --shadow-light: rgba(1, 8, 20, 0.4);
+  --sidebar-bg: #0a1322;
+  --sidebar-text: #e4ecfb;
+  --sidebar-hover: #18273d;
+  --info-bg: #12243d;
+  --info-border: #2f5d8f;
+  --info-text: #c1d8f7;
+}
+
+[data-theme="dark"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .main-content {
+  background: linear-gradient(180deg, #0c1728 0%, #0a1423 100%);
+}
+
+[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #091322 0%, #0d1a2d 100%);
+  border-right: 1px solid rgba(82, 198, 255, 0.16);
+}
+
+[data-theme="dark"] .sidebar-nav-link:hover,
+[data-theme="dark"] .sidebar-nav-link.active {
+  background: rgba(82, 198, 255, 0.12);
+  color: #7dd5ff;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .statement-options,
+[data-theme="dark"] .transaction-list {
+  background: linear-gradient(180deg, #112036 0%, #0f1b2f 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 12px 28px var(--shadow);
+}
+
+[data-theme="dark"] .card:hover,
+[data-theme="dark"] .stat-card:hover {
+  border-color: #3a6492;
+  box-shadow: 0 16px 34px var(--shadow);
+}
+
+[data-theme="dark"] .form-input,
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: #12233a !important;
+  color: var(--text-primary) !important;
+  border: 1px solid #335171 !important;
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: #59c8ff !important;
+  box-shadow: 0 0 0 3px rgba(89, 200, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, #1b69b3 0%, #1297d8 52%, #38c8ff 100%);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: #19314d;
+  color: #dbe8fb;
+  border: 1px solid #34597f;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background: #224266;
+}
+
+[data-theme="dark"] .tab-btn {
+  color: #c8d7ee;
+  border: 1px solid transparent;
+}
+
+[data-theme="dark"] .tab-btn:hover {
+  background: rgba(82, 198, 255, 0.12);
+  border-color: rgba(82, 198, 255, 0.28);
+}
+
+[data-theme="dark"] .tab-btn.active {
+  background: linear-gradient(135deg, #1b69b3 0%, #1297d8 52%, #38c8ff 100%);
+  color: #fff;
+}
+
+[data-theme="dark"] .transaction-item,
+[data-theme="dark"] .card-item {
+  border-color: #2d4868 !important;
+  background: #12233a !important;
+}
+
+[data-theme="dark"] .error-message {
+  background: rgba(220, 53, 69, 0.16);
+  color: #ffb8bf;
+  border: 1px solid rgba(220, 53, 69, 0.35);
+}
+
+[data-theme="dark"] .success-message {
+  background: rgba(40, 167, 69, 0.15);
+  color: #b8f3c7;
+  border: 1px solid rgba(40, 167, 69, 0.35);
+}
+
+[data-theme="dark"] .virtual-card-modal {
+  background: linear-gradient(180deg, #112038 0%, #0e1a2f 100%);
+  border-color: #2e4d72;
+}
+
+/* Transactions dark-mode readability */
+[data-theme="dark"] .transactions-title {
+  color: #eaf1ff;
+}
+
+[data-theme="dark"] .transactions-new-action-btn {
+  background: linear-gradient(135deg, #1b69b3 0%, #1297d8 52%, #38c8ff 100%) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .transactions-balance-card,
+[data-theme="dark"] .transactions-list-item {
+  background: linear-gradient(180deg, #13253d 0%, #112036 100%) !important;
+  border: 1px solid #2f4f73 !important;
+  box-shadow: 0 10px 26px rgba(1, 8, 20, 0.45);
+}
+
+[data-theme="dark"] .transactions-balance-value,
+[data-theme="dark"] .transactions-list-description {
+  color: #eaf1ff !important;
+}
+
+[data-theme="dark"] .transactions-list-meta,
+[data-theme="dark"] .transactions-balance-card .text-gray-500 {
+  color: #a9bedc !important;
+}
+
+[data-theme="dark"] .transactions-tabs {
+  border-bottom-color: #2c496a !important;
+}
+
+[data-theme="dark"] .transactions-tab {
+  color: #a9bedc !important;
+}
+
+[data-theme="dark"] .transactions-tab:hover {
+  color: #d9e8ff !important;
+}
+
+[data-theme="dark"] .transactions-tab.text-blue-600,
+[data-theme="dark"] .transactions-tab.border-blue-600 {
+  color: #67ccff !important;
+  border-bottom-color: #67ccff !important;
+}
+
+/* CVV PIN Modal */
+.cvv-pin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 24, 0.62);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1800;
+  padding: 1rem;
+}
+
+.cvv-pin-modal {
+  width: min(430px, 100%);
+  border-radius: 16px;
+  padding: 1.1rem 1.1rem 1rem;
+  background: #ffffff;
+  border: 1px solid #d9e2ef;
+  box-shadow: 0 22px 50px rgba(6, 12, 24, 0.28);
+}
+
+.cvv-pin-modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  color: #0f213e;
+}
+
+.cvv-pin-modal-subtitle {
+  margin-bottom: 0.75rem;
+  color: #627796;
+  font-size: 0.9rem;
+}
+
+.cvv-pin-modal-error {
+  background: #ffe7e9;
+  color: #a3202d;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #ffc9cf;
+  margin-bottom: 0.9rem;
+}
+
+.cvv-pin-modal-input {
+  width: 100%;
+  padding: 0.72rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #9fb3cc;
+  background: #f6f9ff;
+  color: #0f213e;
+  font-size: 1.02rem;
+  letter-spacing: 0.18em;
+  margin-bottom: 0.8rem;
+}
+
+.cvv-pin-modal-input:focus {
+  outline: none;
+  border-color: #3baef0;
+  box-shadow: 0 0 0 3px rgba(59, 174, 240, 0.22);
+}
+
+.cvv-pin-modal-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.cvv-pin-btn {
+  flex: 1;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cvv-pin-btn-cancel {
+  border: 1px solid #9fb3cc;
+  color: #193457;
+  background: #f8fbff;
+}
+
+.cvv-pin-btn-confirm {
+  border: none;
+  color: #fff;
+  background: linear-gradient(135deg, #1b69b3 0%, #1297d8 52%, #38c8ff 100%);
+}
+
+.cvv-pin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .cvv-pin-modal {
+  background: linear-gradient(180deg, #13233a 0%, #101f34 100%);
+  border: 1px solid #35577e;
+  box-shadow: 0 26px 56px rgba(2, 8, 18, 0.6);
+}
+
+[data-theme="dark"] .cvv-pin-modal-title {
+  color: #e9f1ff;
+}
+
+[data-theme="dark"] .cvv-pin-modal-subtitle {
+  color: #a8bedf;
+}
+
+[data-theme="dark"] .cvv-pin-modal-input {
+  background: #0f2138 !important;
+  border: 1px solid #43658e !important;
+  color: #e9f1ff !important;
+}
+
+[data-theme="dark"] .cvv-pin-btn-cancel {
+  background: #162c47;
+  border-color: #3d5f85;
+  color: #d8e8ff;
+}
+
+[data-theme="dark"] .cvv-pin-modal-error {
+  background: rgba(220, 53, 69, 0.16);
+  color: #ffc3cb;
+  border-color: rgba(220, 53, 69, 0.35);
+}
+
+@media (max-width: 560px) {
+  .cvv-pin-modal {
+    padding: 1.1rem;
+    border-radius: 14px;
+  }
+
+  .cvv-pin-modal-title {
+    font-size: 1rem;
+  }
+
+  .cvv-pin-modal-input {
+    font-size: 0.98rem;
+  }
+
+  .cvv-pin-modal-actions {
+    flex-direction: column;
+  }
+}
+
+/* Cards polish */
+.cards-type-chip.is-debit {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1f67d4;
+}
+
+.cards-type-chip.is-credit {
+  background: rgba(139, 92, 246, 0.16);
+  color: #6d28d9;
+}
+
+.card-lock-btn.lock {
+  background: var(--error);
+}
+
+.card-lock-btn.unlock {
+  background: var(--success);
+}
+
+[data-theme="dark"] .cards-type-chip.is-debit {
+  background: rgba(103, 204, 255, 0.18);
+  color: #9edfff;
+}
+
+[data-theme="dark"] .cards-type-chip.is-credit {
+  background: rgba(167, 139, 250, 0.2);
+  color: #d4c3ff;
+}
+
+[data-theme="dark"] .card-item {
+  border-color: #315273 !important;
+  background: linear-gradient(180deg, #13243b 0%, #102033 100%) !important;
+}
+
+/* Payments polish */
+[data-theme="dark"] .bills-header h1,
+[data-theme="dark"] .recurring-header h1 {
+  color: #eaf1ff;
+}
+
+[data-theme="dark"] .bills-header p,
+[data-theme="dark"] .recurring-header p {
+  color: #a9bedc !important;
+}
+
+[data-theme="dark"] .transaction-item {
+  border-color: #2e4a69 !important;
+  background: #13243b !important;
+}
+
+/* Notifications polish */
+[data-theme="dark"] .notifications-page .notifications-list-wrap {
+  border-color: #315273 !important;
+  background: #112236 !important;
+}
+
+[data-theme="dark"] .notifications-page .notifications-row.is-unread {
+  background: rgba(82, 198, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .notifications-page .notifications-row.is-read {
+  background: rgba(18, 35, 57, 0.95) !important;
+}
+
+[data-theme="dark"] .notifications-page .notifications-mark-all-btn {
+  background: linear-gradient(135deg, #1b69b3 0%, #1297d8 52%, #38c8ff 100%) !important;
+  color: #fff !important;
 }

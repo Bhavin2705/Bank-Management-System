@@ -54,7 +54,7 @@ function App() {
   const applyTheme = (userData) => {
     const isDark = userData?.preferences?.theme === 'dark';
     setDarkMode(isDark);
-    document.documentElement.toggleAttribute('data-theme', 'dark', isDark);
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   };
 
   const toggleDarkMode = async () => {
@@ -72,7 +72,7 @@ function App() {
       if (res?.success) {
         setUser((prev) => ({ ...prev, preferences: res.data }));
       }
-    } catch (err) {
+    } catch {
       // rollback on failure
       applyTheme(user);
     }

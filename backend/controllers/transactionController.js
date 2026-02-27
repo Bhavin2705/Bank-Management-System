@@ -4,9 +4,6 @@ const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
 const { createInAppNotification } = require('../utils/notifications');
 
-// @desc    Get all transactions for a user
-// @route   GET /api/transactions
-// @access  Private
 const getTransactions = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -24,7 +21,6 @@ const getTransactions = async (req, res) => {
 
         const transactions = await Transaction.getUserTransactions(req.user._id, options);
 
-        // Get total count for pagination
         const total = await Transaction.countDocuments({
             userId: req.user._id,
             ...(options.type && { type: options.type }),
@@ -55,15 +51,11 @@ const getTransactions = async (req, res) => {
     }
 };
 
-// Helper to avoid floating point precision issues: round to 2 decimals (paise)
 const roundTwo = (v) => {
     if (typeof v !== 'number') v = Number(v) || 0;
     return Math.round((v + Number.EPSILON) * 100) / 100;
 };
 
-// @desc    Get single transaction
-// @route   GET /api/transactions/:id
-// @access  Private
 const getTransaction = async (req, res) => {
     try {
         const transaction = await Transaction.findById(req.params.id)
@@ -78,7 +70,6 @@ const getTransaction = async (req, res) => {
             });
         }
 
-        // Check if user owns this transaction or is admin
         if (transaction.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -98,11 +89,8 @@ const getTransaction = async (req, res) => {
     }
 };
 
-// @desc    Create new transaction
-// @route   POST /api/transactions
-// @access  Private
 const createTransaction = async (req, res) => {
-    console.log('[Transaction Controller] Creating transaction for user:', req.user._id);
+    let session;
     try {
         const {
             type,
@@ -125,48 +113,71 @@ const createTransaction = async (req, res) => {
             }
         }
 
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({ success: false, error: 'User not found' });
-        }
         const numericAmount = roundTwo(Number(amount));
         if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
             return res.status(400).json({ success: false, error: 'Invalid amount' });
         }
-        let newBalance = roundTwo(Number(user.balance));
-
-        if (type === 'credit') {
-            newBalance = roundTwo(newBalance + numericAmount);
-        } else if (type === 'debit') {
-            if (newBalance < numericAmount) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Insufficient balance'
-                });
-            }
-            newBalance = roundTwo(newBalance - numericAmount);
-        }
-
         const finalDescription = description && description.trim().length > 0 ? description.trim() : (type === 'credit' ? 'Credit transaction' : 'Debit transaction');
         const normalizedCategory = typeof category === 'string' ? category.trim() : '';
         const defaultCategory = type === 'credit' ? 'deposit' : type === 'debit' ? 'withdrawal' : 'transfer';
         const finalCategory = normalizedCategory || defaultCategory;
 
-        const transaction = await Transaction.create({
-            userId: req.user._id,
-            type,
-            amount: numericAmount,
-            balance: newBalance,
-            description: finalDescription,
-            category: finalCategory,
-            clientRequestId,
-            recipientId,
-            recipientAccount,
-            recipientName
-        });
-        console.log('[Transaction Controller] Transaction created:', transaction);
+        session = await mongoose.startSession();
+        let transaction;
+        let user;
 
-        await User.findByIdAndUpdate(req.user._id, { balance: newBalance });
+        await session.withTransaction(async () => {
+            user = await User.findById(req.user._id).session(session);
+            if (!user) {
+                const err = new Error('User not found');
+                err.statusCode = 404;
+                throw err;
+            }
+            let newBalance = roundTwo(Number(user.balance));
+            if (type === 'credit') {
+                newBalance = roundTwo(newBalance + numericAmount);
+            } else if (type === 'debit') {
+                if (newBalance < numericAmount) {
+                    const err = new Error('Insufficient balance');
+                    err.statusCode = 400;
+                    throw err;
+                }
+                newBalance = roundTwo(newBalance - numericAmount);
+            }
+
+            transaction = (await Transaction.create([{
+                userId: req.user._id,
+                type,
+                amount: numericAmount,
+                balance: newBalance,
+                description: finalDescription,
+                category: finalCategory,
+                clientRequestId,
+                recipientId,
+                recipientAccount,
+                recipientName
+            }], { session }))[0];
+
+            await User.updateOne({ _id: req.user._id }, { balance: newBalance }, { session });
+
+            if (type === 'transfer' && recipientId) {
+                const recipient = await User.findById(recipientId).session(session);
+                if (recipient) {
+                    const recipientNewBalance = roundTwo(Number(recipient.balance) + numericAmount);
+
+                    await Transaction.create([{
+                        userId: recipientId,
+                        type: 'credit',
+                        amount: numericAmount,
+                        balance: recipientNewBalance,
+                        description: `Transfer from ${user.name}`,
+                        category: 'transfer'
+                    }], { session });
+
+                    await User.updateOne({ _id: recipientId }, { balance: recipientNewBalance }, { session });
+                }
+            }
+        });
 
         const transactionDetails = {
             type: type,
@@ -194,50 +205,9 @@ const createTransaction = async (req, res) => {
 
         let emailSent = false;
         if (user?.preferences?.notifications?.email !== false) {
-            emailSent = await emailHelpers.sendTransactionNotification(user.email, transactionDetails);
-        }
-
-        if (type === 'transfer' && recipientId) {
-            const recipient = await User.findById(recipientId);
-            if (recipient) {
-                const recipientNewBalance = roundTwo(Number(recipient.balance) + numericAmount);
-
-                await Transaction.create({
-                    userId: recipientId,
-                    type: 'credit',
-                    amount: numericAmount,
-                    balance: recipientNewBalance,
-                    description: `Transfer from ${user.name}`,
-                    category: 'transfer'
-                });
-
-                await User.findByIdAndUpdate(recipientId, { balance: recipientNewBalance });
-
-                const recipientTransactionDetails = {
-                    type: 'credit',
-                    amount: numericAmount,
-                    currency: 'INR',
-                    description: `Transfer from ${user.name}`,
-                    timestamp: new Date()
-                };
-
-                if (recipient?.preferences?.notifications?.email !== false) {
-                    await emailHelpers.sendTransactionNotification(recipient.email, recipientTransactionDetails);
-                }
-            }
-        }
-
-        try {
-            const rawDoc = await mongoose.connection.db.collection('transactions').findOne({ _id: transaction._id });
-            const count = await mongoose.connection.db.collection('transactions').countDocuments();
-            console.log('[Raw Collection] findOne result:', rawDoc);
-            console.log('[Raw Collection] countDocuments:', count);
-            if (!rawDoc) {
-                console.error('Transaction not found in raw collection after create:', transaction._id);
-                return res.status(500).json({ success: false, error: 'Transaction not persisted to raw collection' });
-            }
-        } catch (rawErr) {
-            console.error('Error checking raw collection:', rawErr);
+            emailHelpers.sendTransactionNotification(user.email, transactionDetails)
+                .then((sent) => { emailSent = !!sent; })
+                .catch(() => {});
         }
 
         const transactionData = transaction.toObject();
@@ -248,17 +218,24 @@ const createTransaction = async (req, res) => {
 
         res.status(201).json({ success: true, data: transactionData });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                error: error.message
+            });
+        }
         console.error('Error creating transaction:', error);
         res.status(500).json({
             success: false,
             error: 'Server error creating transaction'
         });
+    } finally {
+        if (session) {
+            session.endSession();
+        }
     }
 };
 
-// @desc    Update transaction
-// @route   PUT /api/transactions/:id
-// @access  Private
 const updateTransaction = async (req, res) => {
     try {
         const transaction = await Transaction.findById(req.params.id);
@@ -270,7 +247,6 @@ const updateTransaction = async (req, res) => {
             });
         }
 
-        // Check if user owns this transaction or is admin
         if (transaction.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -278,7 +254,6 @@ const updateTransaction = async (req, res) => {
             });
         }
 
-        // Only allow updating certain fields
         const allowedFields = ['description', 'category'];
         const updates = {};
 
@@ -306,9 +281,6 @@ const updateTransaction = async (req, res) => {
     }
 };
 
-// @desc    Delete transaction
-// @route   DELETE /api/transactions/:id
-// @access  Private
 const deleteTransaction = async (req, res) => {
     try {
         const transaction = await Transaction.findById(req.params.id);
@@ -320,7 +292,6 @@ const deleteTransaction = async (req, res) => {
             });
         }
 
-        // Check if user owns this transaction or is admin
         if (transaction.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             return res.status(403).json({
                 success: false,
@@ -328,7 +299,6 @@ const deleteTransaction = async (req, res) => {
             });
         }
 
-        // Reverse the transaction effect on balance
         const user = await User.findById(req.user._id);
         let newBalance = user.balance;
 
@@ -338,10 +308,8 @@ const deleteTransaction = async (req, res) => {
             newBalance += transaction.amount;
         }
 
-        // Update user balance
         await User.findByIdAndUpdate(req.user._id, { balance: newBalance });
 
-        // Delete transaction
         await Transaction.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
@@ -357,9 +325,6 @@ const deleteTransaction = async (req, res) => {
     }
 };
 
-// @desc    Get transaction statistics
-// @route   GET /api/transactions/stats
-// @access  Private
 const getTransactionStats = async (req, res) => {
     try {
         const period = req.query.period || 'month';
@@ -382,9 +347,6 @@ const getTransactionStats = async (req, res) => {
     }
 };
 
-// @desc    Get transaction categories
-// @route   GET /api/transactions/categories
-// @access  Private
 const getTransactionCategories = async (req, res) => {
     try {
         const categories = [
@@ -405,9 +367,6 @@ const getTransactionCategories = async (req, res) => {
     }
 };
 
-// @desc    Validate/Preview transfer details
-// @route   POST /api/transactions/validate-transfer
-// @access  Private
 const validateTransferDetails = async (req, res) => {
     try {
         const {
@@ -418,7 +377,6 @@ const validateTransferDetails = async (req, res) => {
             description
         } = req.body;
 
-        // First, try to find recipient in our system
         let recipient = null;
         let multipleAccounts = false;
         let availableAccounts = [];
@@ -448,7 +406,6 @@ const validateTransferDetails = async (req, res) => {
             }
         }
 
-        // Determine transfer type
         let isInternalTransfer = false;
         let transferType = 'external';
 
@@ -460,7 +417,6 @@ const validateTransferDetails = async (req, res) => {
             transferType = 'external';
         }
 
-        // Check if sender is trying to transfer to themselves
         if (recipient && recipient._id.toString() === req.user._id.toString()) {
             return res.status(400).json({
                 success: false,
@@ -468,16 +424,12 @@ const validateTransferDetails = async (req, res) => {
             });
         }
 
-        // Get sender balance
         const sender = await User.findById(req.user._id);
 
-        // Calculate fees (use rounded amount to avoid floating precision issues)
         const amt = roundTwo(Number(amount));
-        // No processing fee for any transfers (internal or external)
         const processingFee = 0;
         const totalDebit = roundTwo(amt + processingFee);
 
-        // Check if sender has sufficient balance
         const hasSufficientBalance = sender.balance >= totalDebit;
 
         const preview = {
@@ -509,10 +461,8 @@ const validateTransferDetails = async (req, res) => {
     }
 };
 
-// @desc    Transfer money between users
-// @route   POST /api/transactions/transfer
-// @access  Private
 const transferMoney = async (req, res) => {
+    let session;
     try {
         const {
             recipientAccount,
@@ -567,20 +517,16 @@ const transferMoney = async (req, res) => {
             }
         }
 
-        // Determine transfer type based on whether recipient exists and their bank
         let isInternalTransfer = false;
         let transferType = 'external';
 
         if (recipient) {
-            // Recipient exists in our system - always treat as internal transfer
             isInternalTransfer = true;
             transferType = 'internal';
         } else {
-            // Recipient doesn't exist in our system - truly external
             isInternalTransfer = false;
             transferType = 'external';
 
-            // Validate external transfer requirements
             if (!recipientBank || !recipientBank.bankName) {
                 return res.status(400).json({
                     success: false,
@@ -588,7 +534,6 @@ const transferMoney = async (req, res) => {
                 });
             }
 
-            // Only require recipientAccount if not transferring by phone number
             if (!recipientAccount && !recipientPhone) {
                 return res.status(400).json({
                     success: false,
@@ -597,7 +542,6 @@ const transferMoney = async (req, res) => {
             }
         }
 
-        // Check if sender is trying to transfer to themselves
         if (recipient && recipient._id.toString() === req.user._id.toString()) {
             return res.status(400).json({
                 success: false,
@@ -605,57 +549,91 @@ const transferMoney = async (req, res) => {
             });
         }
 
-        // Check sender balance (use rounded amount)
-        const sender = await User.findById(req.user._id);
-        if (!sender) {
-            return res.status(404).json({
-                success: false,
-                error: 'Sender not found'
-            });
-        }
         const amt = roundTwo(Number(amount));
-        if (sender.balance < amt) {
+        if (!Number.isFinite(amt) || amt <= 0) {
             return res.status(400).json({
                 success: false,
-                error: 'Insufficient balance'
+                error: 'Invalid amount'
             });
         }
-
-        // For external transfers, add processing fee (rounded)
-        // No processing fee for any transfers
         const processingFee = 0;
         const totalDebit = roundTwo(amt + processingFee);
+        session = await mongoose.startSession();
+        let sender;
+        let senderTransaction;
+        let recipientEmail = null;
+        let recipientTransactionId = null;
+        let recipientTransactionCreatedAt = null;
 
-        if (sender.balance < totalDebit) {
-            return res.status(400).json({
-                success: false,
-                error: 'Insufficient balance including processing fee'
-            });
-        }
+        await session.withTransaction(async () => {
+            sender = await User.findById(req.user._id).session(session);
+            if (!sender) {
+                const err = new Error('Sender not found');
+                err.statusCode = 404;
+                throw err;
+            }
 
-        // Calculate new balance (rounded)
-        const senderNewBalance = roundTwo(Number(sender.balance) - totalDebit);
+            if (sender.balance < amt) {
+                const err = new Error('Insufficient balance');
+                err.statusCode = 400;
+                throw err;
+            }
 
-        // Update sender balance FIRST before creating transactions
-        sender.balance = senderNewBalance;
-        await sender.save({ validateBeforeSave: false });
+            if (sender.balance < totalDebit) {
+                const err = new Error('Insufficient balance including processing fee');
+                err.statusCode = 400;
+                throw err;
+            }
 
-        // Sender transaction - record the actual transfer amount, not total debit
-        const senderTransaction = await Transaction.create({
-            userId: req.user._id,
-            type: 'debit',
-            transferType,
-            amount: isInternalTransfer ? amt : totalDebit, // For external, include fee in amount
-            balance: senderNewBalance,
-            clientRequestId,
-            description: isInternalTransfer
-                ? (description || `Transfer to ${recipient ? recipient.name : recipientAccount}`)
-                : `${description || `Transfer to ${recipient ? recipient.name : recipientAccount}`} (includes processing fee Rs${processingFee.toLocaleString('en-IN')})`,
-            category: 'transfer',
-            recipientId: recipient ? recipient._id : null,
-            recipientAccount,
-            recipientName: recipient ? recipient.name : (req.body.recipientName || 'External Account'),
-            recipientBank: recipientBank || null
+            const senderNewBalance = roundTwo(Number(sender.balance) - totalDebit);
+            sender.balance = senderNewBalance;
+            await sender.save({ validateBeforeSave: false, session });
+
+            senderTransaction = (await Transaction.create([{
+                userId: req.user._id,
+                type: 'debit',
+                transferType,
+                amount: isInternalTransfer ? amt : totalDebit,
+                balance: senderNewBalance,
+                clientRequestId,
+                description: isInternalTransfer
+                    ? (description || `Transfer to ${recipient ? recipient.name : recipientAccount}`)
+                    : `${description || `Transfer to ${recipient ? recipient.name : recipientAccount}`} (includes processing fee Rs${processingFee.toLocaleString('en-IN')})`,
+                category: 'transfer',
+                recipientId: recipient ? recipient._id : null,
+                recipientAccount,
+                recipientName: recipient ? recipient.name : (req.body.recipientName || 'External Account'),
+                recipientBank: recipientBank || null
+            }], { session }))[0];
+
+            if (isInternalTransfer && recipient) {
+                const recipientInTx = await User.findById(recipient._id).session(session);
+                if (!recipientInTx) {
+                    const err = new Error('Recipient not found');
+                    err.statusCode = 404;
+                    throw err;
+                }
+                const recipientNewBalance = roundTwo(Number(recipientInTx.balance) + amt);
+
+                const recipientTransaction = (await Transaction.create([{
+                    userId: recipientInTx._id,
+                    type: 'credit',
+                    transferType: 'internal',
+                    amount: amt,
+                    balance: recipientNewBalance,
+                    description: `Transfer from ${sender.name}`,
+                    category: 'transfer',
+                    recipientId: req.user._id,
+                    recipientAccount: sender.accountNumber,
+                    recipientName: sender.name
+                }], { session }))[0];
+
+                recipientInTx.balance = recipientNewBalance;
+                await recipientInTx.save({ validateBeforeSave: false, session });
+                recipientEmail = recipientInTx.email;
+                recipientTransactionId = recipientTransaction._id;
+                recipientTransactionCreatedAt = recipientTransaction.createdAt;
+            }
         });
 
         const senderNotification = await createInAppNotification({
@@ -670,73 +648,45 @@ const transferMoney = async (req, res) => {
                 category: 'transfer'
             }
         });
-        if (!senderNotification) {
-            console.warn('In-app notification was not created for transfer sender transaction:', senderTransaction._id.toString());
-        }
-
         let senderEmailSent = false;
         if (sender?.preferences?.notifications?.email !== false) {
-            senderEmailSent = await emailHelpers.sendTransactionNotification(sender.email, {
+            emailHelpers.sendTransactionNotification(sender.email, {
                 type: 'debit',
                 amount: amt,
                 currency: 'INR',
                 description: senderTransaction.description,
                 timestamp: senderTransaction.createdAt
-            });
+            }).then((sent) => { senderEmailSent = !!sent; }).catch(() => {});
         }
 
-        // No separate fee transaction; fee is included in main debit transaction
 
-        // For internal transfers, create corresponding credit transaction for recipient
         let recipientNotificationCreated = false;
         let recipientEmailSent = false;
 
         if (isInternalTransfer && recipient) {
-            const recipientNewBalance = roundTwo(Number(recipient.balance) + amt);
-
-            const recipientTransaction = await Transaction.create({
-                userId: recipient._id,
-                type: 'credit',
-                transferType: 'internal',
-                amount: amt,
-                balance: recipientNewBalance,
-                description: `Transfer from ${sender.name}`,
-                category: 'transfer',
-                recipientId: req.user._id, // Reference back to sender
-                recipientAccount: sender.accountNumber,
-                recipientName: sender.name
-            });
-
             const recipientNotification = await createInAppNotification({
                 userId: recipient._id,
                 type: 'transaction',
                 title: 'Money Received',
                 message: `Rs${amt.toLocaleString('en-IN')} received from ${sender.name}.`,
-                relatedId: recipientTransaction._id,
+                relatedId: recipientTransactionId || senderTransaction._id,
                 relatedModel: 'Transaction',
                 metadata: {
                     amount: amt,
                     category: 'transfer'
                 }
             });
-            if (!recipientNotification) {
-                console.warn('In-app notification was not created for transfer recipient transaction:', recipientTransaction._id.toString());
-            }
             recipientNotificationCreated = !!recipientNotification;
 
-            if (recipient?.preferences?.notifications?.email !== false) {
-                recipientEmailSent = await emailHelpers.sendTransactionNotification(recipient.email, {
+            if (recipientEmail) {
+                emailHelpers.sendTransactionNotification(recipientEmail, {
                     type: 'credit',
                     amount: amt,
                     currency: 'INR',
-                    description: recipientTransaction.description,
-                    timestamp: recipientTransaction.createdAt
-                });
+                    description: `Transfer from ${sender.name}`,
+                    timestamp: recipientTransactionCreatedAt || new Date()
+                }).then((sent) => { recipientEmailSent = !!sent; }).catch(() => {});
             }
-
-            // Update recipient balance
-            recipient.balance = recipientNewBalance;
-            await recipient.save({ validateBeforeSave: false });
         }
 
         let message = `Successfully transferred Rs${amt.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
@@ -747,7 +697,6 @@ const transferMoney = async (req, res) => {
             }
         }
 
-        // Always inform user about fee and total debit
         message += `\nNote: A processing fee of Rs${processingFee.toLocaleString('en-IN')} was deducted. Total debited from your account: Rs${totalDebit.toLocaleString('en-IN')}.`;
 
         res.status(201).json({
@@ -772,11 +721,21 @@ const transferMoney = async (req, res) => {
             }
         });
     } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                error: error.message
+            });
+        }
         console.error('Transfer error:', error);
         res.status(500).json({
             success: false,
             error: 'Server error processing transfer'
         });
+    } finally {
+        if (session) {
+            session.endSession();
+        }
     }
 };
 

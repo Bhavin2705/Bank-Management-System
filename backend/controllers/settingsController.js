@@ -1,9 +1,6 @@
 const User = require('../models/User');
 const { createInAppNotification } = require('../utils/notifications');
 
-// @desc    Get user settings/preferences
-// @route   GET /api/settings
-// @access  Private
 const getSettings = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -60,9 +57,6 @@ const getSettings = async (req, res) => {
     }
 };
 
-// @desc    Update user preferences
-// @route   PUT /api/settings/preferences
-// @access  Private
 const updatePreferences = async (req, res) => {
     try {
         const { currency, language, theme, notifications } = req.body;
@@ -107,9 +101,6 @@ const updatePreferences = async (req, res) => {
     }
 };
 
-// @desc    Enable/Disable two-factor authentication
-// @route   PUT /api/settings/two-factor
-// @access  Private
 const updateTwoFactor = async (req, res) => {
     try {
         const { enable } = req.body;
@@ -151,9 +142,6 @@ const updateTwoFactor = async (req, res) => {
     }
 };
 
-// @desc    Get linked accounts/cards
-// @route   GET /api/settings/linked-accounts
-// @access  Private
 const getLinkedAccounts = async (req, res) => {
     try {
         const Card = require('../models/Card');
@@ -173,9 +161,6 @@ const getLinkedAccounts = async (req, res) => {
     }
 };
 
-// @desc    Get account session information
-// @route   GET /api/settings/sessions
-// @access  Private
 const getSessions = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);

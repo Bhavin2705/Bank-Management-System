@@ -39,7 +39,7 @@ export default function VirtualCardModal({
 
   const cardTheme = useMemo(() => {
     if ((card?.cardType || '').toLowerCase() === 'credit') {
-      return 'linear-gradient(135deg, #111827 0%, #1f2937 55%, #4b5563 100%)';
+      return 'linear-gradient(135deg, #0F172A 0%, #1E293B 48%, #334155 100%)';
     }
     return 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%)';
   }, [card?.cardType]);
@@ -60,11 +60,12 @@ export default function VirtualCardModal({
         </div>
 
         <div className="virtual-card-stage">
-          <div className="virtual-card-face" style={{ background: cardTheme }}>
+          <div className={`virtual-card-face ${showBack ? 'virtual-card-face-back' : ''}`} style={{ background: cardTheme }}>
             {!showBack ? (
               <>
                 <div className="virtual-card-top-row">
                   <span className="virtual-card-bank">BankPro</span>
+                  <span className="virtual-card-product">{(card?.cardType || 'debit').toUpperCase()} CARD</span>
                   <Wifi size={18} className="virtual-card-wifi" />
                 </div>
                 <div className="virtual-card-chip" />

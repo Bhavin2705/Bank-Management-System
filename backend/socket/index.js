@@ -99,7 +99,10 @@ const configureSocket = (server) => {
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret_change_me');
+            if (!process.env.JWT_SECRET) {
+                return next(new Error('Authentication error: server misconfigured'));
+            }
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             if (!decoded || decoded.tokenType !== 'access' || !decoded.id) {
                 return next(new Error('Authentication error: invalid token type'));
@@ -122,15 +125,11 @@ const configureSocket = (server) => {
     });
 
     io.on('connection', (socket) => {
-        console.log('User connected:', socket.userId);
-
         socket.on('join_support', (data) => {
             socket.join('support');
-            console.log(`User ${data.name} joined support chat`);
 
             if (socket.user.role === 'admin') {
                 socket.join('admin_support');
-                console.log(`Admin ${data.name} joined admin support room`);
             }
 
             socket.to('support').emit('user_joined', {
@@ -141,7 +140,6 @@ const configureSocket = (server) => {
         });
 
         socket.on('user_message', (data) => {
-            console.log('User message:', data);
 
             socket.to('admin_support').emit('new_user_message', {
                 userId: socket.userId,
@@ -182,7 +180,6 @@ const configureSocket = (server) => {
                     isAutoResponse: false
                 });
 
-                console.log(`Admin ${socket.user.name} responded to user ${data.userId}`);
             }
         });
 
@@ -200,9 +197,6 @@ const configureSocket = (server) => {
             });
         });
 
-        socket.on('disconnect', () => {
-            console.log('User disconnected:', socket.userId);
-        });
     });
 
     return io;

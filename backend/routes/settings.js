@@ -10,10 +10,8 @@ const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes require authentication
 router.use(protect);
 
-// Settings routes
 router.get('/', getSettings);
 router.put('/preferences', updatePreferences);
 router.put('/two-factor', updateTwoFactor);

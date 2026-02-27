@@ -1,4 +1,4 @@
-﻿const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 class EmailService {
     constructor() {
@@ -313,12 +313,12 @@ class EmailService {
                         <p>Thank you for joining BankPro! We're excited to have you on board.</p>
                         <p><strong>Key Features You Can Now Access:</strong></p>
                         <div class="feature-list">
-                            <div class="feature">âœ“ Manage multiple bank accounts</div>
-                            <div class="feature">âœ“ Track transactions and budgets</div>
-                            <div class="feature">âœ“ Pay bills easily and securely</div>
-                            <div class="feature">âœ“ Set and monitor financial goals</div>
-                            <div class="feature">âœ“ Monitor investments</div>
-                            <div class="feature">âœ“ Exchange currencies</div>
+                            <div class="feature">✓ Manage multiple bank accounts</div>
+                            <div class="feature">✓ Track transactions and budgets</div>
+                            <div class="feature">✓ Pay bills easily and securely</div>
+                            <div class="feature">✓ Set and monitor financial goals</div>
+                            <div class="feature">✓ Monitor investments</div>
+                            <div class="feature">✓ Exchange currencies</div>
                         </div>
                         <p>Start exploring your dashboard to make the most of BankPro.</p>
                         <p>Best regards,<br>BankPro Team</p>
@@ -506,7 +506,7 @@ class EmailService {
                     </div>
                     <div class="content">
                         <p>Hello,</p>
-                        <p><span class="success-badge">âœ“ Payment Successful</span></p>
+                        <p><span class="success-badge">✓ Payment Successful</span></p>
                         <div class="details">
                             <div class="detail-row">
                                 <span><strong>Bill:</strong></span>
@@ -685,7 +685,7 @@ class EmailService {
                         <h2>Security Alert</h2>
                     </div>
                     <div class="alert-box">
-                        <strong>âš ï¸ Unusual Activity Detected</strong>
+                        <strong>⚠️ Unusual Activity Detected</strong>
                         <p>We noticed unusual activity on your account. Please review the details below.</p>
                     </div>
                     <div class="content">

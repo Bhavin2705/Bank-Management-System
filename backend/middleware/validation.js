@@ -1,10 +1,8 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-// Handle validation errors
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        // Build a readable error message from validation errors
         const details = errors.array();
         const message = details.map(err => err.msg).join('; ');
 
@@ -17,7 +15,6 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 
-// User validation rules
 const validateUserRegistration = [
     body('name')
         .trim()
@@ -79,7 +76,6 @@ const validatePasswordResetToken = [
     handleValidationErrors
 ];
 
-// Transaction validation rules
 const validateTransaction = [
     body('type')
         .isIn(['credit', 'debit', 'transfer'])
@@ -155,7 +151,6 @@ const validateTransfer = [
     handleValidationErrors
 ];
 
-// Account validation rules
 const validateAccountCreation = [
     body('accountType')
         .isIn(['savings', 'checking', 'business', 'fixed_deposit', 'recurring_deposit'])
@@ -171,7 +166,6 @@ const validateAccountCreation = [
     handleValidationErrors
 ];
 
-// Card validation rules
 const validateCardCreation = [
     body('cardType')
         .isIn(['debit', 'credit'])
@@ -191,7 +185,6 @@ const validateCardCreation = [
     handleValidationErrors
 ];
 
-// Investment validation rules
 const validateInvestment = [
     body('type')
         .isIn(['stocks', 'mutual_funds', 'bonds', 'fd', 'rd', 'gold', 'crypto', 'etf'])
@@ -209,7 +202,6 @@ const validateInvestment = [
     handleValidationErrors
 ];
 
-// Budget validation rules
 const validateBudget = [
     body('name')
         .trim()
@@ -231,7 +223,6 @@ const validateBudget = [
     handleValidationErrors
 ];
 
-// Goal validation rules
 const validateGoal = [
     body('name')
         .trim()
@@ -250,7 +241,6 @@ const validateGoal = [
     handleValidationErrors
 ];
 
-// Bill validation rules
 const validateBill = [
     body('type')
         .isIn([
@@ -278,7 +268,6 @@ const validateBill = [
     handleValidationErrors
 ];
 
-// General validation rules
 const validateObjectId = [
     param('id')
         .isMongoId()

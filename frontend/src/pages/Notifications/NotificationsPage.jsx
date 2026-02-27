@@ -108,8 +108,8 @@ const Notifications = () => {
   }
 
   return (
-    <div className="container">
-      <div style={{
+    <div className="container notifications-page">
+      <div className="notifications-header" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
@@ -128,6 +128,7 @@ const Notifications = () => {
 
         {hasUnread && notifications.length > 0 && (
           <button
+            className="notifications-mark-all-btn"
             onClick={markAllAsRead}
             style={{
               padding: '0.6rem 1.25rem',
@@ -146,7 +147,7 @@ const Notifications = () => {
       </div>
 
       {error && (
-        <div style={{
+        <div className="notifications-list-wrap" style={{
           background: 'rgba(220, 53, 69, 0.1)',
           color: '#dc3545',
           padding: '1rem 1.25rem',
@@ -179,6 +180,7 @@ const Notifications = () => {
         }}>
           {notifications.map((n) => (
             <div
+              className={`notifications-row ${n.read ? 'is-read' : 'is-unread'}`}
               key={n.id || n._id}
               style={{
                 padding: '1.25rem 1.5rem',

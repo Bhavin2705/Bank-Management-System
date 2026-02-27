@@ -19,7 +19,6 @@ const router = express.Router();
 
 router.get('/banks', getBanks);
 
-// Public routes (for registration form validation)
 router.get('/check-email', async (req, res) => {
     try {
         const { email } = req.query;

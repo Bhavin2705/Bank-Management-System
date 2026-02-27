@@ -24,7 +24,6 @@ const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimit')
 
 const router = express.Router();
 
-// Public routes
 router.post('/register', authLimiter, validateUserRegistration, register);
 router.post('/login', authLimiter, validateUserLogin, login);
 router.post('/login-account', authLimiter, validateUserLogin, loginWithAccount);
@@ -33,7 +32,6 @@ router.put('/resetpassword/:resettoken', validatePasswordResetToken, resetPasswo
 router.get('/resetpassword/:resettoken', verifyResetToken);
 router.post('/refresh', refreshToken);
 
-// Protected routes
 router.use(protect); // All routes below require authentication
 
 router.post('/logout', logout);

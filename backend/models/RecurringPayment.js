@@ -41,7 +41,6 @@ const recurringPaymentSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Next due date is required']
     },
-    // Payment details
     fromAccount: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Account',
@@ -55,7 +54,6 @@ const recurringPaymentSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Beneficiary name is required']
     },
-    // Status and control
     status: {
         type: String,
         enum: ['active', 'paused', 'completed', 'cancelled', 'failed'],
@@ -65,7 +63,6 @@ const recurringPaymentSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    // Payment history
     paymentHistory: [{
         transactionId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -80,7 +77,6 @@ const recurringPaymentSchema = new mongoose.Schema({
         },
         notes: String
     }],
-    // Failure handling
     maxRetries: {
         type: Number,
         default: 3
@@ -90,13 +86,11 @@ const recurringPaymentSchema = new mongoose.Schema({
         default: 0
     },
     lastFailureReason: String,
-    // Notifications
     notifications: {
         email: { type: Boolean, default: true },
         sms: { type: Boolean, default: false },
         daysBefore: { type: Number, default: 1 }
     },
-    // Categories and tags
     category: {
         type: String,
         enum: [
@@ -106,7 +100,6 @@ const recurringPaymentSchema = new mongoose.Schema({
         default: 'other'
     },
     tags: [String],
-    // Metadata
     metadata: {
         billId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -122,39 +115,32 @@ const recurringPaymentSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Indexes
 recurringPaymentSchema.index({ userId: 1, status: 1 });
 recurringPaymentSchema.index({ userId: 1, nextDueDate: 1 });
 recurringPaymentSchema.index({ userId: 1, type: 1 });
 recurringPaymentSchema.index({ nextDueDate: 1 });
 
-// Virtual for days until next payment
 recurringPaymentSchema.virtual('daysUntilNext').get(function () {
     const now = new Date();
     const diffTime = this.nextDueDate - now;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-// Virtual for total payments made
 recurringPaymentSchema.virtual('totalPaymentsMade').get(function () {
     return this.paymentHistory.filter(payment => payment.status === 'success').length;
 });
 
-// Virtual for total amount paid
 recurringPaymentSchema.virtual('totalAmountPaid').get(function () {
     return this.paymentHistory
         .filter(payment => payment.status === 'success')
         .reduce((total, payment) => total + payment.amount, 0);
 });
 
-// Pre-save middleware
 recurringPaymentSchema.pre('save', function (next) {
-    // Set next due date if not set
     if (!this.nextDueDate) {
         this.nextDueDate = this.startDate;
     }
 
-    // Check if payment is completed
     if (this.endDate && new Date() > this.endDate) {
         this.status = 'completed';
     }
@@ -162,7 +148,6 @@ recurringPaymentSchema.pre('save', function (next) {
     next();
 });
 
-// Instance method to calculate next due date
 recurringPaymentSchema.methods.calculateNextDueDate = function () {
     const currentDue = new Date(this.nextDueDate);
 
@@ -193,11 +178,8 @@ recurringPaymentSchema.methods.calculateNextDueDate = function () {
     return currentDue;
 };
 
-// Instance method to process payment
 recurringPaymentSchema.methods.processPayment = async function () {
     try {
-        // This would integrate with the transaction service
-        // For now, we'll just record the payment attempt
 
         const paymentRecord = {
             amount: this.amount,
@@ -208,10 +190,8 @@ recurringPaymentSchema.methods.processPayment = async function () {
 
         this.paymentHistory.push(paymentRecord);
 
-        // Calculate next due date
         this.nextDueDate = this.calculateNextDueDate();
 
-        // Reset retry count on success
         this.retryCount = 0;
         this.lastFailureReason = null;
 
@@ -219,7 +199,6 @@ recurringPaymentSchema.methods.processPayment = async function () {
 
         return { success: true, payment: paymentRecord };
     } catch (error) {
-        // Handle payment failure
         this.retryCount += 1;
         this.lastFailureReason = error.message;
 
@@ -233,24 +212,20 @@ recurringPaymentSchema.methods.processPayment = async function () {
     }
 };
 
-// Instance method to pause/unpause
 recurringPaymentSchema.methods.togglePause = function () {
     this.status = this.status === 'active' ? 'paused' : 'active';
     return this.save();
 };
 
-// Instance method to cancel
 recurringPaymentSchema.methods.cancel = function () {
     this.status = 'cancelled';
     return this.save();
 };
 
-// Static method to get user recurring payments
 recurringPaymentSchema.statics.getUserRecurringPayments = function (userId, status = 'active') {
     return this.find({ userId, status }).sort({ nextDueDate: 1 });
 };
 
-// Static method to get payments due soon
 recurringPaymentSchema.statics.getPaymentsDueSoon = function (userId, days = 7) {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
@@ -262,7 +237,6 @@ recurringPaymentSchema.statics.getPaymentsDueSoon = function (userId, days = 7) 
     }).sort({ nextDueDate: 1 });
 };
 
-// Static method to process all due payments
 recurringPaymentSchema.statics.processDuePayments = async function () {
     const duePayments = await this.find({
         status: 'active',
@@ -284,7 +258,6 @@ recurringPaymentSchema.statics.processDuePayments = async function () {
     return results;
 };
 
-// Static method to get payment statistics
 recurringPaymentSchema.statics.getPaymentStats = function (userId) {
     return this.aggregate([
         { $match: { userId: mongoose.Types.ObjectId(userId) } },

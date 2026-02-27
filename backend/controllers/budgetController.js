@@ -1,9 +1,6 @@
 const Budget = require('../models/Budget');
 const Transaction = require('../models/Transaction');
 
-// @desc    Get all budgets for a user
-// @route   GET /api/budgets
-// @access  Private
 const getBudgets = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -39,13 +36,10 @@ const getBudgets = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching budgets:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-// @desc    Get budget by ID
-// @route   GET /api/budgets/:id
-// @access  Private
 const getBudget = async (req, res) => {
   try {
     const budget = await Budget.findOne({
@@ -60,13 +54,10 @@ const getBudget = async (req, res) => {
     res.status(200).json({ success: true, data: budget });
   } catch (err) {
     console.error('Error fetching budget:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-// @desc    Get budget summary
-// @route   GET /api/budgets/summary
-// @access  Private
 const getBudgetSummary = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -94,13 +85,10 @@ const getBudgetSummary = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching budget summary:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-// @desc    Create a new budget
-// @route   POST /api/budgets
-// @access  Private
 const createBudget = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -132,13 +120,10 @@ const createBudget = async (req, res) => {
     res.status(201).json({ success: true, data: budget });
   } catch (err) {
     console.error('Error creating budget:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to create budget' });
+    res.status(400).json({ success: false, message: 'Failed to create budget' });
   }
 };
 
-// @desc    Update a budget
-// @route   PUT /api/budgets/:id
-// @access  Private
 const updateBudget = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -154,7 +139,6 @@ const updateBudget = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Budget not found' });
     }
 
-    // Update allowed fields
     const allowedFields = ['name', 'amount', 'period', 'status', 'spent'];
     Object.keys(req.body).forEach(key => {
       if (allowedFields.includes(key)) {
@@ -162,7 +146,6 @@ const updateBudget = async (req, res) => {
       }
     });
 
-    // Check if over budget
     if (budget.spent > budget.amount) {
       budget.status = 'over_budget';
     } else if (budget.status === 'over_budget') {
@@ -174,13 +157,10 @@ const updateBudget = async (req, res) => {
     res.status(200).json({ success: true, data: budget });
   } catch (err) {
     console.error('Error updating budget:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to update budget' });
+    res.status(400).json({ success: false, message: 'Failed to update budget' });
   }
 };
 
-// @desc    Delete a budget
-// @route   DELETE /api/budgets/:id
-// @access  Private
 const deleteBudget = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -199,13 +179,10 @@ const deleteBudget = async (req, res) => {
     res.status(200).json({ success: true, message: 'Budget deleted successfully' });
   } catch (err) {
     console.error('Error deleting budget:', err);
-    res.status(500).json({ success: false, message: err.message || 'Failed to delete budget' });
+    res.status(500).json({ success: false, message: 'Failed to delete budget' });
   }
 };
 
-// @desc    Update budget spent amount based on transactions
-// @route   POST /api/budgets/:id/update-spent
-// @access  Private
 const updateBudgetSpent = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -221,7 +198,6 @@ const updateBudgetSpent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Budget not found' });
     }
 
-    // Get transactions for this category
     const transactions = await Transaction.find({
       userId: req.user._id,
       category: budget.category,
@@ -231,7 +207,6 @@ const updateBudgetSpent = async (req, res) => {
     const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
     budget.spent = totalSpent;
 
-    // Update status if needed
     if (budget.spent > budget.amount) {
       budget.status = 'over_budget';
     } else if (budget.status === 'over_budget') {
@@ -243,13 +218,10 @@ const updateBudgetSpent = async (req, res) => {
     res.status(200).json({ success: true, data: budget });
   } catch (err) {
     console.error('Error updating budget spent:', err);
-    res.status(400).json({ success: false, message: err.message || 'Failed to update budget' });
+    res.status(400).json({ success: false, message: 'Failed to update budget' });
   }
 };
 
-// @desc    Get budget statistics
-// @route   GET /api/budgets/stats
-// @access  Private
 const getBudgetStats = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -288,7 +260,7 @@ const getBudgetStats = async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching budget stats:', err);
-    res.status(500).json({ success: false, message: err.message || 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 

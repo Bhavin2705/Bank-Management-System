@@ -1,23 +1,19 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Protect routes - require authentication
 const protect = async (req, res, next) => {
     try {
         let token;
 
-        // Check for token in headers
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             token = req.headers.authorization.split(' ')[1];
         }
 
 
-        // Check for token in cookies (if cookies are available)
         if (!token && req.cookies && req.cookies.token) {
             token = req.cookies.token;
         }
 
-        // Note: tokens must be provided in Authorization header as Bearer token or via cookies.
 
         if (!token) {
             return res.status(401).json({
@@ -27,9 +23,14 @@ const protect = async (req, res, next) => {
         }
 
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret_change_me');
+            if (!process.env.JWT_SECRET) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Authentication is not configured'
+                });
+            }
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Get user from token
             const user = await User.findById(decoded.id);
 
             if (!user) {
@@ -38,7 +39,6 @@ const protect = async (req, res, next) => {
                     error: 'No user found with this token'
                 });
             }
-            // Blocked/suspended/inactive users cannot access protected routes
             if (user.status === 'suspended' || user.status === 'inactive') {
                 return res.status(403).json({
                     success: false,
@@ -63,7 +63,6 @@ const protect = async (req, res, next) => {
     }
 };
 
-// Grant access to specific roles
 const authorize = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {
@@ -76,7 +75,6 @@ const authorize = (...roles) => {
     };
 };
 
-// Check if user owns resource or is admin
 const resourceOwner = (modelName) => {
     return async (req, res, next) => {
         try {
@@ -90,7 +88,6 @@ const resourceOwner = (modelName) => {
                 });
             }
 
-            // Check if user owns the resource or is admin
             if (resource.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
                 return res.status(403).json({
                     success: false,
