@@ -3,7 +3,7 @@
 const ConverterCard = ({
   conversion,
   exchangeRates,
-  sortedCodes,
+  selectableCodes,
   useLiveData,
   result,
   refreshing,
@@ -75,7 +75,7 @@ const ConverterCard = ({
       <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
         <label className="form-label">From</label>
         <select className="form-input" value={conversion.fromCurrency} onChange={(e) => onConversionChange({ fromCurrency: e.target.value })}>
-          {sortedCodes.map((code) => (
+          {selectableCodes.map((code) => (
             <option key={code} value={code}>
               {code} - {getCurrencyInfo(code).name}
             </option>
@@ -101,7 +101,7 @@ const ConverterCard = ({
       <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
         <label className="form-label">To</label>
         <select className="form-input" value={conversion.toCurrency} onChange={(e) => onConversionChange({ toCurrency: e.target.value })}>
-          {sortedCodes.map((code) => (
+          {selectableCodes.map((code) => (
             <option key={code} value={code}>
               {code} - {getCurrencyInfo(code).name}
             </option>

@@ -124,7 +124,32 @@ const CurrencyExchangePage = () => {
     });
   }, [exchangeRates, conversion]);
 
-  const sortedCodes = useMemo(() => Object.keys(exchangeRates).sort(), [exchangeRates]);
+  const selectableCodes = useMemo(() => {
+    const codesInRates = new Set(Object.keys(exchangeRates));
+    const curated = popularCurrencies
+      .map((currency) => currency.code)
+      .filter((code) => codesInRates.has(code));
+
+    if (curated.length > 0) return curated.slice(0, 10);
+    return Object.keys(exchangeRates).sort().slice(0, 10);
+  }, [exchangeRates]);
+
+  useEffect(() => {
+    if (selectableCodes.length === 0) return;
+    setConversion((prev) => {
+      const hasFrom = selectableCodes.includes(prev.fromCurrency);
+      const hasTo = selectableCodes.includes(prev.toCurrency);
+      if (hasFrom && hasTo) return prev;
+
+      const fallbackFrom = selectableCodes[0];
+      const fallbackTo = selectableCodes.find((code) => code !== fallbackFrom) || fallbackFrom;
+      return {
+        ...prev,
+        fromCurrency: hasFrom ? prev.fromCurrency : fallbackFrom,
+        toCurrency: hasTo ? prev.toCurrency : fallbackTo,
+      };
+    });
+  }, [selectableCodes]);
 
   const handleToggleMode = () => {
     setUseLiveData((prev) => !prev);
@@ -170,7 +195,7 @@ const CurrencyExchangePage = () => {
       <ConverterCard
         conversion={conversion}
         exchangeRates={exchangeRates}
-        sortedCodes={sortedCodes}
+        selectableCodes={selectableCodes}
         useLiveData={useLiveData}
         result={result}
         refreshing={refreshing}
