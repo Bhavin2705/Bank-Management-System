@@ -15,10 +15,16 @@ const Notifications = () => {
         setLoading(true);
         setError('');
         const response = await api.notifications.getAll();
-        const list = Array.isArray(response)
-          ? response
-          : (Array.isArray(response.data) ? response.data : []);
-        setNotifications(list);
+        const list = Array.isArray(response?.data) ? response.data : [];
+        const normalized = list
+          .filter((item) => item && (item.id || item._id))
+          .filter((item) => typeof item.message === 'string' && item.message.trim().length > 0)
+          .map((item) => ({
+            ...item,
+            id: item.id || item._id,
+            timestamp: item.timestamp || item.createdAt || null
+          }));
+        setNotifications(normalized);
       } catch (err) {
         console.error('Notifications error:', err);
         const errorMsg = 'Failed to load notifications. Please try again.';
