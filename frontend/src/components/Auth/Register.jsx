@@ -120,6 +120,14 @@ const Register = ({ onLogin, switchToLogin }) => {
     }
   }, [formData.phone]);
 
+  const handleSignIn = () => {
+    if (typeof switchToLogin === 'function') {
+      switchToLogin();
+      return;
+    }
+    navigate('/login');
+  };
+
   const isFormValid = () => {
     return (
       formData.name.trim() !== '' &&
@@ -685,7 +693,7 @@ const Register = ({ onLogin, switchToLogin }) => {
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-gray-500">Already have an account?</span>
                 <button
-                  onClick={switchToLogin}
+                  onClick={handleSignIn}
                   className="text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:underline"
                 >
                   Sign In

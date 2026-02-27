@@ -147,6 +147,14 @@ const Login = ({ onLogin, switchToRegister }) => {
     setLoading(false);
   };
 
+  const handleCreateAccount = () => {
+    if (typeof switchToRegister === 'function') {
+      switchToRegister();
+      return;
+    }
+    navigate('/register');
+  };
+
   if (showResetSuccess) {
     return <PasswordResetSuccess onBackToLogin={handleBackToLogin} />;
   }
@@ -391,7 +399,7 @@ const Login = ({ onLogin, switchToRegister }) => {
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-gray-500">Don't have an account?</span>
                 <button
-                  onClick={switchToRegister}
+                  onClick={handleCreateAccount}
                   className="text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:underline"
                 >
                   Create Account
