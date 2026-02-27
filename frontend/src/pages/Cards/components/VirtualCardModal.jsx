@@ -1,5 +1,5 @@
 ﻿import { CreditCard, Wifi, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const formatCard = (cardNumber = '') => {
   const digits = String(cardNumber).replace(/\D/g, '');
@@ -31,11 +31,17 @@ export default function VirtualCardModal({
 }) {
   const [showBack, setShowBack] = useState(false);
 
+  useEffect(() => {
+    if (show) {
+      setShowBack(false);
+    }
+  }, [show, card?._id, card?.id]);
+
   const cardTheme = useMemo(() => {
     if ((card?.cardType || '').toLowerCase() === 'credit') {
-      return 'linear-gradient(135deg, #1f2937 0%, #111827 45%, #4b5563 100%)';
+      return 'linear-gradient(135deg, #111827 0%, #1f2937 55%, #4b5563 100%)';
     }
-    return 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)';
+    return 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%)';
   }, [card?.cardType]);
 
   if (!show || !card) return null;
@@ -44,7 +50,10 @@ export default function VirtualCardModal({
     <div className="virtual-card-overlay" role="dialog" aria-modal="true" aria-label="Virtual card preview">
       <div className="virtual-card-modal card">
         <div className="virtual-card-modal-header">
-          <h3>Virtual Card Preview</h3>
+          <div>
+            <h3>Virtual Card Preview</h3>
+            <p>Secure digital card for online payments</p>
+          </div>
           <button type="button" className="virtual-card-close" onClick={onClose} aria-label="Close virtual card preview">
             <X size={18} />
           </button>
@@ -69,7 +78,13 @@ export default function VirtualCardModal({
                     <div className="virtual-card-label">Expires</div>
                     <div className="virtual-card-value">{card.expiryDate}</div>
                   </div>
-                  <div className="virtual-card-brand">{brandLabel(card)}</div>
+                  <div className="virtual-card-brand-block">
+                    <div className="virtual-card-brand-logo">
+                      <span />
+                      <span />
+                    </div>
+                    <div className="virtual-card-brand">{brandLabel(card)}</div>
+                  </div>
                 </div>
               </>
             ) : (
@@ -82,13 +97,14 @@ export default function VirtualCardModal({
                 <div className="virtual-card-back-note">
                   This virtual card is for secure online purchases only.
                 </div>
+                <div className="virtual-card-back-help">24x7 Support: 1800-BANKPRO</div>
               </>
             )}
           </div>
         </div>
 
         <div className="virtual-card-controls">
-          <button type="button" className="btn btn-secondary" onClick={() => setShowBack((prev) => !prev)}>
+          <button type="button" className="btn btn-primary" onClick={() => setShowBack((prev) => !prev)}>
             {showBack ? 'Show Front' : 'Show Back'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={onToggleCardNumber}>

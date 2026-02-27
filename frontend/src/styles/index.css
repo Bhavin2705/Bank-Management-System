@@ -2433,3 +2433,183 @@ option {
     grid-column: 1 / -1;
   }
 }
+
+/* Virtual Card V2 polish */
+.virtual-card-overlay {
+  background: rgba(6, 10, 22, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.virtual-card-modal {
+  width: min(560px, 100%);
+  border-radius: 22px;
+  padding: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 28px 60px rgba(7, 11, 24, 0.45);
+}
+
+.virtual-card-modal-header {
+  margin-bottom: 1.1rem;
+}
+
+.virtual-card-modal-header h3 {
+  font-size: 1.45rem;
+  letter-spacing: -0.01em;
+}
+
+.virtual-card-modal-header p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.virtual-card-close {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.virtual-card-close:hover {
+  border-color: rgba(30, 58, 138, 0.45);
+  background: #f5f8ff;
+}
+
+.virtual-card-face {
+  border-radius: 20px;
+  padding: 1.1rem;
+  box-shadow: 0 24px 40px rgba(8, 14, 34, 0.42);
+}
+
+.virtual-card-face::before {
+  content: '';
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  top: -90px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.23) 0%, rgba(255, 255, 255, 0) 72%);
+}
+
+.virtual-card-face::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  bottom: -90px;
+  left: -70px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+}
+
+.virtual-card-bank {
+  font-size: 1.02rem;
+  letter-spacing: 0.25px;
+}
+
+.virtual-card-chip {
+  width: 50px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.virtual-card-number {
+  font-size: clamp(1.06rem, 2.5vw, 1.45rem);
+  letter-spacing: 0.18em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.virtual-card-label {
+  font-size: 0.68rem;
+  opacity: 0.86;
+}
+
+.virtual-card-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.virtual-card-brand-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.virtual-card-brand-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.virtual-card-brand-logo span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.virtual-card-brand-logo span:first-child {
+  background: rgba(255, 95, 95, 0.95);
+  margin-right: -4px;
+}
+
+.virtual-card-brand-logo span:last-child {
+  background: rgba(255, 188, 67, 0.95);
+}
+
+.virtual-card-strip {
+  height: 46px;
+  margin-top: 0.45rem;
+}
+
+.virtual-card-signature-row {
+  margin-top: 1.15rem;
+}
+
+.virtual-card-signature {
+  height: 36px;
+}
+
+.virtual-card-cvv {
+  height: 36px;
+  min-width: 70px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+}
+
+.virtual-card-back-help {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.virtual-card-controls {
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.virtual-card-controls .btn {
+  min-height: 42px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+}
+
+.virtual-card-meta {
+  font-size: 0.85rem;
+  padding-top: 0.2rem;
+}
+
+@media (max-width: 480px) {
+  .virtual-card-modal {
+    border-radius: 18px;
+    padding: 1rem;
+  }
+
+  .virtual-card-modal-header h3 {
+    font-size: 1.22rem;
+  }
+
+  .virtual-card-number {
+    letter-spacing: 0.13em;
+  }
+}
