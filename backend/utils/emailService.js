@@ -3,7 +3,6 @@
 class EmailService {
     constructor() {
         this.transporter = null;
-        this.provider = null;
         this.initialized = false;
         this.lastVerification = {
             ok: false,
@@ -15,7 +14,6 @@ class EmailService {
 
     initializeTransporter() {
         try {
-            const resendApiKey = process.env.RESEND_API_KEY;
             const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST;
             const smtpPort = process.env.SMTP_PORT || process.env.EMAIL_PORT;
             const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
@@ -25,21 +23,12 @@ class EmailService {
                 ? process.env.SMTP_SECURE === 'true'
                 : configuredPort === 465;
 
-            if (resendApiKey) {
-                this.provider = 'resend';
-                this.initialized = true;
-                this.verifyConnection().catch((err) => {
-                    this.lastVerification = {
-                        ok: false,
-                        message: err.message || 'Resend verification failed',
-                        checkedAt: new Date().toISOString()
-                    };
-                });
-            } else if (smtpHost && smtpUser && smtpPass) {
+            if (smtpHost && smtpUser && smtpPass) {
                 this.transporter = nodemailer.createTransport({
                     host: smtpHost,
                     port: configuredPort,
                     secure: smtpSecure,
+                    family: 4,
                     connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 10000),
                     greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000),
                     socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 15000),
@@ -48,7 +37,6 @@ class EmailService {
                         pass: smtpPass
                     }
                 });
-                this.provider = 'smtp';
                 this.initialized = true;
                 this.verifyConnection().catch((err) => {
                     this.lastVerification = {
@@ -76,7 +64,7 @@ class EmailService {
     }
 
     isConfigured() {
-        return !!(this.initialized && (this.provider === 'resend' || this.transporter));
+        return !!(this.initialized && this.transporter);
     }
 
     async verifyConnection() {
@@ -90,16 +78,6 @@ class EmailService {
         }
 
         try {
-            if (this.provider === 'resend') {
-                const verificationResult = await this.verifyResendConnection();
-                this.lastVerification = {
-                    ok: verificationResult.ok,
-                    message: verificationResult.message,
-                    checkedAt: new Date().toISOString()
-                };
-                return verificationResult.ok;
-            }
-
             await this.transporter.verify();
             this.lastVerification = {
                 ok: true,
@@ -120,90 +98,15 @@ class EmailService {
     getStatus() {
         return {
             configured: this.isConfigured(),
-            provider: this.provider || 'none',
+            provider: this.isConfigured() ? 'smtp' : 'none',
             verified: !!this.lastVerification.ok,
             message: this.lastVerification.message,
             checkedAt: this.lastVerification.checkedAt
         };
     }
 
-    async verifyResendConnection() {
-        const apiKey = process.env.RESEND_API_KEY;
-        if (!apiKey) {
-            return { ok: false, message: 'RESEND_API_KEY is missing' };
-        }
-
-        const controller = new AbortController();
-        const timeoutMs = Number(process.env.RESEND_TIMEOUT_MS || 10000);
-        const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-        try {
-            const response = await fetch('https://api.resend.com/domains', {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${apiKey}`
-                },
-                signal: controller.signal
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                return { ok: false, message: `Resend verify failed: ${response.status} ${text}` };
-            }
-
-            return { ok: true, message: 'Resend API verified' };
-        } catch (error) {
-            const message = error?.name === 'AbortError' ? 'Resend connection timeout' : (error.message || 'Resend verification failed');
-            return { ok: false, message };
-        } finally {
-            clearTimeout(timeout);
-        }
-    }
-
     async sendMail(mailOptions) {
-        if (this.provider === 'resend') {
-            return this.sendMailViaResend(mailOptions);
-        }
-
-        return this.sendMail(mailOptions);
-    }
-
-    async sendMailViaResend(mailOptions) {
-        const apiKey = process.env.RESEND_API_KEY;
-        if (!apiKey) {
-            throw new Error('Resend API key is not configured');
-        }
-
-        const from = process.env.RESEND_FROM || mailOptions.from || this.getFromEmail();
-        const controller = new AbortController();
-        const timeoutMs = Number(process.env.RESEND_TIMEOUT_MS || 10000);
-        const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-        try {
-            const response = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    from,
-                    to: Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to],
-                    subject: mailOptions.subject,
-                    html: mailOptions.html
-                }),
-                signal: controller.signal
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(`Resend send failed: ${response.status} ${text}`);
-            }
-
-            return response.json();
-        } finally {
-            clearTimeout(timeout);
-        }
+        return this.transporter.sendMail(mailOptions);
     }
 
     async sendPasswordResetEmail(email, resetUrl) {
