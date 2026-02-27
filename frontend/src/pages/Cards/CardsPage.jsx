@@ -4,7 +4,7 @@ import { useNotification } from '../../components/providers/NotificationProvider
 import api from '../../utils/api';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { CvvPinModal } from '../../shared/components/modals';
-import { AddCardForm, AdminCardsAccessNotice, CardsList, CardsStats } from './components';
+import { AddCardForm, AdminCardsAccessNotice, CardsList, CardsStats, VirtualCardModal } from './components';
 import { formatCardNumber, generateCardNumber, generateExpiryDate } from './utils';
 
 const initialFormData = {
@@ -14,6 +14,7 @@ const initialFormData = {
 };
 
 const Cards = ({ user }) => {
+  const getCardId = (card) => card?.id || card?._id || '';
   const { showError, showSuccess } = useNotification();
   const [cards, setCards] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -27,6 +28,7 @@ const Cards = ({ user }) => {
   const [cvvPinError, setCvvPinError] = useState('');
   const [cvvPinVerifying, setCvvPinVerifying] = useState(false);
   const [pendingCvvCardId, setPendingCvvCardId] = useState(null);
+  const [virtualCardId, setVirtualCardId] = useState(null);
 
   const loadCards = async () => {
     try {
@@ -144,7 +146,7 @@ const Cards = ({ user }) => {
   };
 
   const toggleCardLock = async (cardId) => {
-    const card = cards.find((c) => c.id === cardId);
+    const card = cards.find((c) => getCardId(c) === cardId);
     if (!card) return;
 
     const newStatus = card.status === 'active' ? 'inactive' : 'active';
@@ -170,6 +172,16 @@ const Cards = ({ user }) => {
       cancelText: 'Cancel',
     });
   };
+
+  const openVirtualCard = (cardId) => {
+    setVirtualCardId(cardId);
+  };
+
+  const closeVirtualCard = () => {
+    setVirtualCardId(null);
+  };
+
+  const selectedVirtualCard = cards.find((card) => getCardId(card) === virtualCardId) || null;
 
   const handleModalConfirm = async () => {
     if (!modal.cardId) {
@@ -241,6 +253,7 @@ const Cards = ({ user }) => {
           toggleCardVisibility={toggleCardVisibility}
           toggleCardLock={toggleCardLock}
           toggleCvvVisibility={toggleCvvVisibility}
+          showVirtualCard={openVirtualCard}
           closeCard={closeCard}
         />
       </div>
@@ -262,6 +275,15 @@ const Cards = ({ user }) => {
         setCvvPin={setCvvPin}
         onClose={closeCvvPinModal}
         onVerify={verifyCvvPin}
+      />
+      <VirtualCardModal
+        show={!!selectedVirtualCard}
+        card={selectedVirtualCard}
+        cardNumberVisible={selectedVirtualCard ? visibleCards.has(getCardId(selectedVirtualCard)) : false}
+        cvvVisible={selectedVirtualCard ? visibleCvvs.has(getCardId(selectedVirtualCard)) : false}
+        onToggleCardNumber={() => selectedVirtualCard && toggleCardVisibility(getCardId(selectedVirtualCard))}
+        onToggleCvv={() => selectedVirtualCard && toggleCvvVisibility(getCardId(selectedVirtualCard))}
+        onClose={closeVirtualCard}
       />
     </div>
   );

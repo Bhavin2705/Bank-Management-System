@@ -2218,3 +2218,218 @@ option {
     transform: translateY(-20px);
   }
 }
+
+.virtual-card-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 28, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  padding: 1rem;
+}
+
+.virtual-card-modal {
+  width: min(520px, 100%);
+  margin: 0;
+  border-radius: 16px;
+  padding: 1.25rem;
+}
+
+.virtual-card-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.virtual-card-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.virtual-card-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.virtual-card-stage {
+  perspective: 1200px;
+  margin-bottom: 1rem;
+}
+
+.virtual-card-face {
+  width: 100%;
+  aspect-ratio: 1.58 / 1;
+  border-radius: 18px;
+  color: #f5f9ff;
+  padding: 1rem;
+  box-shadow: 0 16px 34px rgba(9, 16, 37, 0.35);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s ease;
+}
+
+.virtual-card-face.is-back {
+  transform: rotateY(180deg);
+}
+
+.virtual-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.virtual-card-bank {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.virtual-card-wifi {
+  opacity: 0.9;
+}
+
+.virtual-card-chip {
+  width: 44px;
+  height: 32px;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #ffd986 0%, #b88d26 100%);
+  margin-bottom: 0.9rem;
+}
+
+.virtual-card-number {
+  font-family: "Courier New", monospace;
+  font-size: clamp(1rem, 3vw, 1.35rem);
+  letter-spacing: 0.14em;
+  margin-bottom: 1rem;
+  word-break: break-all;
+}
+
+.virtual-card-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.virtual-card-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.78;
+}
+
+.virtual-card-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.virtual-card-brand {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 0.88rem;
+}
+
+.virtual-card-strip {
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
+  height: 44px;
+  background: rgba(5, 8, 20, 0.9);
+  margin-top: 0.35rem;
+}
+
+.virtual-card-signature-row {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.virtual-card-signature {
+  height: 34px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f2f2f2, #dadada);
+}
+
+.virtual-card-cvv {
+  min-width: 64px;
+  text-align: center;
+  height: 34px;
+  border-radius: 6px;
+  color: #111827;
+  background: #f4f7fd;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.virtual-card-back-note {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.virtual-card-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.virtual-card-controls .btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 40px;
+  font-size: 0.84rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.virtual-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.virtual-card-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+@media (max-width: 480px) {
+  .virtual-card-modal {
+    padding: 0.95rem;
+  }
+
+  .virtual-card-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .virtual-card-bottom-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.55rem;
+  }
+
+  .virtual-card-brand {
+    grid-column: 1 / -1;
+  }
+}
