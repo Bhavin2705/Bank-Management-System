@@ -1,10 +1,7 @@
 export { default as AdminBanks } from './AdminBanks/AdminBanksPage';
-export { default as AdminSupport } from './AdminSupport/AdminSupportPage';
 export { default as Budget } from './Budget/BudgetPage';
 export { default as Cards } from './Cards/CardsPage';
 export { default as CurrencyExchange } from './CurrencyExchange/CurrencyExchangePage';
-export { default as DepositWithdraw } from './DepositWithdraw/DepositWithdrawPage';
-export { default as Export } from './Export/ExportPage';
 export { default as Insights } from './Insights/InsightsPage';
 export { default as Notifications } from './Notifications/NotificationsPage';
 export { default as Payments } from './Payments/PaymentsPage';
@@ -12,5 +9,4 @@ export { default as Security } from './Security/SecurityPage';
 export { default as Settings } from './Settings/SettingsPage';
 export { default as Statements } from './Statements/StatementsPage';
 export { default as Transactions } from './Transactions/TransactionsPage';
-export { default as Transfer } from './Transfer/TransferPage';
 export { default as Users } from './Users/UsersPage';
