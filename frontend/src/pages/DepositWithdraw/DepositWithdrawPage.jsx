@@ -20,6 +20,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
 
     const handleDeposit = async (e) => {
         e.preventDefault();
+        if (loading) return;
 
         const depositAmount = parseFloat(amount);
         if (depositAmount <= 0) {
@@ -97,6 +98,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
 
     const handleWithdraw = async (e) => {
         e.preventDefault();
+        if (loading) return;
 
         const withdrawAmount = parseFloat(amount);
         if (withdrawAmount <= 0) {
@@ -209,6 +211,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                     <div style={{ display: 'flex', gap: '2rem' }}>
                         <button
                             onClick={() => setActiveTab('deposit')}
+                            disabled={loading}
                             style={{
                                 padding: '1rem',
                                 border: 'none',
@@ -227,6 +230,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                         </button>
                         <button
                             onClick={() => setActiveTab('withdraw')}
+                            disabled={loading}
                             style={{
                                 padding: '1rem',
                                 border: 'none',
@@ -259,6 +263,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                             min="0"
                             step="0.01"
                             required
+                            disabled={loading}
                             placeholder="Enter amount"
                         />
                     </div>
@@ -270,6 +275,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                             className="form-input"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            disabled={loading}
                             placeholder="Purpose of transaction"
                         />
                     </div>
@@ -298,6 +304,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                             placeholder="Enter 4-6 digit PIN"
                             pattern="[0-9]{4,6}"
                             autoComplete="off"
+                            disabled={loading}
                             style={{
                                 letterSpacing: '0.2em',
                                 fontSize: '1.2rem'
@@ -334,7 +341,7 @@ const DepositWithdraw = ({ user, onUserUpdate }) => {
                         style={{ width: '100%' }}
                         disabled={loading}
                     >
-                        {loading ? 'Processing...' : (
+                        {loading ? (activeTab === 'deposit' ? 'Depositing...' : 'Withdrawing...') : (
                             activeTab === 'deposit' ? (
                                 <>
                                     <Plus size={18} style={{ marginRight: '0.5rem' }} />

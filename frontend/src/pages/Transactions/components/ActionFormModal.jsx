@@ -24,6 +24,8 @@ export default function ActionFormModal({
   onActionTypeChange,
   onClose,
   onSubmit,
+  isProcessing,
+  processingText,
   pinVerifying,
   pinError,
   pin,
@@ -59,7 +61,7 @@ export default function ActionFormModal({
       <div className="transactions-modal card" style={{ width: '100%', maxWidth: '480px', maxHeight: '90vh', overflowY: 'auto' }}>
         <div className="transactions-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h2>New Transaction</h2>
-          <button className="transactions-modal-close-btn" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>
+          <button className="transactions-modal-close-btn" onClick={onClose} disabled={isProcessing || pinVerifying} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', opacity: isProcessing || pinVerifying ? 0.6 : 1 }}>
             x
           </button>
         </div>
@@ -71,6 +73,7 @@ export default function ActionFormModal({
               type="button"
               className="transactions-action-tab"
               onClick={() => onActionTypeChange(type)}
+              disabled={isProcessing || pinVerifying}
               style={{
                 padding: '0.5rem 1rem',
                 background: actionType === type ? 'var(--primary)' : 'transparent',
@@ -81,6 +84,7 @@ export default function ActionFormModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
+                opacity: isProcessing || pinVerifying ? 0.6 : 1,
               }}
             >
               {type === 'deposit' && <ArrowUpCircle size={18} />}
@@ -257,10 +261,12 @@ export default function ActionFormModal({
           )}
 
           <div className="transactions-modal-actions" style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={pinVerifying}>
-              {pinVerifying ? 'Verifying...' : `Confirm ${actionType.charAt(0).toUpperCase() + actionType.slice(1)}`}
+            <button type="submit" className="btn btn-primary" disabled={pinVerifying || isProcessing}>
+              {isProcessing
+                ? (processingText || 'Processing...')
+                : (pinVerifying ? 'Verifying...' : `Confirm ${actionType.charAt(0).toUpperCase() + actionType.slice(1)}`)}
             </button>
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={pinVerifying}>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={pinVerifying || isProcessing}>
               Cancel
             </button>
           </div>

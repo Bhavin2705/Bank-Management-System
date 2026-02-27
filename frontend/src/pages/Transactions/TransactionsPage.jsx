@@ -41,6 +41,8 @@ export default function Transactions({ user, onUserUpdate }) {
   const [pin, setPin] = useState('');
   const [pinVerifying, setPinVerifying] = useState(false);
   const [pinError, setPinError] = useState('');
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [processingText, setProcessingText] = useState('');
 
   const [cards, setCards] = useState([]);
   const [selectedCardId, setSelectedCardId] = useState('');
@@ -116,6 +118,8 @@ export default function Transactions({ user, onUserUpdate }) {
     setShowBankSelector(false);
     setPin('');
     setPinError('');
+    setIsSubmittingAction(false);
+    setProcessingText('');
   };
 
   const handleDepositOrWithdrawConfirmed = async (transaction) => {
@@ -272,6 +276,7 @@ export default function Transactions({ user, onUserUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmittingAction || pinVerifying) return;
 
     if (!pin.trim()) {
       setPinError('Please enter your PIN');
@@ -324,17 +329,31 @@ export default function Transactions({ user, onUserUpdate }) {
         };
       }
 
-      setPendingTransaction({
-        type: 'transfer',
-        amount,
-        payload
-      });
-      setPinError('');
-      await verifyPin();
+      try {
+        setIsSubmittingAction(true);
+        setProcessingText('Transferring...');
+        setPendingTransaction({
+          type: 'transfer',
+          amount,
+          payload
+        });
+        setPinError('');
+        await verifyPin();
+      } finally {
+        setIsSubmittingAction(false);
+        setProcessingText('');
+      }
       return;
     }
 
-    await handleDepositOrWithdraw();
+    try {
+      setIsSubmittingAction(true);
+      setProcessingText(actionType === 'deposit' ? 'Depositing...' : 'Withdrawing...');
+      await handleDepositOrWithdraw();
+    } finally {
+      setIsSubmittingAction(false);
+      setProcessingText('');
+    }
   };
 
   const formatCurrency = (amount) => formatCurrencyByPreference(amount || 0, user);
@@ -353,6 +372,8 @@ export default function Transactions({ user, onUserUpdate }) {
         onActionTypeChange={setActionType}
         onClose={resetForms}
         onSubmit={handleSubmit}
+        isProcessing={isSubmittingAction}
+        processingText={processingText}
         pinVerifying={pinVerifying}
         pinError={pinError}
         pin={pin}
