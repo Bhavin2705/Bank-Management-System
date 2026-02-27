@@ -18,7 +18,7 @@ const AuthLayout = ({ children, darkMode, toggleDarkMode }) => {
           flexDirection: 'column',
           background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
           color: 'white',
-          width: '280px',
+          width: 'min(280px, 84vw)',
           position: 'fixed',
           left: 0,
           top: 0,
@@ -127,7 +127,7 @@ const AuthLayout = ({ children, darkMode, toggleDarkMode }) => {
 
       <main
         style={{
-          marginLeft: '280px',
+          marginLeft: 'min(280px, 84vw)',
           flex: 1,
           background: 'var(--bg-secondary)',
           minHeight: '100vh'

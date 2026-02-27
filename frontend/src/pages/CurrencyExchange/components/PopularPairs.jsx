@@ -1,7 +1,7 @@
 const PopularPairs = ({ popularPairs, exchangeRates, getCurrencyInfo }) => (
   <div className="card">
     <h3 style={{ marginBottom: '1.5rem' }}>Popular Currency Pairs</h3>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1rem' }}>
       {popularPairs.map((pair) => {
         const rate = exchangeRates[pair.to] / exchangeRates[pair.from];
         return (

@@ -8,17 +8,17 @@ const BankTab = ({ user, bankData, handleFormKeyDown, handleBankChange, handleBa
     </h3>
 
     <form onKeyDown={handleFormKeyDown} onSubmit={handleBankUpdate}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1rem' }}>
         <div className="form-group">
           <label className="form-label">Bank</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
             <input
               type="text"
               name="bankName"
               className="form-input"
               value={bankData.bankName}
               onChange={handleBankChange}
-              style={{ marginRight: '0.5rem' }}
+              style={{ flex: 1, minWidth: 0 }}
             />
             <input
               type="text"
@@ -26,6 +26,7 @@ const BankTab = ({ user, bankData, handleFormKeyDown, handleBankChange, handleBa
               className="form-input"
               value={bankData.ifscCode}
               onChange={handleBankChange}
+              style={{ flex: 1, minWidth: 0 }}
             />
           </div>
           <small style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>

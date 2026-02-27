@@ -82,11 +82,14 @@ const NotificationContainer = () => {
         <div style={{
             position: 'fixed',
             top: '20px',
-            right: '20px',
+            right: '12px',
+            left: '12px',
             zIndex: 9999,
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px'
+            gap: '10px',
+            alignItems: 'flex-end',
+            pointerEvents: 'none'
         }}>
             {notifications.map(notification => (
                 <NotificationItem
@@ -160,9 +163,10 @@ const NotificationItem = ({ notification, onRemove }) => {
             border: `1px solid ${colors.border}`,
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            minWidth: '300px',
-            maxWidth: '500px',
-            animation: 'slideInRight 0.3s ease-out'
+            minWidth: 0,
+            width: 'min(100%, 500px)',
+            animation: 'slideInRight 0.3s ease-out',
+            pointerEvents: 'auto'
         }}>
             <div style={{ color: colors.icon, flexShrink: 0 }}>
                 {getIcon(notification.type)}

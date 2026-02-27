@@ -42,7 +42,7 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  style={{ minWidth: '110px' }}
+                  style={{ minWidth: 0 }}
                   disabled={loading}
                   onClick={() => onToggleCardStatus(card._id, card.status)}
                 >

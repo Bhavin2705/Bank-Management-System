@@ -144,7 +144,7 @@ const Statements = ({ user }) => {
 
         {miniStatement ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               <div>
                 <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Account Holder</div>
                 <div style={{ fontWeight: '500' }}>{miniStatement.accountHolder}</div>
@@ -161,7 +161,7 @@ const Statements = ({ user }) => {
 
             <div style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: '4px', marginBottom: '1.5rem' }}>
               <h4 style={{ margin: '0 0 1rem 0' }}>Summary</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '1rem' }}>
                 <div>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Total Transactions</div>
                   <div style={{ fontWeight: '600', fontSize: '1.2rem' }}>{miniStatement.summary.totalTransactions}</div>
@@ -214,7 +214,7 @@ const Statements = ({ user }) => {
         )}
       </div>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
+      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', marginBottom: '2rem' }}>
         <div className="stat-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -261,7 +261,7 @@ const Statements = ({ user }) => {
             <Calendar size={16} />
             <span style={{ fontWeight: '500' }}>Date Range:</span>
           </div>
-          <div style={{ minWidth: '150px' }}>
+          <div style={{ minWidth: 0, width: '100%', maxWidth: '220px' }}>
             <CustomCalendar
               value={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
               onChange={(date) => setDateRange({ ...dateRange, start: date ? toLocalYYYYMMDD(date) : '' })}
@@ -270,7 +270,7 @@ const Statements = ({ user }) => {
             />
           </div>
           <span>to</span>
-          <div style={{ minWidth: '150px' }}>
+          <div style={{ minWidth: 0, width: '100%', maxWidth: '220px' }}>
             <CustomCalendar
               value={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
               onChange={(date) => setDateRange({ ...dateRange, end: date ? toLocalYYYYMMDD(date) : '' })}
@@ -285,19 +285,19 @@ const Statements = ({ user }) => {
             <Filter size={16} />
             <span style={{ fontWeight: '500' }}>Filter:</span>
           </div>
-          <select value={filterType} onChange={(event) => setFilterType(event.target.value)} className="form-input" style={{ width: 'auto', minWidth: '120px' }}>
+          <select value={filterType} onChange={(event) => setFilterType(event.target.value)} className="form-input" style={{ width: '100%', minWidth: 0, maxWidth: '220px' }}>
             <option value="all">All Types</option>
             <option value="credit">Credits</option>
             <option value="debit">Debits</option>
             <option value="transfer">Transfers</option>
           </select>
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="form-input" style={{ width: 'auto', minWidth: '140px' }}>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="form-input" style={{ width: '100%', minWidth: 0, maxWidth: '220px' }}>
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
             <option value="amount-desc">Highest Amount</option>
             <option value="amount-asc">Lowest Amount</option>
           </select>
-          <input type="text" placeholder="Search transactions..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-input" style={{ width: 'auto', minWidth: '200px' }} />
+          <input type="text" placeholder="Search transactions..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-input" style={{ width: '100%', minWidth: 0, maxWidth: '280px' }} />
           <button onClick={exportToCsv} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Download size={16} />
             Export CSV

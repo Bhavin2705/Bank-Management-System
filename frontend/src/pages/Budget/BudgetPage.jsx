@@ -183,7 +183,7 @@ const Budget = ({ user }) => {
           </button>
         </div>
       ) : (
-        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))' }}>
           {budgets.map((budget) => {
             const spent = getCategoryExpenses(budget.category);
             const remaining = budget.amount - spent;
@@ -270,7 +270,7 @@ const Budget = ({ user }) => {
           justifyContent: 'center',
           zIndex: 1000
         }}>
-          <div className="card" style={{ maxWidth: '400px', width: '100%', margin: '2rem' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%', margin: '1rem' }}>
             <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Edit Budget' : 'Create Budget'}</h3>
 
             <form onSubmit={handleSubmit}>
@@ -325,7 +325,7 @@ const Budget = ({ user }) => {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem' }}>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
                   {editingId ? 'Update' : 'Create'} Budget
                 </button>

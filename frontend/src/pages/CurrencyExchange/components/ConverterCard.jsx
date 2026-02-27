@@ -72,7 +72,7 @@ const ConverterCard = ({
     </div>
 
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-      <div style={{ flex: 1, minWidth: '220px' }}>
+      <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
         <label className="form-label">From</label>
         <select className="form-input" value={conversion.fromCurrency} onChange={(e) => onConversionChange({ fromCurrency: e.target.value })}>
           {sortedCodes.map((code) => (
@@ -98,7 +98,7 @@ const ConverterCard = ({
         <ArrowRightLeft size={20} />
       </button>
 
-      <div style={{ flex: 1, minWidth: '220px' }}>
+      <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
         <label className="form-label">To</label>
         <select className="form-input" value={conversion.toCurrency} onChange={(e) => onConversionChange({ toCurrency: e.target.value })}>
           {sortedCodes.map((code) => (
@@ -130,7 +130,7 @@ const ConverterCard = ({
           <h4 style={{ margin: 0 }}>Conversion Result</h4>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>From</div>
             <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>{formatCurrency(result.originalAmount, result.fromCurrency)}</div>

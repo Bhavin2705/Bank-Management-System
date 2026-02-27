@@ -13,7 +13,7 @@ const SessionsTab = ({ sessions, loading, onRefresh }) => (
     </div>
 
     {sessions ? (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1rem' }}>
         <div style={{ padding: '1.5rem', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px' }}>
           <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Account Created</div>
           <div style={{ fontWeight: '600', fontSize: '1.1rem' }}>{new Date(sessions.accountCreated).toLocaleDateString()}</div>

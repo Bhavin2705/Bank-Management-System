@@ -410,7 +410,9 @@ const Insights = ({ user }) => {
                         color: 'var(--text-primary)',
                         fontSize: '0.95rem',
                         cursor: 'pointer',
-                        minWidth: '160px'
+                        minWidth: 0,
+                        width: '100%',
+                        maxWidth: '220px'
                     }}
                 >
                     <option value="7">Last 7 Days</option>
@@ -498,7 +500,7 @@ const Insights = ({ user }) => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: '2rem' }}>
                 <div className="card">
                     <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                         <TrendingDown size={20} style={{ color: '#dc3545' }} />

@@ -17,7 +17,7 @@ const ProfileTab = ({
     </h3>
 
     <form onSubmit={handleProfileUpdate} onKeyDown={handleFormKeyDown}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1rem' }}>
         <div className="form-group">
           <label className="form-label">Full Name</label>
           <input
