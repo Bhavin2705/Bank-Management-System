@@ -1233,19 +1233,19 @@ option {
 
 @media (min-width: 1024px) {
   .auth-hero-panel {
-    width: 50%;
+    width: 53%;
     max-width: none;
   }
 
   .auth-form-panel {
-    width: 50%;
-    justify-content: center !important;
-    padding-left: clamp(1.25rem, 2vw, 2.5rem) !important;
+    width: 47%;
+    justify-content: flex-start !important;
+    padding-left: clamp(5.5rem, 9vw, 10.5rem) !important;
     padding-right: clamp(1.25rem, 2vw, 2.5rem) !important;
   }
 
   .auth-form-panel .auth-form-wrap {
-    margin-left: auto;
+    margin-left: 0;
     margin-right: auto;
   }
 }
