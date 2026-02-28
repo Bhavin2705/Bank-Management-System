@@ -31,6 +31,8 @@ const Security = ({ user }) => {
   const [passwordForm, setPasswordForm] = useState(INITIAL_PASSWORD_FORM);
   const [pinForm, setPinForm] = useState(INITIAL_PIN_FORM);
   const [accountPinForm, setAccountPinForm] = useState(INITIAL_ACCOUNT_PIN_FORM);
+  const [updatingCardPin, setUpdatingCardPin] = useState(false);
+  const [updatingAccountPin, setUpdatingAccountPin] = useState(false);
   const [cards, setCards] = useState([]);
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [securityQuestions, setSecurityQuestions] = useState(INITIAL_SECURITY_QUESTIONS_FORM);
@@ -82,8 +84,9 @@ const Security = ({ user }) => {
       });
   }, [selectedCardId]);
 
-  const handlePinChange = (event) => {
+  const handlePinChange = async (event) => {
     event.preventDefault();
+    if (updatingCardPin) return;
     setError('');
     setMessage('');
 
@@ -93,24 +96,27 @@ const Security = ({ user }) => {
       return;
     }
 
-    api.cards.updatePin(selectedCardId, { currentPin: pinForm.currentPin, newPin: pinForm.newPin })
-      .then((res) => {
-        if (res.success) {
-          showSuccess(res.message || 'PIN updated successfully for the selected card!');
-          setPinForm(INITIAL_PIN_FORM);
-          loadCards();
-        } else {
-          showError(res.error || 'Failed to update PIN');
-        }
-      })
-      .catch((updatePinError) => {
-        console.error('Update PIN error:', updatePinError);
-        showError(updatePinError.message || 'Failed to update PIN');
-      });
+    try {
+      setUpdatingCardPin(true);
+      const res = await api.cards.updatePin(selectedCardId, { currentPin: pinForm.currentPin, newPin: pinForm.newPin });
+      if (res.success) {
+        showSuccess(res.message || 'PIN updated successfully for the selected card!');
+        setPinForm(INITIAL_PIN_FORM);
+        loadCards();
+      } else {
+        showError(res.error || 'Failed to update PIN');
+      }
+    } catch (updatePinError) {
+      console.error('Update PIN error:', updatePinError);
+      showError(updatePinError.message || 'Failed to update PIN');
+    } finally {
+      setUpdatingCardPin(false);
+    }
   };
 
-  const handleAccountPinChange = (event) => {
+  const handleAccountPinChange = async (event) => {
     event.preventDefault();
+    if (updatingAccountPin) return;
     setError('');
     setMessage('');
 
@@ -120,22 +126,24 @@ const Security = ({ user }) => {
       return;
     }
 
-    api.users.updatePin({
-      currentPin: accountPinForm.currentPin,
-      newPin: accountPinForm.newPin
-    })
-      .then((res) => {
-        if (res.success) {
-          showSuccess(res.message || 'Account PIN updated successfully!');
-          setAccountPinForm(INITIAL_ACCOUNT_PIN_FORM);
-        } else {
-          showError(res.error || 'Failed to update account PIN');
-        }
-      })
-      .catch((updateAccountPinError) => {
-        console.error('Update account PIN error:', updateAccountPinError);
-        showError(updateAccountPinError.message || 'Failed to update account PIN');
+    try {
+      setUpdatingAccountPin(true);
+      const res = await api.users.updatePin({
+        currentPin: accountPinForm.currentPin,
+        newPin: accountPinForm.newPin
       });
+      if (res.success) {
+        showSuccess(res.message || 'Account PIN updated successfully!');
+        setAccountPinForm(INITIAL_ACCOUNT_PIN_FORM);
+      } else {
+        showError(res.error || 'Failed to update account PIN');
+      }
+    } catch (updateAccountPinError) {
+      console.error('Update account PIN error:', updateAccountPinError);
+      showError(updateAccountPinError.message || 'Failed to update account PIN');
+    } finally {
+      setUpdatingAccountPin(false);
+    }
   };
 
   const handleSecurityQuestions = (event) => {
@@ -341,7 +349,9 @@ const Security = ({ user }) => {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary">Update PIN</button>
+            <button type="submit" className="btn btn-primary" disabled={updatingCardPin}>
+              {updatingCardPin ? 'Updating...' : 'Update PIN'}
+            </button>
           </form>
         )}
 
@@ -382,7 +392,9 @@ const Security = ({ user }) => {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary">Update Account PIN</button>
+            <button type="submit" className="btn btn-primary" disabled={updatingAccountPin}>
+              {updatingAccountPin ? 'Updating...' : 'Update Account PIN'}
+            </button>
           </form>
         )}
 
