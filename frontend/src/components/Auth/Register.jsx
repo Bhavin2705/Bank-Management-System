@@ -694,7 +694,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                 <span className="text-gray-500">Already have an account?</span>
                 <button
                   onClick={handleSignIn}
-                  className="text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:underline"
+                  className="auth-accent-link font-medium transition-colors duration-200 focus:outline-none focus:underline"
                 >
                   Sign In
                 </button>

@@ -222,7 +222,7 @@ const ForgotPassword = ({ onBack, onResetTokenGenerated }) => {
               <div className="flex items-center justify-center">
                 <button
                   onClick={onBack}
-                  className="text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:underline flex items-center"
+                  className="auth-accent-link font-medium transition-colors duration-200 focus:outline-none focus:underline flex items-center"
                 >
                   <ArrowLeft size={16} className="mr-1" />
                   Back to Login

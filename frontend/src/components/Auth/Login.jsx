@@ -336,7 +336,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium"
+                      className="text-sm auth-accent-link transition-colors duration-200 font-medium"
                     >
                       Forgot password?
                     </button>
@@ -360,7 +360,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                     <button
                       type="button"
                       onClick={handleResendOtp}
-                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium"
+                      className="text-sm auth-accent-link transition-colors duration-200 font-medium"
                       disabled={loading}
                     >
                       Resend OTP
@@ -400,7 +400,7 @@ const Login = ({ onLogin, switchToRegister }) => {
                 <span className="text-gray-500">Don't have an account?</span>
                 <button
                   onClick={handleCreateAccount}
-                  className="text-blue-600 font-medium hover:text-blue-800 transition-colors duration-200 focus:outline-none focus:underline"
+                  className="auth-accent-link font-medium transition-colors duration-200 focus:outline-none focus:underline"
                 >
                   Create Account
                 </button>

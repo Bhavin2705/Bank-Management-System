@@ -1202,6 +1202,14 @@ option {
   text-decoration: none;
 }
 
+.auth-accent-link {
+  color: #ea580c !important;
+}
+
+.auth-accent-link:hover {
+  color: #c2410c !important;
+}
+
 .auth-page {
   overflow-x: hidden;
   max-width: 100vw;
