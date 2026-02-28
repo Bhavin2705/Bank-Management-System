@@ -548,7 +548,7 @@ input,
 
 .sidebar-nav-link:hover,
 .sidebar-nav-link.active {
-  background: rgba(0, 212, 255, 0.1);
+  background: rgba(0, 212, 255, 0.18);
   color: #00D4FF;
 }
 
@@ -2841,7 +2841,7 @@ option {
 
 [data-theme="dark"] .sidebar-nav-link:hover,
 [data-theme="dark"] .sidebar-nav-link.active {
-  background: rgba(82, 198, 255, 0.12);
+  background: rgba(82, 198, 255, 0.2);
   color: #7dd5ff;
 }
 
