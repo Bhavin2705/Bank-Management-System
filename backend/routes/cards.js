@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validateCardCreation } = require('../middleware/validation');
 const cardsController = require('../controllers/cardsController');
 
 router.use(protect);
 
 router.get('/', cardsController.getUserCards);
+router.get('/admin/user/:id', authorize('admin'), validateObjectId, cardsController.getUserCardsAdmin);
 
 router.post('/', validateCardCreation, cardsController.createCard);
 

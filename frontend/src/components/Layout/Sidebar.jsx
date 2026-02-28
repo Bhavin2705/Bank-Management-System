@@ -34,6 +34,7 @@ const BASE_NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_ITEMS = [
+  { id: 'users', label: 'User Management', icon: Users, path: '/users' },
   { id: 'admin-banks', label: 'Manage Banks', icon: Users, path: '/admin-banks' },
 ];
 

@@ -96,10 +96,11 @@ const updateUser = async (req, res) => {
             return notAuthorized(res);
         }
 
-        const allowed = ['name', 'email', 'phone', 'profile', 'preferences', 'status'];
-        if (isAdmin(req)) {
-            allowed.push('role');
+        if (req.body.role !== undefined) {
+            return res.status(403).json({ success: false, error: 'Role changes are not allowed in admin dashboard' });
         }
+
+        const allowed = ['name', 'email', 'phone', 'profile', 'preferences', 'status'];
         if (!isAdmin(req)) {
             const index = allowed.indexOf('status');
             if (index !== -1) allowed.splice(index, 1);
@@ -121,6 +122,10 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
     try {
+        if (req.user && req.user.role === 'admin') {
+            return res.status(403).json({ success: false, error: 'User deletion is disabled for admin dashboard' });
+        }
+
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 

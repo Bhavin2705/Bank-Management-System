@@ -29,13 +29,16 @@ const CardsList = ({
         const cardId = card.id || card._id;
         const isUpdatingCard = updatingCardId === cardId;
         const isClosingCard = closingCardId === cardId;
+        const isBlockedByBank = card.status === 'blocked';
+        const lockButtonDisabled = isUpdatingCard || isClosingCard || isBlockedByBank;
+        const lockButtonTitle = isBlockedByBank ? 'Card blocked by bank. Contact support.' : card.status === 'active' ? 'Lock card' : 'Unlock card';
         return (
           <div key={cardId} className="card-item" style={{
             padding: '1.5rem',
             border: '1px solid var(--border)',
             borderRadius: '8px',
-            background: card.status === 'inactive' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-            opacity: card.status === 'inactive' ? 0.78 : 1,
+            background: card.status === 'inactive' || card.status === 'blocked' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+            opacity: card.status === 'inactive' || card.status === 'blocked' ? 0.78 : 1,
           }}>
             <div className="card-item-main" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="card-item-content" style={{ flex: 1, minWidth: 0 }}>
@@ -95,8 +98,8 @@ const CardsList = ({
                       color: 'white',
                       cursor: 'pointer',
                     }}
-                    title={card.status === 'active' ? 'Lock card' : 'Unlock card'}
-                    disabled={isUpdatingCard || isClosingCard}
+                    title={lockButtonTitle}
+                    disabled={lockButtonDisabled}
                   >
                     {card.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
                   </button>

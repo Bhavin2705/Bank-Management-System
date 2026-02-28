@@ -151,7 +151,7 @@ const updateCardPin = async (req, res) => {
         const card = await Card.findById(cardId).select('+pin');
         if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
 
-        if (!isOwnerOrAdmin(card.userId, req.user)) {
+        if (card.userId.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Not authorized to update this card' });
         }
 
@@ -201,28 +201,73 @@ const updateCardStatus = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Not authorized to update this card' });
         }
 
+        const isOwner = card.userId.toString() === req.user._id.toString();
+        const isAdminAction = req.user.role === 'admin' && !isOwner;
+
+        if (!isAdminAction && status === 'blocked') {
+            return res.status(403).json({ success: false, error: 'Only bank admin can block cards' });
+        }
+
+        if (!isAdminAction && card.status === 'blocked' && status !== 'blocked') {
+            return res.status(403).json({ success: false, error: 'This card is blocked by bank. Please contact bank support.' });
+        }
+
         if (card.status === 'closed' && status !== 'closed') {
             return res.status(400).json({ success: false, error: 'Closed cards cannot be reopened' });
         }
 
+        const previousStatus = card.status;
         card.status = status;
         await card.save();
 
+        const notifyTitle = isAdminAction && status === 'blocked'
+            ? 'Card Blocked by Bank'
+            : isAdminAction && previousStatus === 'blocked' && status === 'active'
+                ? 'Card Unblocked by Bank'
+                : 'Card Status Updated';
+        const notifyMessage = isAdminAction && status === 'blocked'
+            ? `Your card ending with ${String(card.cardNumber || '').slice(-4)} has been blocked by bank admin. Please contact bank support.`
+            : isAdminAction && previousStatus === 'blocked' && status === 'active'
+                ? `Your card ending with ${String(card.cardNumber || '').slice(-4)} has been unblocked by bank admin.`
+                : `Card ending with ${String(card.cardNumber || '').slice(-4)} is now ${status}.`;
+
         await createInAppNotification({
-            userId: req.user._id,
+            userId: card.userId,
             type: status === 'blocked' || status === 'lost' ? 'card_blocked' : 'account_update',
-            title: 'Card Status Updated',
-            message: `Card ending with ${String(card.cardNumber || '').slice(-4)} is now ${status}.`,
+            title: notifyTitle,
+            message: notifyMessage,
             priority: status === 'blocked' || status === 'lost' ? 'high' : 'medium',
             relatedId: card._id,
             relatedModel: 'Card',
-            metadata: { category: 'card' }
+            metadata: {
+                category: 'card',
+                actorId: req.user._id,
+                actorRole: req.user.role,
+                previousStatus
+            }
         });
 
         res.status(200).json({ success: true, message: `Card status updated to ${status}` });
     } catch (error) {
         console.error('Update card status error:', error);
         res.status(500).json({ success: false, error: 'Server error updating card status' });
+    }
+};
+
+const getUserCardsAdmin = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, error: 'Not authorized to access this route' });
+        }
+
+        const cards = await Card.find({ userId: req.params.id, status: { $ne: 'closed' } })
+            .select('-pin -cvvEncrypted -cvvIv -cvvTag')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({ success: true, data: cards });
+    } catch (error) {
+        console.error('Get admin user cards error:', error);
+        res.status(500).json({ success: false, error: 'Server error getting user cards' });
     }
 };
 
@@ -248,7 +293,7 @@ const revealCardCvv = async (req, res) => {
         const card = await Card.findById(cardId).select('+cvvEncrypted +cvvIv +cvvTag');
         if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
 
-        if (!isOwnerOrAdmin(card.userId, req.user)) {
+        if (card.userId.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Not authorized to access this card' });
         }
 
@@ -272,6 +317,7 @@ const revealCardCvv = async (req, res) => {
 
 module.exports = {
     getUserCards,
+    getUserCardsAdmin,
     createCard,
     updateCardPin,
     updateCardStatus,

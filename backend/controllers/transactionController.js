@@ -56,6 +56,45 @@ const roundTwo = (v) => {
     return Math.round((v + Number.EPSILON) * 100) / 100;
 };
 
+const getUserTransactionsAdmin = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                error: 'Not authorized to access this route'
+            });
+        }
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+        const userId = req.params.id;
+
+        const transactions = await Transaction.find({ userId })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .skip(skip);
+
+        const total = await Transaction.countDocuments({ userId });
+
+        res.status(200).json({
+            success: true,
+            data: transactions,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server error getting user transactions'
+        });
+    }
+};
+
 const findRecipientByAccountOrPhone = async (recipientAccount, recipientPhone) => {
     if (recipientAccount) {
         const recipient = await User.findOne({ accountNumber: recipientAccount });
@@ -269,7 +308,7 @@ const updateTransaction = async (req, res) => {
             });
         }
 
-        if (transaction.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (transaction.userId.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 error: 'Not authorized to update this transaction'
@@ -314,23 +353,32 @@ const deleteTransaction = async (req, res) => {
             });
         }
 
-        if (transaction.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (transaction.userId.toString() !== req.user._id.toString()) {
             return res.status(403).json({
                 success: false,
                 error: 'Not authorized to delete this transaction'
             });
         }
 
-        const user = await User.findById(req.user._id);
-        let newBalance = user.balance;
+        const balanceOwnerId = transaction.userId;
+        const balanceOwner = await User.findById(balanceOwnerId);
 
-        if (transaction.type === 'credit') {
-            newBalance -= transaction.amount;
-        } else if (transaction.type === 'debit') {
-            newBalance += transaction.amount;
+        if (!balanceOwner) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
         }
 
-        await User.findByIdAndUpdate(req.user._id, { balance: newBalance });
+        let newBalance = Number(balanceOwner.balance) || 0;
+
+        if (transaction.type === 'credit') {
+            newBalance -= Number(transaction.amount) || 0;
+        } else if (transaction.type === 'debit') {
+            newBalance += Number(transaction.amount) || 0;
+        }
+
+        await User.findByIdAndUpdate(balanceOwnerId, { balance: roundTwo(newBalance) });
 
         await Transaction.findByIdAndDelete(req.params.id);
 
@@ -727,6 +775,7 @@ const transferMoney = async (req, res) => {
 
 module.exports = {
     getTransactions,
+    getUserTransactionsAdmin,
     getTransaction,
     createTransaction,
     updateTransaction,

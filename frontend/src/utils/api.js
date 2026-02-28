@@ -209,6 +209,7 @@ export const api = {
 
     cards: {
         getAll: () => apiRequest('/cards'),
+        getByUserAdmin: (userId) => apiRequest(`/cards/admin/user/${userId}`),
         create: (data) => apiRequest('/cards', { method: 'POST', body: JSON.stringify(data) }),
         updatePin: (id, data) => apiRequest(`/cards/${id}/pin`, { method: 'PUT', body: JSON.stringify(data) }),
         updateStatus: (id, data) => apiRequest(`/cards/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -252,6 +253,7 @@ export const api = {
 
     transactions: {
         getAll: (params = {}) => apiRequest(`/transactions?${new URLSearchParams(params)}`),
+        getByUserAdmin: (userId, params = {}) => apiRequest(`/transactions/admin/user/${userId}?${new URLSearchParams(params)}`),
         getById: (id) => apiRequest(`/transactions/${id}`),
         create: (data) => apiRequest('/transactions', { method: 'POST', body: JSON.stringify(data) }),
         update: (id, data) => apiRequest(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -282,9 +284,10 @@ export const api = {
         update: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
         delete: (id) => apiRequest(`/users/${id}`, { method: 'DELETE' }),
         getStats: () => apiRequest('/users/stats'),
+        getBankMetrics: () => apiRequest('/users/bank-metrics'),
         getBanks: () => apiRequest('/banks'),
-        updateRole: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-        updateStatus: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+        updateRole: (id, data) => apiRequest(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify(data) }),
+        updateStatus: (id, data) => apiRequest(`/users/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
         checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
         checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
         verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),

@@ -1,6 +1,7 @@
 const express = require('express');
 const {
     getTransactions,
+    getUserTransactionsAdmin,
     getTransaction,
     createTransaction,
     updateTransaction,
@@ -10,7 +11,7 @@ const {
     validateTransferDetails,
     transferMoney
 } = require('../controllers/transactionController');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const {
     validateObjectId,
     validatePagination,
@@ -30,6 +31,7 @@ router.post('/transfer', transactionLimiter, validateTransfer, transferMoney);
 
 router.get('/', validatePagination, getTransactions);
 router.post('/', transactionLimiter, validateTransaction, createTransaction);
+router.get('/admin/user/:id', authorize('admin'), validateObjectId, getUserTransactionsAdmin);
 
 router.get('/:id', validateObjectId, getTransaction);
 router.put('/:id', validateObjectId, updateTransaction);

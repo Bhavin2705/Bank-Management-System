@@ -57,10 +57,10 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
                   type="button"
                   className="btn btn-secondary"
                   style={{ minWidth: 0 }}
-                  disabled={loading}
+                  disabled={loading || card.status === 'blocked'}
                   onClick={() => onToggleCardStatus(card._id, card.status)}
                 >
-                  {card.status === 'active' ? 'Lock Card' : 'Unlock Card'}
+                  {card.status === 'blocked' ? 'Contact Bank' : card.status === 'active' ? 'Lock Card' : 'Unlock Card'}
                 </button>
                 ) : (
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>

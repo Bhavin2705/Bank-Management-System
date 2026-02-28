@@ -328,7 +328,12 @@ const Settings = ({ user, onUserUpdate }) => {
       return;
     }
 
-    const nextStatus = currentStatus === 'active' ? 'blocked' : 'active';
+    if (currentStatus === 'blocked') {
+      showError('This card is blocked by bank. Please contact bank support.');
+      return;
+    }
+
+    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
     setLoading((prev) => ({ ...prev, accounts: true }));
 
     try {

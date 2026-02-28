@@ -4,7 +4,7 @@ import { useNotification } from '../../components/providers/NotificationProvider
 import api from '../../utils/api';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { CvvPinModal } from '../../shared/components/modals';
-import { AddCardForm, AdminCardsAccessNotice, CardsList, CardsStats, VirtualCardModal } from './components';
+import { AddCardForm, CardsList, CardsStats, VirtualCardModal } from './components';
 import { formatCardNumber, generateCardNumber, generateExpiryDate } from './utils';
 
 const initialFormData = {
@@ -171,6 +171,11 @@ const Cards = ({ user }) => {
     const card = cards.find((c) => getCardId(c) === cardId);
     if (!card) return;
 
+    if (card.status === 'blocked') {
+      showError('This card is blocked by bank. Please contact bank support.');
+      return;
+    }
+
     const newStatus = card.status === 'active' ? 'inactive' : 'active';
     try {
       setUpdatingCardId(cardId);
@@ -236,10 +241,6 @@ const Cards = ({ user }) => {
   const handleModalCancel = () => {
     setModal({ open: false });
   };
-
-  if (user.role === 'admin') {
-    return <AdminCardsAccessNotice />;
-  }
 
   return (
     <div className="container cards-page">
