@@ -10,7 +10,8 @@ const {
     getTransferRecipients,
     getClientData,
     updateClientData,
-    verifyPin
+    verifyPin,
+    updatePin
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
@@ -56,6 +57,7 @@ router.get('/check-phone', async (req, res) => {
 router.use(protect);
 
 router.post('/verify-pin', verifyPin);
+router.put('/update-pin', updatePin);
 router.get('/me/client-data', getClientData);
 router.put('/me/client-data', updateClientData);
 

@@ -256,6 +256,59 @@ const verifyPin = async (req, res) => {
     }
 };
 
+const updatePin = async (req, res) => {
+    try {
+        const { currentPin, newPin } = req.body || {};
+        const userId = req.user.id;
+
+        if (!currentPin || !newPin) {
+            return res.status(400).json({
+                success: false,
+                error: 'Current PIN and new PIN are required'
+            });
+        }
+
+        if (!/^\d{4,6}$/.test(String(newPin))) {
+            return res.status(400).json({
+                success: false,
+                error: 'New PIN must be 4 to 6 digits'
+            });
+        }
+
+        const user = await User.findById(userId).select('+pin');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        const isCurrentPinValid = await user.comparePin(String(currentPin));
+
+        if (!isCurrentPinValid) {
+            return res.status(401).json({
+                success: false,
+                error: 'Current PIN is incorrect'
+            });
+        }
+
+        user.pin = String(newPin);
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Account PIN updated successfully'
+        });
+    } catch (error) {
+        console.error('PIN update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'PIN update failed'
+        });
+    }
+};
+
 module.exports = {
     getUsers,
     getUser,
@@ -267,5 +320,6 @@ module.exports = {
     getTransferRecipients,
     getClientData,
     updateClientData,
-    verifyPin
+    verifyPin,
+    updatePin
 };

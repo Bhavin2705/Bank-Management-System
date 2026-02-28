@@ -210,7 +210,8 @@ export const api = {
         updateStatus: (id, data) => apiRequest(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
         checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
         checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
-        verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) })
+        verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),
+        updatePin: (data) => apiRequest('/users/update-pin', { method: 'PUT', body: JSON.stringify(data) })
     },
 
     settings: {

@@ -17,6 +17,12 @@ export const INITIAL_PIN_FORM = {
   confirmPin: ''
 };
 
+export const INITIAL_ACCOUNT_PIN_FORM = {
+  currentPin: '',
+  newPin: '',
+  confirmPin: ''
+};
+
 export const INITIAL_SECURITY_QUESTIONS_FORM = {
   question1: '',
   answer1: '',
@@ -52,6 +58,26 @@ export const validatePinForm = ({ selectedCardId, cards, pinForm }) => {
 
   if (pinForm.newPin !== pinForm.confirmPin) {
     return 'New PINs do not match';
+  }
+
+  return '';
+};
+
+export const validateAccountPinForm = (accountPinForm) => {
+  if (!/^\d{4,6}$/.test(accountPinForm.currentPin)) {
+    return 'Current account PIN must be 4 to 6 digits';
+  }
+
+  if (!/^\d{4,6}$/.test(accountPinForm.newPin)) {
+    return 'New account PIN must be 4 to 6 digits';
+  }
+
+  if (accountPinForm.newPin !== accountPinForm.confirmPin) {
+    return 'New account PINs do not match';
+  }
+
+  if (accountPinForm.currentPin === accountPinForm.newPin) {
+    return 'New account PIN must be different from current PIN';
   }
 
   return '';

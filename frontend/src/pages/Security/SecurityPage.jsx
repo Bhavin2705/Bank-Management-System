@@ -5,10 +5,12 @@ import api from '../../utils/api';
 import clientData from '../../utils/clientData';
 import {
   getRecentLoginHistory,
+  INITIAL_ACCOUNT_PIN_FORM,
   INITIAL_PASSWORD_FORM,
   INITIAL_PIN_FORM,
   INITIAL_SECURITY_QUESTIONS_FORM,
   SECURITY_QUESTIONS,
+  validateAccountPinForm,
   validatePasswordForm,
   validatePinForm
 } from './utils';
@@ -23,8 +25,12 @@ const Security = ({ user }) => {
   const [showCurrentPin, setShowCurrentPin] = useState(false);
   const [showNewPin, setShowNewPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
+  const [showCurrentAccountPin, setShowCurrentAccountPin] = useState(false);
+  const [showNewAccountPin, setShowNewAccountPin] = useState(false);
+  const [showConfirmAccountPin, setShowConfirmAccountPin] = useState(false);
   const [passwordForm, setPasswordForm] = useState(INITIAL_PASSWORD_FORM);
   const [pinForm, setPinForm] = useState(INITIAL_PIN_FORM);
+  const [accountPinForm, setAccountPinForm] = useState(INITIAL_ACCOUNT_PIN_FORM);
   const [cards, setCards] = useState([]);
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [securityQuestions, setSecurityQuestions] = useState(INITIAL_SECURITY_QUESTIONS_FORM);
@@ -100,6 +106,35 @@ const Security = ({ user }) => {
       .catch((updatePinError) => {
         console.error('Update PIN error:', updatePinError);
         showError(updatePinError.message || 'Failed to update PIN');
+      });
+  };
+
+  const handleAccountPinChange = (event) => {
+    event.preventDefault();
+    setError('');
+    setMessage('');
+
+    const validationError = validateAccountPinForm(accountPinForm);
+    if (validationError) {
+      showError(validationError);
+      return;
+    }
+
+    api.users.updatePin({
+      currentPin: accountPinForm.currentPin,
+      newPin: accountPinForm.newPin
+    })
+      .then((res) => {
+        if (res.success) {
+          showSuccess(res.message || 'Account PIN updated successfully!');
+          setAccountPinForm(INITIAL_ACCOUNT_PIN_FORM);
+        } else {
+          showError(res.error || 'Failed to update account PIN');
+        }
+      })
+      .catch((updateAccountPinError) => {
+        console.error('Update account PIN error:', updateAccountPinError);
+        showError(updateAccountPinError.message || 'Failed to update account PIN');
       });
   };
 
@@ -189,7 +224,8 @@ const Security = ({ user }) => {
         <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
           <div className="tab-buttons security-tab-buttons">
             <button onClick={() => setActiveTab('password')} className={`tab-btn${activeTab === 'password' ? ' active' : ''}`}>Change Password</button>
-            <button onClick={() => setActiveTab('pin')} className={`tab-btn${activeTab === 'pin' ? ' active' : ''}`}>Change PIN</button>
+            <button onClick={() => setActiveTab('account-pin')} className={`tab-btn${activeTab === 'account-pin' ? ' active' : ''}`}>Account PIN</button>
+            <button onClick={() => setActiveTab('pin')} className={`tab-btn${activeTab === 'pin' ? ' active' : ''}`}>Card PIN</button>
             <button onClick={() => setActiveTab('security')} className={`tab-btn${activeTab === 'security' ? ' active' : ''}`}>Security Questions</button>
             <button onClick={() => setActiveTab('history')} className={`tab-btn${activeTab === 'history' ? ' active' : ''}`}>Login History</button>
           </div>
@@ -238,7 +274,7 @@ const Security = ({ user }) => {
 
         {activeTab === 'pin' && (
           <form onSubmit={handlePinChange}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Change PIN</h3>
+            <h3 style={{ marginBottom: '1.5rem' }}>Change Card PIN</h3>
 
             <div className="form-group">
               <label className="form-label">Select Card</label>
@@ -306,6 +342,47 @@ const Security = ({ user }) => {
             </div>
 
             <button type="submit" className="btn btn-primary">Update PIN</button>
+          </form>
+        )}
+
+        {activeTab === 'account-pin' && (
+          <form onSubmit={handleAccountPinChange}>
+            <h3 style={{ marginBottom: '1.5rem' }}>Change Account PIN</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+              This is the 4 to 6 digit PIN set during registration.
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Current Account PIN</label>
+              <div style={{ position: 'relative' }}>
+                <input type={showCurrentAccountPin ? 'text' : 'password'} className="form-input" value={accountPinForm.currentPin} onChange={(event) => setAccountPinForm({ ...accountPinForm, currentPin: event.target.value })} maxLength="6" required />
+                <button type="button" onClick={() => setShowCurrentAccountPin(!showCurrentAccountPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showCurrentAccountPin ? 'Hide PIN' : 'Show PIN'}>
+                  {showCurrentAccountPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">New Account PIN</label>
+              <div style={{ position: 'relative' }}>
+                <input type={showNewAccountPin ? 'text' : 'password'} className="form-input" value={accountPinForm.newPin} onChange={(event) => setAccountPinForm({ ...accountPinForm, newPin: event.target.value })} maxLength="6" required />
+                <button type="button" onClick={() => setShowNewAccountPin(!showNewAccountPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showNewAccountPin ? 'Hide PIN' : 'Show PIN'}>
+                  {showNewAccountPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Confirm New Account PIN</label>
+              <div style={{ position: 'relative' }}>
+                <input type={showConfirmAccountPin ? 'text' : 'password'} className="form-input" value={accountPinForm.confirmPin} onChange={(event) => setAccountPinForm({ ...accountPinForm, confirmPin: event.target.value })} maxLength="6" required />
+                <button type="button" onClick={() => setShowConfirmAccountPin(!showConfirmAccountPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showConfirmAccountPin ? 'Hide PIN' : 'Show PIN'}>
+                  {showConfirmAccountPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary">Update Account PIN</button>
           </form>
         )}
 
