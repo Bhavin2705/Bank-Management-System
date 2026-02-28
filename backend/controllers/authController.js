@@ -501,12 +501,24 @@ const getMe = async (req, res) => {
 
 const updateDetails = async (req, res) => {
     try {
+        const normalizedAddress = (() => {
+            if (req.body.address === undefined) return undefined;
+            if (req.body.address === null) return { street: '' };
+            if (typeof req.body.address === 'string') {
+                return { street: req.body.address.trim() };
+            }
+            if (typeof req.body.address === 'object') {
+                return req.body.address;
+            }
+            return undefined;
+        })();
+
         const fieldsToUpdate = {
             name: req.body.name,
             email: req.body.email,
             phone: req.body.phone,
             'profile.dateOfBirth': req.body.dateOfBirth,
-            'profile.address': req.body.address,
+            'profile.address': normalizedAddress,
             'profile.occupation': req.body.occupation,
             'profile.income': req.body.income,
             'preferences.currency': req.body.currency,
@@ -542,6 +554,24 @@ const updateDetails = async (req, res) => {
             data: user
         });
     } catch (error) {
+        if (error.name === 'ValidationError') {
+            const message = Object.values(error.errors || {})
+                .map((entry) => entry.message)
+                .join(', ') || 'Invalid profile details';
+
+            return res.status(400).json({
+                success: false,
+                error: message
+            });
+        }
+
+        if (error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email already registered'
+            });
+        }
+
         res.status(500).json({
             success: false,
             error: 'Server error updating user details'
