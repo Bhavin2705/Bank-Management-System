@@ -66,7 +66,6 @@ const Insights = ({ user }) => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [hoveredBar, setHoveredBar] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -162,7 +161,6 @@ const Insights = ({ user }) => {
     const maxValue = Math.max(...chartData.map((item) => Math.max(item.income, item.expenses)), 1);
     const hasData = chartData.some((item) => item.income > 0 || item.expenses > 0);
     const chartHeight = 230;
-    const chartMinWidth = Math.max(chartData.length * 120, 360);
 
     if (!hasData) {
       return <div className="insights-empty-chart">No transactions in this period</div>;
@@ -170,44 +168,28 @@ const Insights = ({ user }) => {
 
     return (
       <div className="insights-chart-scroll">
-        <div className="insights-chart-grid" style={{ minWidth: `${chartMinWidth}px` }}>
-          {chartData.map((item, index) => {
+        <div className="insights-chart-grid">
+          {chartData.map((item) => {
             const incomeHeight = (item.income / maxValue) * chartHeight;
             const expenseHeight = (item.expenses / maxValue) * chartHeight;
-            const isHovered = hoveredBar === index;
 
             return (
-              <div
-                key={item.label}
-                className="insights-chart-group"
-                onMouseEnter={() => setHoveredBar(index)}
-                onMouseLeave={() => setHoveredBar(null)}
-              >
-                {isHovered && (
-                  <div className="insights-tooltip">
-                    <div className="insights-tooltip-title">{item.label}</div>
-                    <div className="insights-tooltip-row">
-                      <span>Income</span>
-                      <span>{formatCurrency(item.income)}</span>
-                    </div>
-                    <div className="insights-tooltip-row">
-                      <span>Expenses</span>
-                      <span>{formatCurrency(item.expenses)}</span>
-                    </div>
-                  </div>
-                )}
-
+              <div key={item.label} className="insights-chart-group">
                 <div className="insights-bars">
                   <div
                     className="insights-bar insights-bar-income"
-                    style={{ height: `${Math.max(incomeHeight, 3)}px` }}
+                    style={{ height: `${item.income > 0 ? Math.max(incomeHeight, 6) : 0}px` }}
                   />
                   <div
                     className="insights-bar insights-bar-expense"
-                    style={{ height: `${Math.max(expenseHeight, 3)}px` }}
+                    style={{ height: `${item.expenses > 0 ? Math.max(expenseHeight, 6) : 0}px` }}
                   />
                 </div>
                 <div className="insights-chart-label">{item.label}</div>
+                <div className="insights-chart-values">
+                  <span>{formatCurrency(item.income)}</span>
+                  <span>{formatCurrency(item.expenses)}</span>
+                </div>
               </div>
             );
           })}
