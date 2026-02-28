@@ -7,6 +7,7 @@ const { getAllowedSocketOrigins, isAllowedSocketOrigin } = require('./origins');
 
 const configureSocket = (server) => {
     const allowedSocketOrigins = getAllowedSocketOrigins();
+    const supportChatEnabled = String(process.env.SUPPORT_CHAT_ENABLED || '').toLowerCase() === 'true';
 
     const io = socketIo(server, {
         cors: {
@@ -57,6 +58,10 @@ const configureSocket = (server) => {
     });
 
     io.on('connection', (socket) => {
+        if (!supportChatEnabled) {
+            return;
+        }
+
         socket.on('join_support', (data) => {
             socket.join('support');
 

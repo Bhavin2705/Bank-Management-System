@@ -3,7 +3,6 @@ const {
     getUsers,
     getUser,
     updateUser,
-    deleteUser,
     getUserStats,
     getBanks,
     getBankMetrics,
@@ -70,12 +69,7 @@ router.put('/:id/status', authorize('admin'), validateObjectId, (req, res, next)
     req.body = { status: req.body.status };
     next();
 }, updateUser);
-router.put('/:id/role', authorize('admin'), validateObjectId, (req, res, next) => {
-    req.body = { role: req.body.role };
-    next();
-}, updateUser);
 router.get('/:id', validateObjectId, getUser);
 router.put('/:id', validateObjectId, updateUser);
-router.delete('/:id', authorize('admin'), validateObjectId, deleteUser);
 
 module.exports = router;
