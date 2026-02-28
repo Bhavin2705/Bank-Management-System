@@ -1,30 +1,15 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
-const AUTH_TOKEN_KEY = 'bank_auth_token';
 
 export const getAuthToken = () => {
-    try {
-        return localStorage.getItem(AUTH_TOKEN_KEY);
-    } catch (storageError) {
-        console.debug('Unable to read auth token:', storageError?.message || 'unknown error');
-        return null;
-    }
+    return null;
 };
 
 export const setAuthToken = (token) => {
-    if (!token) return;
-    try {
-        localStorage.setItem(AUTH_TOKEN_KEY, token);
-    } catch (storageError) {
-        console.debug('Unable to persist auth token:', storageError?.message || 'unknown error');
-    }
+    return token;
 };
 
 export const clearAuthToken = () => {
-    try {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-    } catch (storageError) {
-        console.debug('Unable to clear auth token:', storageError?.message || 'unknown error');
-    }
+    return true;
 };
 const handleResponse = async (response, isLoginRequest = false) => {
     let data = {};
@@ -46,11 +31,9 @@ const handleResponse = async (response, isLoginRequest = false) => {
 
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
-    const authToken = getAuthToken();
     const config = {
         headers: {
-            'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+            'Content-Type': 'application/json'
         },
         credentials: 'include',
         ...options
@@ -59,7 +42,6 @@ const apiRequest = async (endpoint, options = {}) => {
     if (options.headers) {
         config.headers = {
             'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
             ...options.headers
         };
     }
@@ -211,6 +193,7 @@ export const api = {
         checkEmail: (email) => apiRequest(`/users/check-email?email=${encodeURIComponent(email)}`),
         checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
         verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),
+        getSelfTransferAccounts: () => apiRequest('/users/transfer-recipients?scope=self'),
         updatePin: (data) => apiRequest('/users/update-pin', { method: 'PUT', body: JSON.stringify(data) })
     },
 

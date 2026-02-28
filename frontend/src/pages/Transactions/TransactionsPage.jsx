@@ -34,6 +34,7 @@ export default function Transactions({ user, onUserUpdate }) {
   const [formData, setFormData] = useState(createInitialFormData);
   const [transferData, setTransferData] = useState(createInitialTransferData);
   const [banks, setBanks] = useState([]);
+  const [selfAccounts, setSelfAccounts] = useState([]);
   const [showBankSelector, setShowBankSelector] = useState(false);
 
   const [showPinModal, setShowPinModal] = useState(false);
@@ -96,6 +97,26 @@ export default function Transactions({ user, onUserUpdate }) {
     };
     loadBanks();
   }, [showError]);
+
+  useEffect(() => {
+    const loadSelfAccounts = async () => {
+      try {
+        const response = await api.users.getSelfTransferAccounts();
+        if (response?.success && Array.isArray(response.data)) {
+          setSelfAccounts(response.data);
+        } else {
+          setSelfAccounts([]);
+        }
+      } catch (selfAccountsError) {
+        console.debug('Failed to load self transfer accounts:', selfAccountsError?.message || 'unknown error');
+        setSelfAccounts([]);
+      }
+    };
+
+    if (user?._id || user?.id) {
+      loadSelfAccounts();
+    }
+  }, [user?._id, user?.id]);
 
   useEffect(() => {
     const loadRecipients = async () => {
@@ -184,23 +205,23 @@ export default function Transactions({ user, onUserUpdate }) {
     }
   };
 
-  const processPendingTransaction = async () => {
-    if (!pendingTransaction) {
+  const processPendingTransaction = async (transactionToProcess = pendingTransaction) => {
+    if (!transactionToProcess) {
       return false;
     }
 
-    if (pendingTransaction.type === 'credit' || pendingTransaction.type === 'debit') {
-      return handleDepositOrWithdrawConfirmed(pendingTransaction);
+    if (transactionToProcess.type === 'credit' || transactionToProcess.type === 'debit') {
+      return handleDepositOrWithdrawConfirmed(transactionToProcess);
     }
 
-    if (pendingTransaction.type === 'transfer') {
-      return handleTransferConfirmed(pendingTransaction);
+    if (transactionToProcess.type === 'transfer') {
+      return handleTransferConfirmed(transactionToProcess);
     }
 
     return false;
   };
 
-  const verifyPin = async () => {
+  const verifyPin = async (transactionToProcess = null) => {
     if (!pin.trim()) {
       setPinError('Please enter your PIN');
       return;
@@ -212,7 +233,7 @@ export default function Transactions({ user, onUserUpdate }) {
       const result = await api.users.verifyPin(pin);
 
       if (result && result.success) {
-        const transactionSuccess = await processPendingTransaction();
+        const transactionSuccess = await processPendingTransaction(transactionToProcess || pendingTransaction);
 
         if (transactionSuccess) {
           resetForms();
@@ -307,7 +328,18 @@ export default function Transactions({ user, onUserUpdate }) {
         clientRequestId: createClientRequestId(),
       };
 
-      if (transferData.transferMethod === 'phone') {
+      if (transferData.selfTransfer) {
+        const selectedSelfAccount = transferData.selfRecipientAccount || transferData.recipientAccount;
+        if (!selectedSelfAccount) {
+          showError('Select one of your own accounts for self transfer');
+          return;
+        }
+        if (selectedSelfAccount === user.accountNumber) {
+          showError('Select a different account for self transfer');
+          return;
+        }
+        payload.recipientAccount = selectedSelfAccount;
+      } else if (transferData.transferMethod === 'phone') {
         if (!transferData.recipientPhone || !/^\d{10}$/.test(transferData.recipientPhone)) {
           showError('Enter a valid 10-digit phone number');
           return;
@@ -316,6 +348,10 @@ export default function Transactions({ user, onUserUpdate }) {
       } else {
         if (!transferData.recipientAccount) {
           showError('Enter a valid account number');
+          return;
+        }
+        if (transferData.recipientAccount === user.accountNumber) {
+          showError('Cannot transfer to the same account');
           return;
         }
         payload.recipientAccount = transferData.recipientAccount;
@@ -332,13 +368,14 @@ export default function Transactions({ user, onUserUpdate }) {
       try {
         setIsSubmittingAction(true);
         setProcessingText('Transferring...');
-        setPendingTransaction({
+        const nextPendingTransaction = {
           type: 'transfer',
           amount,
           payload
-        });
+        };
+        setPendingTransaction(nextPendingTransaction);
         setPinError('');
-        await verifyPin();
+        await verifyPin(nextPendingTransaction);
       } finally {
         setIsSubmittingAction(false);
         setProcessingText('');
@@ -358,10 +395,20 @@ export default function Transactions({ user, onUserUpdate }) {
 
   const formatCurrency = (amount) => formatCurrencyByPreference(amount || 0, user);
   const visibleTransactions = getVisibleTransactions(transactions, activeTab);
+  const handleNewAction = () => {
+    const tabToAction = {
+      deposit: 'deposit',
+      withdraw: 'withdraw',
+      transfer: 'transfer'
+    };
+
+    setActionType(tabToAction[activeTab] || 'deposit');
+    setShowActionForm(true);
+  };
 
   return (
     <div className="container transactions-page">
-      <TransactionsHeader onNewAction={() => setShowActionForm(true)} />
+      <TransactionsHeader onNewAction={handleNewAction} />
       <BalanceCard balance={formatCurrency(user.balance)} />
       <TransactionsTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <TransactionsList loading={loading} transactions={visibleTransactions} formatCurrency={formatCurrency} />
@@ -382,6 +429,8 @@ export default function Transactions({ user, onUserUpdate }) {
         setFormData={setFormData}
         transferData={transferData}
         setTransferData={setTransferData}
+        selfAccounts={selfAccounts}
+        currentAccountNumber={user.accountNumber}
         banks={banks}
         showBankSelector={showBankSelector}
         setShowBankSelector={setShowBankSelector}

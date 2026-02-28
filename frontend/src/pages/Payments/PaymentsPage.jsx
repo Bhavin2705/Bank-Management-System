@@ -1,6 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
 import { formatCurrencyByPreference } from '../../utils/currency';
-import { getCurrentUser } from '../../utils/auth';
 import { addTransaction } from '../../utils/transactions';
 import api from '../../utils/api';
 import BillsTab from './components/BillsTab';
@@ -99,9 +98,11 @@ const Payments = ({ user, onUserUpdate }) => {
     };
 
     try {
-      await addTransaction(transaction);
-      const updatedUser = getCurrentUser();
-      onUserUpdate(updatedUser || user);
+      const createdTransaction = await addTransaction(transaction);
+      const nextBalance = typeof createdTransaction?.balance === 'number'
+        ? createdTransaction.balance
+        : user.balance - amount;
+      onUserUpdate({ ...user, balance: nextBalance });
       await loadBills();
       setShowBillForm(false);
       setBillFormData(initialBillFormData);

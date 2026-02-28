@@ -66,6 +66,7 @@ const Insights = ({ user }) => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedBarIndex, setSelectedBarIndex] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -119,7 +120,6 @@ const Insights = ({ user }) => {
     const categories = {
       transfers: 0,
       bills: 0,
-      cardPayments: 0,
       others: 0
     };
 
@@ -130,7 +130,6 @@ const Insights = ({ user }) => {
       const category = (transaction.category || '').toLowerCase();
       if (category.includes('transfer')) categories.transfers += Number(transaction.amount) || 0;
       else if (category.includes('bill')) categories.bills += Number(transaction.amount) || 0;
-      else if (category.includes('card')) categories.cardPayments += Number(transaction.amount) || 0;
       else categories.others += Number(transaction.amount) || 0;
     });
 
@@ -146,7 +145,6 @@ const Insights = ({ user }) => {
     () => [
       { category: 'Transfers', amount: categorySpending.transfers },
       { category: 'Bills', amount: categorySpending.bills },
-      { category: 'Card Payments', amount: categorySpending.cardPayments },
       { category: 'Others', amount: categorySpending.others }
     ]
       .filter((item) => item.amount > 0)
@@ -169,12 +167,26 @@ const Insights = ({ user }) => {
     return (
       <div className="insights-chart-scroll">
         <div className="insights-chart-grid">
-          {chartData.map((item) => {
+          {chartData.map((item, index) => {
             const incomeHeight = (item.income / maxValue) * chartHeight;
             const expenseHeight = (item.expenses / maxValue) * chartHeight;
+            const isSelected = selectedBarIndex === index;
 
             return (
-              <div key={item.label} className="insights-chart-group">
+              <div
+                key={item.label}
+                className={`insights-chart-group${isSelected ? ' is-active' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedBarIndex(index)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedBarIndex(index);
+                  }
+                }}
+                aria-label={`Show values for ${item.label}`}
+              >
                 <div className="insights-bars">
                   <div
                     className="insights-bar insights-bar-income"
@@ -186,13 +198,20 @@ const Insights = ({ user }) => {
                   />
                 </div>
                 <div className="insights-chart-label">{item.label}</div>
-                <div className="insights-chart-values">
-                  <span>{formatCurrency(item.income)}</span>
-                  <span>{formatCurrency(item.expenses)}</span>
-                </div>
               </div>
             );
           })}
+        </div>
+        <div className="insights-chart-details">
+          {selectedBarIndex === null ? (
+            <span>Click a bar group to view exact values.</span>
+          ) : (
+            <>
+              <strong>{chartData[selectedBarIndex]?.label}</strong>
+              <span>Income: {formatCurrency(chartData[selectedBarIndex]?.income || 0)}</span>
+              <span>Expenses: {formatCurrency(chartData[selectedBarIndex]?.expenses || 0)}</span>
+            </>
+          )}
         </div>
       </div>
     );
@@ -201,39 +220,36 @@ const Insights = ({ user }) => {
   const SpendingDonutChart = () => {
     const categories = [
       { name: 'Transfers', value: categorySpending.transfers, color: '#3b82f6' },
-      { name: 'Bills', value: categorySpending.bills, color: '#8b5cf6' },
-      { name: 'Card Payments', value: categorySpending.cardPayments, color: '#f59e0b' },
+      { name: 'Bills', value: categorySpending.bills, color: '#14b8a6' },
       { name: 'Others', value: categorySpending.others, color: '#64748b' }
     ];
 
+    const nonZeroCategories = categories.filter((category) => category.value > 0);
     const total = totalSpending || 1;
-    const radius = 60;
-    const centerX = 100;
-    const centerY = 100;
-    let currentAngle = -Math.PI / 2;
+    let accumulator = 0;
+    const gradientStops = nonZeroCategories.map((category) => {
+      const start = (accumulator / total) * 360;
+      accumulator += category.value;
+      const end = (accumulator / total) * 360;
+      return `${category.color} ${start}deg ${end}deg`;
+    });
 
     return (
       <div className="insights-donut-wrap">
-        <svg width="200" height="200" viewBox="0 0 200 200" aria-label="Spending by category">
-          {categories.map((category) => {
-            const sliceAngle = (category.value / total) * 2 * Math.PI;
-            const x1 = centerX + radius * Math.cos(currentAngle);
-            const y1 = centerY + radius * Math.sin(currentAngle);
-            const x2 = centerX + radius * Math.cos(currentAngle + sliceAngle);
-            const y2 = centerY + radius * Math.sin(currentAngle + sliceAngle);
-            const largeArc = sliceAngle > Math.PI ? 1 : 0;
-            const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-            currentAngle += sliceAngle;
-            return <path key={category.name} d={pathData} fill={category.color} stroke="white" strokeWidth="2" />;
-          })}
-          <circle cx={centerX} cy={centerY} r="35" fill="var(--bg-secondary)" />
-          <text x={centerX} y={centerY - 5} textAnchor="middle" className="insights-donut-total">
-            {formatCurrency(totalSpending)}
-          </text>
-          <text x={centerX} y={centerY + 12} textAnchor="middle" className="insights-donut-subtitle">
-            Total Spent
-          </text>
-        </svg>
+        <div
+          className="insights-donut-ring"
+          style={{
+            background: nonZeroCategories.length
+              ? `conic-gradient(${gradientStops.join(', ')})`
+              : 'conic-gradient(#334155 0deg 360deg)'
+          }}
+          aria-label="Spending by category"
+        >
+          <div className="insights-donut-inner">
+            <div className="insights-donut-total">{formatCurrency(totalSpending)}</div>
+            <div className="insights-donut-subtitle">Total Spent</div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -333,8 +349,7 @@ const Insights = ({ user }) => {
           <div className="insights-category-list">
             {[
               { name: 'Transfers', color: '#3b82f6', value: categorySpending.transfers },
-              { name: 'Bills', color: '#8b5cf6', value: categorySpending.bills },
-              { name: 'Card Payments', color: '#f59e0b', value: categorySpending.cardPayments },
+              { name: 'Bills', color: '#14b8a6', value: categorySpending.bills },
               { name: 'Others', color: '#64748b', value: categorySpending.others }
             ].map((category) => (
               <div key={category.name} className="insights-category-item">

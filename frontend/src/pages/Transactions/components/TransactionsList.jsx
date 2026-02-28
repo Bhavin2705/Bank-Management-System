@@ -1,6 +1,16 @@
 import { Activity, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { formatTransactionDate } from '../utils';
 
+const EMAIL_LIKE_TEXT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const getTransactionLabel = (tx) => {
+  const description = (tx?.description || '').trim();
+  if (tx?.category === 'transfer' && EMAIL_LIKE_TEXT.test(description)) {
+    return 'Self transfer';
+  }
+  return description || 'Transaction';
+};
+
 export default function TransactionsList({ loading, transactions, formatCurrency }) {
   if (loading) {
     return <div className="text-center py-16 text-gray-500">Loading...</div>;
@@ -32,7 +42,7 @@ export default function TransactionsList({ loading, transactions, formatCurrency
             )}
           </div>
           <div className="transactions-list-main flex-1">
-            <div className="transactions-list-description font-medium text-gray-800">{tx.description || 'Transaction'}</div>
+            <div className="transactions-list-description font-medium text-gray-800">{getTransactionLabel(tx)}</div>
             <div className="transactions-list-meta text-sm text-gray-500">
               {formatTransactionDate(tx.createdAt || tx.date)}
               {tx.category && ` - ${tx.category}`}

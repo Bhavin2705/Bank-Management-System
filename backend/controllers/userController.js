@@ -157,10 +157,38 @@ const getBanks = async (req, res) => {
 
 const getTransferRecipients = async (req, res) => {
     try {
+        const scope = String(req.query.scope || '').toLowerCase();
+        let query = { _id: { $ne: req.user._id } };
+
+        if (scope === 'self') {
+            const currentUser = await User.findById(req.user._id).select('phone email');
+            if (!currentUser) {
+                return res.status(404).json({ success: false, error: 'User not found' });
+            }
+
+            const ownAccountFilters = [];
+            if (currentUser.phone) ownAccountFilters.push({ phone: currentUser.phone });
+            if (currentUser.email) ownAccountFilters.push({ email: currentUser.email });
+
+            if (ownAccountFilters.length === 0) {
+                return res.status(200).json({ success: true, data: [] });
+            }
+
+            query = {
+                ...query,
+                $or: ownAccountFilters
+            };
+        } else {
+            query = {
+                ...query,
+                role: { $ne: 'admin' }
+            };
+        }
+
         const recipients = await User.find(
-            { _id: { $ne: req.user._id } },
+            query,
             'name email phone accountNumber bankDetails balance'
-        ).sort({ name: 1 });
+        ).sort({ name: 1, createdAt: 1 });
 
         res.status(200).json({ success: true, data: recipients });
     } catch {

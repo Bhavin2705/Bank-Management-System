@@ -308,7 +308,7 @@ const Register = ({ onLogin, switchToLogin }) => {
   return (
     <div className="auth-page min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       <div 
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
+        className="hidden lg:flex auth-hero-panel flex-col justify-between p-12 text-white"
         style={{
           background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
         }}
@@ -347,7 +347,7 @@ const Register = ({ onLogin, switchToLogin }) => {
           © {new Date().getFullYear()} BankPro. All rights reserved.
         </div>
       </div>
-      <div className="auth-page-main w-full lg:w-1/2 flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 lg:bg-none">
+      <div className="auth-page-main auth-form-panel w-full flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 lg:bg-none">
         <div className={`auth-form-wrap w-full max-w-md transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center mb-2 lg:hidden">
             <div className="flex items-center justify-center space-x-2 mb-2">

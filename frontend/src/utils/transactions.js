@@ -1,5 +1,45 @@
 import api from './api.js';
 
+const inferCategoryFromTransaction = (tx) => {
+  const rawCategory = (tx?.category || '').toString().trim().toLowerCase();
+  const description = (tx?.description || '').toString().toLowerCase();
+
+  if (
+    rawCategory.includes('transfer')
+    || tx?.type === 'transfer'
+    || description.includes('transfer')
+    || description.includes('self transfer')
+  ) {
+    return 'transfer';
+  }
+
+  if (
+    rawCategory.includes('bill')
+    || description.includes('bill')
+    || description.includes('electricity')
+    || description.includes('water')
+    || description.includes('gas')
+  ) {
+    return 'bill_payment';
+  }
+
+  if (rawCategory.includes('card') || description.includes('card')) {
+    return 'card_payment';
+  }
+
+  if (rawCategory) return rawCategory;
+
+  if (tx?.type === 'credit') {
+    return 'deposit';
+  }
+
+  if (tx?.type === 'debit') {
+    return 'withdrawal';
+  }
+
+  return 'other';
+};
+
 export const getTransactions = async (params = {}) => {
   try {
     const response = await api.transactions.getAll(params);
@@ -75,7 +115,8 @@ export const getTransactionStats = async () => {
         description: tx.description,
         amount: tx.amount,
         type: tx.type, // 'credit' or 'debit'
-        date: tx.createdAt
+        date: tx.createdAt,
+        category: inferCategoryFromTransaction(tx)
       }))
     };
   } catch (error) {

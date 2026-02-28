@@ -10,6 +10,8 @@ export const createInitialTransferData = () => ({
   transferMethod: 'phone',
   recipientPhone: '',
   recipientAccount: '',
+  selfTransfer: false,
+  selfRecipientAccount: '',
   recipientName: '',
   recipientBank: { id: 'bankpro', name: 'BankPro' },
   description: '',

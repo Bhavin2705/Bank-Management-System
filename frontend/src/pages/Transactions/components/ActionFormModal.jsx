@@ -34,26 +34,41 @@ export default function ActionFormModal({
   setFormData,
   transferData,
   setTransferData,
+  selfAccounts,
+  currentAccountNumber,
   banks,
   showBankSelector,
   setShowBankSelector,
 }) {
   if (!show) return null;
+  const safeTransfer = transferData || {};
+  const safeForm = formData || {};
+  const safeRecipientBank = safeTransfer.recipientBank || { id: 'bankpro', name: 'BankPro' };
 
   const onAmountChange = (value) => {
     if (actionType === 'transfer') {
-      setTransferData({ ...transferData, amount: value });
+      setTransferData({ ...safeTransfer, amount: value });
       return;
     }
-    setFormData({ ...formData, amount: value });
+    setFormData({ ...safeForm, amount: value });
   };
 
   const onDescriptionChange = (value) => {
     if (actionType === 'transfer') {
-      setTransferData({ ...transferData, description: value });
+      setTransferData({ ...safeTransfer, description: value });
       return;
     }
-    setFormData({ ...formData, description: value });
+    setFormData({ ...safeForm, description: value });
+  };
+
+  const preventAmountAutoAdjust = (event) => {
+    // Prevent mouse wheel from silently changing numeric values while scrolling modal content.
+    if (event.type === 'wheel') {
+      event.currentTarget.blur();
+    }
+    if (event.type === 'keydown' && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      event.preventDefault();
+    }
   };
 
   return (
@@ -104,8 +119,10 @@ export default function ActionFormModal({
               min="1"
               required
               className="form-input"
-              value={actionType === 'transfer' ? transferData.amount : formData.amount}
+              value={actionType === 'transfer' ? (safeTransfer.amount || '') : (safeForm.amount || '')}
               onChange={(e) => onAmountChange(e.target.value)}
+              onWheel={preventAmountAutoAdjust}
+              onKeyDown={preventAmountAutoAdjust}
               placeholder="0.00"
             />
           </div>
@@ -115,7 +132,7 @@ export default function ActionFormModal({
             <input
               type="text"
               className="form-input"
-              value={actionType === 'transfer' ? transferData.description : formData.description}
+              value={actionType === 'transfer' ? (safeTransfer.description || '') : (safeForm.description || '')}
               onChange={(e) => onDescriptionChange(e.target.value)}
               placeholder="Purpose of transaction"
             />
@@ -129,7 +146,7 @@ export default function ActionFormModal({
               type="password"
               inputMode="numeric"
               className="form-input"
-              value={pin}
+              value={pin || ''}
               onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
               placeholder="Enter 4-6 digit PIN"
               pattern="[0-9]{4,6}"
@@ -149,21 +166,49 @@ export default function ActionFormModal({
                   <label className="transactions-radio-option" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="radio"
-                      checked={transferData.transferMethod === 'phone'}
-                      onChange={() => setTransferData({ ...transferData, transferMethod: 'phone' })}
+                      checked={safeTransfer.transferMethod === 'phone'}
+                      onChange={() => setTransferData({ ...safeTransfer, transferMethod: 'phone', selfTransfer: false, selfRecipientAccount: '' })}
+                      disabled={!!safeTransfer.selfTransfer}
                     />
                     Phone
                   </label>
                   <label className="transactions-radio-option" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="radio"
-                      checked={transferData.transferMethod === 'account'}
-                      onChange={() => setTransferData({ ...transferData, transferMethod: 'account' })}
+                      checked={safeTransfer.transferMethod === 'account'}
+                      onChange={() => setTransferData({ ...safeTransfer, transferMethod: 'account' })}
                     />
                     Account
                   </label>
                 </div>
               </div>
+
+              {safeRecipientBank.id === 'bankpro' && (
+                <div className="form-group">
+                  <label className="transactions-radio-option" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!safeTransfer.selfTransfer}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setTransferData({
+                          ...safeTransfer,
+                          selfTransfer: checked,
+                          transferMethod: checked ? 'account' : safeTransfer.transferMethod,
+                          recipientPhone: checked ? '' : (safeTransfer.recipientPhone || ''),
+                          selfRecipientAccount: checked ? safeTransfer.selfRecipientAccount : ''
+                        });
+                      }}
+                    />
+                    Self transfer (my other account)
+                  </label>
+                  {!!safeTransfer.selfTransfer && (
+                    <div style={{ marginTop: '0.65rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      Current account: {currentAccountNumber || 'N/A'}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label">Recipient Bank</label>
@@ -171,11 +216,12 @@ export default function ActionFormModal({
                   <label className="transactions-radio-option" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="radio"
-                      checked={transferData.recipientBank.id === 'bankpro'}
+                      checked={safeRecipientBank.id === 'bankpro'}
                       onChange={() => {
                         setTransferData({
-                          ...transferData,
+                          ...safeTransfer,
                           recipientBank: { id: 'bankpro', name: 'BankPro' },
+                          recipientName: '',
                         });
                         setShowBankSelector(false);
                       }}
@@ -185,11 +231,13 @@ export default function ActionFormModal({
                   <label className="transactions-radio-option" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
                       type="radio"
-                      checked={transferData.recipientBank.id !== 'bankpro'}
+                      checked={safeRecipientBank.id !== 'bankpro'}
                       onChange={() => {
                         setTransferData({
-                          ...transferData,
+                          ...safeTransfer,
                           recipientBank: { id: '', name: '' },
+                          selfTransfer: false,
+                          selfRecipientAccount: '',
                           recipientName: '',
                         });
                         setShowBankSelector(true);
@@ -203,42 +251,60 @@ export default function ActionFormModal({
                   <select
                     className="form-input"
                     style={{ marginTop: '0.75rem' }}
-                    value={transferData.recipientBank.id}
+                    value={safeRecipientBank.id || ''}
                     onChange={(e) => {
-                      const bank = banks.find((b) => b.id === e.target.value) || { id: e.target.value, name: '' };
-                      setTransferData({ ...transferData, recipientBank: bank });
+                      const selectedId = e.target.value;
+                      const bank = banks.find((b) => String(b.id || b._id || '') === selectedId) || { id: selectedId, name: '' };
+                      setTransferData({ ...safeTransfer, recipientBank: { ...bank, id: String(bank.id || bank._id || selectedId || '') } });
                     }}
                   >
                     <option value="">Select bank</option>
                     {banks.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
+                      <option key={String(b.id || b._id || b.name)} value={String(b.id || b._id || '')}>{b.name}</option>
                     ))}
                   </select>
                 )}
               </div>
 
-              {transferData.recipientBank.id !== 'bankpro' && (
+              {safeRecipientBank.id !== 'bankpro' && (
                 <div className="form-group">
                   <label className="form-label">Recipient Name</label>
                   <input
                     type="text"
                     className="form-input"
-                    value={transferData.recipientName}
-                    onChange={e => setTransferData({ ...transferData, recipientName: e.target.value })}
+                    value={safeTransfer.recipientName || ''}
+                    onChange={e => setTransferData({ ...safeTransfer, recipientName: e.target.value })}
                     placeholder="Full name"
                     required
                   />
                 </div>
               )}
 
-              {transferData.transferMethod === 'phone' ? (
+              {safeTransfer.selfTransfer ? (
+                <div className="form-group">
+                  <label className="form-label">Select Your Account</label>
+                  <select
+                    className="form-input"
+                    value={safeTransfer.selfRecipientAccount || ''}
+                    onChange={(e) => setTransferData({ ...safeTransfer, selfRecipientAccount: e.target.value, recipientAccount: e.target.value })}
+                    required
+                  >
+                    <option value="">Select account</option>
+                    {(selfAccounts || []).map((account) => (
+                      <option key={account._id || account.accountNumber} value={account.accountNumber}>
+                        {account.name} - {account.accountNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : safeTransfer.transferMethod === 'phone' ? (
                 <div className="form-group">
                   <label className="form-label">Phone Number</label>
                   <input
                     type="tel"
                     className="form-input"
-                    value={transferData.recipientPhone}
-                    onChange={e => setTransferData({ ...transferData, recipientPhone: e.target.value })}
+                    value={safeTransfer.recipientPhone || ''}
+                    onChange={e => setTransferData({ ...safeTransfer, recipientPhone: e.target.value })}
                     placeholder="9876543210"
                     pattern="\d{10}"
                     required
@@ -250,8 +316,8 @@ export default function ActionFormModal({
                   <input
                     type="text"
                     className="form-input"
-                    value={transferData.recipientAccount}
-                    onChange={e => setTransferData({ ...transferData, recipientAccount: e.target.value })}
+                    value={safeTransfer.recipientAccount || ''}
+                    onChange={e => setTransferData({ ...safeTransfer, recipientAccount: e.target.value })}
                     placeholder="Enter account number"
                     required
                   />
