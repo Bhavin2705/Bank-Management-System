@@ -120,6 +120,68 @@ const appendLoginHistoryEntry = (user, req) => {
     user.clientData.loginHistory = nextHistory.slice(-LOGIN_HISTORY_LIMIT);
 };
 
+const setAuthCookies = (res, token, refreshToken) => {
+    res.cookie('token', token, cookieOptions);
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+};
+
+const buildAuthenticatedUserResponse = (user) => ({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    balance: user.balance,
+    accountNumber: user.accountNumber,
+    bankDetails: user.bankDetails,
+    profile: user.profile,
+    preferences: user.preferences,
+    createdAt: user.createdAt,
+    firstLogin: user.firstLogin
+});
+
+const finalizeSuccessfulLogin = async (user, req, res) => {
+    let userNeedsSave = false;
+
+    if (user.security && user.security.loginAttempts > 0) {
+        user.security.loginAttempts = 0;
+        user.security.lockUntil = undefined;
+        userNeedsSave = true;
+    }
+
+    if (user.security) {
+        user.security.lastLogin = new Date();
+    } else {
+        user.security = { lastLogin: new Date() };
+    }
+    userNeedsSave = true;
+
+    if (user.firstLogin) {
+        user.firstLogin = false;
+        userNeedsSave = true;
+    }
+
+    if (userNeedsSave) {
+        appendLoginHistoryEntry(user, req);
+        await user.save({ validateBeforeSave: false });
+    }
+
+    const token = generateToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+    const userResponse = buildAuthenticatedUserResponse(user);
+
+    setAuthCookies(res, token, refreshToken);
+
+    return res.status(200).json({
+        success: true,
+        data: {
+            user: userResponse,
+            token,
+            refreshToken
+        }
+    });
+};
+
 const register = async (req, res) => {
     try {
         const { name, email, phone, password, pin, initialDeposit, bankDetails } = req.body;
@@ -214,8 +276,7 @@ const register = async (req, res) => {
             firstLogin: user.firstLogin
         };
 
-        res.cookie('token', token, cookieOptions);
-        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+        setAuthCookies(res, token, refreshToken);
 
         emailHelpers.sendWelcomeEmail(user.email, user.name);
         emailHelpers.sendAccountCreatedEmail(user.email, user.name, user.accountNumber);
@@ -315,58 +376,7 @@ const login = async (req, res) => {
             user.security.twoFactorOtpHash = undefined;
             user.security.twoFactorOtpExpires = undefined;
         }
-
-        let userNeedsSave = false;
-        if (user.security && user.security.loginAttempts > 0) {
-            user.security.loginAttempts = 0;
-            user.security.lockUntil = undefined;
-            userNeedsSave = true;
-        }
-
-        if (user.security) {
-            user.security.lastLogin = new Date();
-        } else {
-            user.security = { lastLogin: new Date() };
-        }
-        userNeedsSave = true;
-
-        if (user.firstLogin) {
-            user.firstLogin = false;
-            userNeedsSave = true;
-        }
-        if (userNeedsSave) {
-            appendLoginHistoryEntry(user, req);
-            await user.save({ validateBeforeSave: false });
-        }
-        const token = generateToken(user._id);
-        const refreshToken = generateRefreshToken(user._id);
-
-        const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            balance: user.balance,
-            accountNumber: user.accountNumber,
-            bankDetails: user.bankDetails,
-            profile: user.profile,
-            preferences: user.preferences,
-            createdAt: user.createdAt, // ensure createdAt is sent to frontend
-            firstLogin: user.firstLogin
-        };
-
-        res.cookie('token', token, cookieOptions);
-        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                user: userResponse,
-                token,
-                refreshToken
-            }
-        });
+        return finalizeSuccessfulLogin(user, req, res);
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({
@@ -445,58 +455,7 @@ const loginWithAccount = async (req, res) => {
             user.security.twoFactorOtpHash = undefined;
             user.security.twoFactorOtpExpires = undefined;
         }
-
-        let userNeedsSave = false;
-        if (user.security && user.security.loginAttempts > 0) {
-            user.security.loginAttempts = 0;
-            user.security.lockUntil = undefined;
-            userNeedsSave = true;
-        }
-
-        if (user.security) {
-            user.security.lastLogin = new Date();
-        } else {
-            user.security = { lastLogin: new Date() };
-        }
-        userNeedsSave = true;
-        if (user.firstLogin) {
-            user.firstLogin = false;
-            userNeedsSave = true;
-        }
-        if (userNeedsSave) {
-            appendLoginHistoryEntry(user, req);
-            await user.save({ validateBeforeSave: false });
-        }
-
-        const token = generateToken(user._id);
-        const refreshToken = generateRefreshToken(user._id);
-
-        const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            balance: user.balance,
-            accountNumber: user.accountNumber,
-            bankDetails: user.bankDetails,
-            profile: user.profile,
-            preferences: user.preferences,
-            createdAt: user.createdAt, // ensure createdAt is sent to frontend
-            firstLogin: user.firstLogin
-        };
-
-        res.cookie('token', token, cookieOptions);
-        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                user: userResponse,
-                token,
-                refreshToken
-            }
-        });
+        return finalizeSuccessfulLogin(user, req, res);
     } catch (error) {
         console.error('Login with account error:', error);
         res.status(500).json({

@@ -1,11 +1,27 @@
 const Budget = require('../models/Budget');
 const Transaction = require('../models/Transaction');
 
+const ensureAuthenticatedUser = (req, res) => {
+  if (!req.user || !req.user._id) {
+    res.status(401).json({ success: false, message: 'User not authenticated' });
+    return false;
+  }
+  return true;
+};
+
+const findOwnedBudget = (req, budgetId) => Budget.findOne({ _id: budgetId, userId: req.user._id });
+
+const applyBudgetStatusFromSpent = (budget) => {
+  if (budget.spent > budget.amount) {
+    budget.status = 'over_budget';
+  } else if (budget.status === 'over_budget') {
+    budget.status = 'active';
+  }
+};
+
 const getBudgets = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -60,9 +76,7 @@ const getBudget = async (req, res) => {
 
 const getBudgetSummary = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const summary = await Budget.aggregate([
       { $match: { userId: req.user._id, status: 'active' } },
@@ -91,9 +105,7 @@ const getBudgetSummary = async (req, res) => {
 
 const createBudget = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     if (!req.body.name || req.body.name.trim() === '') {
       return res.status(400).json({ success: false, message: 'Budget name is required' });
@@ -126,14 +138,8 @@ const createBudget = async (req, res) => {
 
 const updateBudget = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-
-    let budget = await Budget.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    if (!ensureAuthenticatedUser(req, res)) return;
+    let budget = await findOwnedBudget(req, req.params.id);
 
     if (!budget) {
       return res.status(404).json({ success: false, message: 'Budget not found' });
@@ -146,11 +152,7 @@ const updateBudget = async (req, res) => {
       }
     });
 
-    if (budget.spent > budget.amount) {
-      budget.status = 'over_budget';
-    } else if (budget.status === 'over_budget') {
-      budget.status = 'active';
-    }
+    applyBudgetStatusFromSpent(budget);
 
     budget = await budget.save();
 
@@ -163,9 +165,7 @@ const updateBudget = async (req, res) => {
 
 const deleteBudget = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const budget = await Budget.findOneAndDelete({
       _id: req.params.id,
@@ -185,14 +185,8 @@ const deleteBudget = async (req, res) => {
 
 const updateBudgetSpent = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-
-    const budget = await Budget.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    if (!ensureAuthenticatedUser(req, res)) return;
+    const budget = await findOwnedBudget(req, req.params.id);
 
     if (!budget) {
       return res.status(404).json({ success: false, message: 'Budget not found' });
@@ -207,11 +201,7 @@ const updateBudgetSpent = async (req, res) => {
     const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
     budget.spent = totalSpent;
 
-    if (budget.spent > budget.amount) {
-      budget.status = 'over_budget';
-    } else if (budget.status === 'over_budget') {
-      budget.status = 'active';
-    }
+    applyBudgetStatusFromSpent(budget);
 
     await budget.save();
 
@@ -224,9 +214,7 @@ const updateBudgetSpent = async (req, res) => {
 
 const getBudgetStats = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const stats = await Budget.aggregate([
       { $match: { userId: req.user._id } },

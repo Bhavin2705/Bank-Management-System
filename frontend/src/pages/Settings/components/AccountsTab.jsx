@@ -27,18 +27,32 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {(() => {
+                  const status = (card.status || 'active').toLowerCase();
+                  const statusColorMap = {
+                    active: '#10b981',
+                    blocked: '#f59e0b',
+                    inactive: '#6b7280',
+                    lost: '#f97316',
+                    expired: '#7c3aed',
+                    closed: '#ef4444'
+                  };
+                  return (
                 <span
                   style={{
                     padding: '0.25rem 0.75rem',
-                    backgroundColor: card.status === 'active' ? '#10b981' : '#ef4444',
+                    backgroundColor: statusColorMap[status] || '#6b7280',
                     color: 'white',
                     borderRadius: '4px',
                     fontSize: '0.85rem',
                     textTransform: 'capitalize'
                   }}
                 >
-                  {card.status || 'active'}
+                  {status}
                 </span>
+                  );
+                })()}
+                {card.status !== 'closed' ? (
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -48,6 +62,11 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
                 >
                   {card.status === 'active' ? 'Lock Card' : 'Unlock Card'}
                 </button>
+                ) : (
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    Permanently closed
+                  </span>
+                )}
               </div>
             </div>
           </div>

@@ -250,22 +250,6 @@ export const api = {
         delete: (id) => apiRequest(`/budgets/${id}`, { method: 'DELETE' })
     },
 
-    goals: {
-        getAll: () => apiRequest('/goals'),
-        getStats: () => apiRequest('/goals/stats'),
-        create: (data) => apiRequest('/goals', { method: 'POST', body: JSON.stringify(data) }),
-        update: (id, data) => apiRequest(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-        delete: (id) => apiRequest(`/goals/${id}`, { method: 'DELETE' })
-    },
-
-    investments: {
-        getAll: () => apiRequest('/investments'),
-        getSummary: () => apiRequest('/investments/portfolio/summary'),
-        create: (data) => apiRequest('/investments', { method: 'POST', body: JSON.stringify(data) }),
-        update: (id, data) => apiRequest(`/investments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-        delete: (id) => apiRequest(`/investments/${id}`, { method: 'DELETE' })
-    },
-
     transactions: {
         getAll: (params = {}) => apiRequest(`/transactions?${new URLSearchParams(params)}`),
         getById: (id) => apiRequest(`/transactions/${id}`),

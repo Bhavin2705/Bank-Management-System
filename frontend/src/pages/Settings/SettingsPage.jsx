@@ -323,6 +323,11 @@ const Settings = ({ user, onUserUpdate }) => {
   };
 
   const handleCardStatusToggle = async (cardId, currentStatus) => {
+    if (currentStatus === 'closed') {
+      showError('Closed cards cannot be reopened');
+      return;
+    }
+
     const nextStatus = currentStatus === 'active' ? 'blocked' : 'active';
     setLoading((prev) => ({ ...prev, accounts: true }));
 

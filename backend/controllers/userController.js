@@ -3,6 +3,15 @@ const Transaction = require('../models/Transaction');
 const Account = require('../models/Account');
 const Bank = require('../models/Bank');
 
+const isAdmin = (req) => req.user && req.user.role === 'admin';
+
+const isSelfOrAdmin = (req, user) => {
+    if (!req.user || !user) return false;
+    return user._id.toString() === req.user._id.toString() || isAdmin(req);
+};
+
+const notAuthorized = (res) => res.status(403).json({ success: false, error: 'Not authorized' });
+
 const getBankMetrics = async (req, res) => {
     try {
         const accountStats = await Account.aggregate([
@@ -68,8 +77,8 @@ const getUser = async (req, res) => {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
 
-        if (user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-            return res.status(403).json({ success: false, error: 'Not authorized' });
+        if (!isSelfOrAdmin(req, user)) {
+            return notAuthorized(res);
         }
 
         res.status(200).json({ success: true, data: user });
@@ -83,15 +92,15 @@ const updateUser = async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
-        if (user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-            return res.status(403).json({ success: false, error: 'Not authorized' });
+        if (!isSelfOrAdmin(req, user)) {
+            return notAuthorized(res);
         }
 
         const allowed = ['name', 'email', 'phone', 'profile', 'preferences', 'status'];
-        if (req.user.role === 'admin') {
+        if (isAdmin(req)) {
             allowed.push('role');
         }
-        if (req.user.role !== 'admin') {
+        if (!isAdmin(req)) {
             const index = allowed.indexOf('status');
             if (index !== -1) allowed.splice(index, 1);
         }

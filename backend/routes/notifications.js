@@ -8,6 +8,12 @@ const MONEY_NOTIFICATION_TYPES = ['transaction', 'bill_paid'];
 
 router.use(protect);
 
+const buildMoneyNotificationFilter = (userId, extra = {}) => ({
+  userId,
+  type: { $in: MONEY_NOTIFICATION_TYPES },
+  ...extra
+});
+
 const mapNotification = (notification) => ({
   id: notification._id.toString(),
   _id: notification._id.toString(),
@@ -20,13 +26,23 @@ const mapNotification = (notification) => ({
   createdAt: notification.createdAt
 });
 
+const markAllAsReadHandler = async (req, res) => {
+  try {
+    await Notification.updateMany(
+      buildMoneyNotificationFilter(req.user._id, { status: 'unread' }),
+      { status: 'read' }
+    );
+    return res.status(200).json({ success: true, message: 'All notifications marked as read' });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Server error updating notifications' });
+  }
+};
+
 router.get('/', async (req, res) => {
   try {
-    const notifications = await Notification.find({
-      userId: req.user._id,
-      status: { $ne: 'archived' },
-      type: { $in: MONEY_NOTIFICATION_TYPES }
-    })
+    const notifications = await Notification.find(
+      buildMoneyNotificationFilter(req.user._id, { status: { $ne: 'archived' } })
+    )
       .sort({ createdAt: -1 })
       .limit(100);
 
@@ -46,9 +62,8 @@ router.get('/:id', async (req, res) => {
     }
 
     const notification = await Notification.findOne({
-      _id: req.params.id,
-      userId: req.user._id,
-      type: { $in: MONEY_NOTIFICATION_TYPES }
+      ...buildMoneyNotificationFilter(req.user._id),
+      _id: req.params.id
     });
 
     if (!notification) {
@@ -68,7 +83,7 @@ router.put('/:id/read', async (req, res) => {
     }
 
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id, type: { $in: MONEY_NOTIFICATION_TYPES } },
+      { ...buildMoneyNotificationFilter(req.user._id), _id: req.params.id },
       { status: 'read' },
       { new: true }
     );
@@ -87,29 +102,9 @@ router.put('/:id/read', async (req, res) => {
   }
 });
 
-router.put('/read-all', async (req, res) => {
-  try {
-    await Notification.updateMany(
-      { userId: req.user._id, status: 'unread', type: { $in: MONEY_NOTIFICATION_TYPES } },
-      { status: 'read' }
-    );
-    return res.status(200).json({ success: true, message: 'All notifications marked as read' });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: 'Server error updating notifications' });
-  }
-});
+router.put('/read-all', markAllAsReadHandler);
 
-router.post('/mark-all-read', async (req, res) => {
-  try {
-    await Notification.updateMany(
-      { userId: req.user._id, status: 'unread', type: { $in: MONEY_NOTIFICATION_TYPES } },
-      { status: 'read' }
-    );
-    return res.status(200).json({ success: true, message: 'All notifications marked as read' });
-  } catch (err) {
-    return res.status(500).json({ success: false, error: 'Server error updating notifications' });
-  }
-});
+router.post('/mark-all-read', markAllAsReadHandler);
 
 router.delete('/:id', async (req, res) => {
   try {
@@ -118,9 +113,8 @@ router.delete('/:id', async (req, res) => {
     }
 
     const deleted = await Notification.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user._id,
-      type: { $in: MONEY_NOTIFICATION_TYPES }
+      ...buildMoneyNotificationFilter(req.user._id),
+      _id: req.params.id
     });
 
     if (!deleted) {
@@ -135,7 +129,7 @@ router.delete('/:id', async (req, res) => {
 
 router.delete('/', async (req, res) => {
   try {
-    await Notification.deleteMany({ userId: req.user._id, type: { $in: MONEY_NOTIFICATION_TYPES } });
+    await Notification.deleteMany(buildMoneyNotificationFilter(req.user._id));
     return res.status(200).json({ success: true, message: 'All notifications deleted' });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Server error deleting notifications' });

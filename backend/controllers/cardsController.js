@@ -4,9 +4,12 @@ const User = require('../models/User');
 const crypto = require('crypto');
 const { createInAppNotification } = require('../utils/notifications');
 
+const isOwnerOrAdmin = (resourceUserId, reqUser) =>
+    resourceUserId.toString() === reqUser._id.toString() || reqUser.role === 'admin';
+
 const getGeneratedExpiry = () => {
     const now = new Date();
-    const monthsAhead = crypto.randomInt(36, 61); // 3 to 5 years
+    const monthsAhead = crypto.randomInt(36, 61);
     const expiry = new Date(now.getFullYear(), now.getMonth() + monthsAhead, 1);
     return {
         month: expiry.getMonth() + 1,
@@ -148,7 +151,7 @@ const updateCardPin = async (req, res) => {
         const card = await Card.findById(cardId).select('+pin');
         if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
 
-        if (card.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (!isOwnerOrAdmin(card.userId, req.user)) {
             return res.status(403).json({ success: false, error: 'Not authorized to update this card' });
         }
 
@@ -194,8 +197,12 @@ const updateCardStatus = async (req, res) => {
         const card = await Card.findById(cardId);
         if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
 
-        if (card.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (!isOwnerOrAdmin(card.userId, req.user)) {
             return res.status(403).json({ success: false, error: 'Not authorized to update this card' });
+        }
+
+        if (card.status === 'closed' && status !== 'closed') {
+            return res.status(400).json({ success: false, error: 'Closed cards cannot be reopened' });
         }
 
         card.status = status;
@@ -241,7 +248,7 @@ const revealCardCvv = async (req, res) => {
         const card = await Card.findById(cardId).select('+cvvEncrypted +cvvIv +cvvTag');
         if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
 
-        if (card.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (!isOwnerOrAdmin(card.userId, req.user)) {
             return res.status(403).json({ success: false, error: 'Not authorized to access this card' });
         }
 

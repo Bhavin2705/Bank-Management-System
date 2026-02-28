@@ -56,6 +56,28 @@ const roundTwo = (v) => {
     return Math.round((v + Number.EPSILON) * 100) / 100;
 };
 
+const findRecipientByAccountOrPhone = async (recipientAccount, recipientPhone) => {
+    if (recipientAccount) {
+        const recipient = await User.findOne({ accountNumber: recipientAccount });
+        return { recipient, users: [] };
+    }
+
+    if (recipientPhone) {
+        const users = await User.find({ phone: recipientPhone });
+        if (users.length === 1) {
+            return { recipient: users[0], users };
+        }
+        return { recipient: null, users };
+    }
+
+    return { recipient: null, users: [] };
+};
+
+const getTransferMeta = (recipient) => ({
+    isInternalTransfer: !!recipient,
+    transferType: recipient ? 'internal' : 'external'
+});
+
 const getTransaction = async (req, res) => {
     try {
         const transaction = await Transaction.findById(req.params.id)
@@ -377,45 +399,23 @@ const validateTransferDetails = async (req, res) => {
             description
         } = req.body;
 
-        let recipient = null;
-        let multipleAccounts = false;
-        let availableAccounts = [];
+        const { recipient, users } = await findRecipientByAccountOrPhone(recipientAccount, recipientPhone);
 
-        if (recipientAccount) {
-            recipient = await User.findOne({ accountNumber: recipientAccount });
-        } else if (recipientPhone) {
-            const users = await User.find({ phone: recipientPhone });
-            if (users.length === 1) {
-                recipient = users[0];
-            } else if (users.length > 1) {
-                multipleAccounts = true;
-                availableAccounts = users.map(u => ({
+        if (users.length > 1) {
+            return res.status(300).json({
+                success: false,
+                error: 'Multiple accounts found',
+                message: 'Multiple accounts found for this phone number. Please specify which account to transfer to.',
+                accounts: users.map(u => ({
                     _id: u._id,
                     name: u.name,
                     accountNumber: u.accountNumber,
                     bankDetails: u.bankDetails
-                }));
-
-                return res.status(300).json({
-                    success: false,
-                    error: 'Multiple accounts found',
-                    message: 'Multiple accounts found for this phone number. Please specify which account to transfer to.',
-                    accounts: availableAccounts,
-                    needsAccountSelection: true
-                });
-            }
+                })),
+                needsAccountSelection: true
+            });
         }
-
-        let isInternalTransfer = false;
-        let transferType = 'external';
-
-        if (recipient) {
-            isInternalTransfer = true;
-            transferType = 'internal';
-        } else {
-            isInternalTransfer = false;
-            transferType = 'external';
-        }
+        const { isInternalTransfer, transferType } = getTransferMeta(recipient);
 
         if (recipient && recipient._id.toString() === req.user._id.toString()) {
             return res.status(400).json({
@@ -494,38 +494,24 @@ const transferMoney = async (req, res) => {
                 });
             }
         }
-        let recipient = null;
-        if (recipientAccount) {
-            recipient = await User.findOne({ accountNumber: recipientAccount });
-        } else if (recipientPhone) {
-            const users = await User.find({ phone: recipientPhone });
-            if (users.length === 1) {
-                recipient = users[0];
-            } else if (users.length > 1) {
-                return res.status(300).json({
-                    success: false,
-                    error: 'Multiple accounts found',
-                    message: 'Multiple accounts found for this phone number. Please specify account number instead.',
-                    accounts: users.map(u => ({
-                        _id: u._id,
-                        name: u.name,
-                        accountNumber: u.accountNumber,
-                        bankDetails: u.bankDetails
-                    })),
-                    needsAccountSelection: true
-                });
-            }
+        const { recipient, users } = await findRecipientByAccountOrPhone(recipientAccount, recipientPhone);
+        if (users.length > 1) {
+            return res.status(300).json({
+                success: false,
+                error: 'Multiple accounts found',
+                message: 'Multiple accounts found for this phone number. Please specify account number instead.',
+                accounts: users.map(u => ({
+                    _id: u._id,
+                    name: u.name,
+                    accountNumber: u.accountNumber,
+                    bankDetails: u.bankDetails
+                })),
+                needsAccountSelection: true
+            });
         }
+        const { isInternalTransfer, transferType } = getTransferMeta(recipient);
 
-        let isInternalTransfer = false;
-        let transferType = 'external';
-
-        if (recipient) {
-            isInternalTransfer = true;
-            transferType = 'internal';
-        } else {
-            isInternalTransfer = false;
-            transferType = 'external';
+        if (!isInternalTransfer) {
 
             if (!recipientBank || !recipientBank.bankName) {
                 return res.status(400).json({

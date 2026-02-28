@@ -1,5 +1,16 @@
 const Bank = require('../models/Bank');
 
+const buildBankId = (name) => {
+    const base = String(name || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 24) || 'bank';
+
+    return `${base}-${Date.now().toString(36)}`;
+};
+
 exports.getBanks = async (req, res) => {
     try {
         const banks = await Bank.find();
@@ -11,13 +22,18 @@ exports.getBanks = async (req, res) => {
 
 exports.addBank = async (req, res) => {
     try {
-        const { name, ifscPrefix, description } = req.body;
+        const { id, name, ifscPrefix, description } = req.body;
 
         if (!name || !ifscPrefix || !description) {
             return res.status(400).json({ success: false, error: 'All fields are required' });
         }
 
-        const bank = new Bank({ name, ifscPrefix, description });
+        const bank = new Bank({
+            id: id || buildBankId(name),
+            name,
+            ifscPrefix,
+            description
+        });
         await bank.save();
 
         res.status(201).json({ success: true, data: bank });

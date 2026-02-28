@@ -4,11 +4,19 @@ const User = require('../models/User');
 const emailHelpers = require('../utils/emailHelpers');
 const { createInAppNotification } = require('../utils/notifications');
 
+const ensureAuthenticatedUser = (req, res) => {
+  if (!req.user || !req.user._id) {
+    res.status(401).json({ success: false, message: 'User not authenticated' });
+    return false;
+  }
+  return true;
+};
+
+const findOwnedBill = (req, billId) => Bill.findOne({ _id: billId, userId: req.user._id });
+
 const getBills = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -63,9 +71,7 @@ const getBill = async (req, res) => {
 
 const createBill = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     if (!req.body.name || req.body.name.trim() === '') {
       return res.status(400).json({ success: false, message: 'Bill name is required' });
@@ -118,14 +124,8 @@ const createBill = async (req, res) => {
 
 const updateBill = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-
-    let bill = await Bill.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    if (!ensureAuthenticatedUser(req, res)) return;
+    let bill = await findOwnedBill(req, req.params.id);
 
     if (!bill) {
       return res.status(404).json({ success: false, message: 'Bill not found' });
@@ -143,9 +143,7 @@ const updateBill = async (req, res) => {
 
 const deleteBill = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const bill = await Bill.findOneAndDelete({
       _id: req.params.id,
@@ -165,14 +163,8 @@ const deleteBill = async (req, res) => {
 
 const payBill = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-
-    const bill = await Bill.findOne({
-      _id: req.params.id,
-      userId: req.user._id
-    });
+    if (!ensureAuthenticatedUser(req, res)) return;
+    const bill = await findOwnedBill(req, req.params.id);
 
     if (!bill) {
       return res.status(404).json({ success: false, message: 'Bill not found' });
@@ -253,9 +245,7 @@ const payBill = async (req, res) => {
 
 const getBillStats = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
+    if (!ensureAuthenticatedUser(req, res)) return;
 
     const stats = await Bill.aggregate([
       { $match: { userId: req.user._id } },

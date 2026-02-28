@@ -1,16 +1,23 @@
 const User = require('../models/User');
 const { createInAppNotification } = require('../utils/notifications');
+const Card = require('../models/Card');
+
+const getUserOr404 = async (req, res, select = '') => {
+    const user = await User.findById(req.user._id).select(select);
+    if (!user) {
+        res.status(404).json({
+            success: false,
+            error: 'User not found'
+        });
+        return null;
+    }
+    return user;
+};
 
 const getSettings = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
+        const user = await getUserOr404(req, res);
+        if (!user) return;
 
         res.status(200).json({
             success: true,
@@ -144,8 +151,6 @@ const updateTwoFactor = async (req, res) => {
 
 const getLinkedAccounts = async (req, res) => {
     try {
-        const Card = require('../models/Card');
-
         const cards = await Card.find({ userId: req.user._id }).select('-cvv');
 
         res.status(200).json({
@@ -163,7 +168,8 @@ const getLinkedAccounts = async (req, res) => {
 
 const getSessions = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        const user = await getUserOr404(req, res);
+        if (!user) return;
 
         const sessions = {
             lastLogin: user.security?.lastLogin,

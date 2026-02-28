@@ -1,5 +1,23 @@
 const { body, param, query, validationResult } = require('express-validator');
 
+const TRANSACTION_CATEGORIES = [
+    'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
+    'food', 'transport', 'transportation', 'entertainment', 'utilities', 'salary',
+    'healthcare', 'investment', 'loan', 'fee', 'interest', 'other'
+];
+
+const BUDGET_CATEGORIES = [
+    'food', 'transport', 'entertainment', 'shopping', 'utilities',
+    'rent', 'insurance', 'healthcare', 'education', 'savings',
+    'investment', 'debt_payment', 'miscellaneous', 'other'
+];
+
+const BILL_TYPES = [
+    'electricity', 'water', 'gas', 'internet', 'phone', 'cable_tv',
+    'insurance', 'loan', 'credit_card', 'rent', 'property_tax',
+    'vehicle', 'medical', 'education', 'other'
+];
+
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -89,11 +107,7 @@ const validateTransaction = [
         .withMessage('Description is required and must be less than 200 characters'),
     body('category')
         .optional()
-        .isIn([
-            'deposit', 'withdrawal', 'transfer', 'bill_payment', 'shopping',
-            'food', 'transport', 'transportation', 'entertainment', 'utilities', 'salary',
-            'healthcare', 'investment', 'loan', 'fee', 'interest', 'other'
-        ])
+        .isIn(TRANSACTION_CATEGORIES)
         .withMessage('Invalid category'),
     body('cardId')
         .optional()
@@ -208,11 +222,7 @@ const validateBudget = [
         .isLength({ min: 1, max: 50 })
         .withMessage('Budget name is required'),
     body('category')
-        .isIn([
-            'food', 'transport', 'entertainment', 'shopping', 'utilities',
-            'rent', 'insurance', 'healthcare', 'education', 'savings',
-            'investment', 'debt_payment', 'miscellaneous', 'other'
-        ])
+        .isIn(BUDGET_CATEGORIES)
         .withMessage('Invalid category'),
     body('amount')
         .isFloat({ min: 0 })
@@ -243,11 +253,7 @@ const validateGoal = [
 
 const validateBill = [
     body('type')
-        .isIn([
-            'electricity', 'water', 'gas', 'internet', 'phone', 'cable_tv',
-            'insurance', 'loan', 'credit_card', 'rent', 'property_tax',
-            'vehicle', 'medical', 'education', 'other'
-        ])
+        .isIn(BILL_TYPES)
         .withMessage('Invalid bill type'),
     body('name')
         .trim()
