@@ -2,7 +2,6 @@
 
 const ConverterCard = ({
   conversion,
-  exchangeRates,
   selectableCodes,
   useLiveData,
   result,

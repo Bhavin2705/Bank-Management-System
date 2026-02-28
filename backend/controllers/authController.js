@@ -59,6 +59,7 @@ const clearTokenCookieOptions = getClearCookieOptions(cookieOptions);
 const clearRefreshCookieOptions = getClearCookieOptions(refreshCookieOptions);
 
 const TWO_FACTOR_OTP_TTL_MS = 10 * 60 * 1000;
+const LOGIN_HISTORY_LIMIT = 10;
 
 const generateTwoFactorOtp = () => String(Math.floor(100000 + Math.random() * 900000));
 
@@ -94,6 +95,29 @@ const verifyTwoFactorOtp = (user, otp) => {
     if (new Date(otpExpiry).getTime() < Date.now()) return false;
 
     return hashTwoFactorOtp(otp) === otpHash;
+};
+
+const appendLoginHistoryEntry = (user, req) => {
+    const forwardedHeader = req.headers['x-forwarded-for'];
+    const forwardedIp = Array.isArray(forwardedHeader)
+        ? forwardedHeader[0]
+        : (typeof forwardedHeader === 'string' ? forwardedHeader.split(',')[0] : null);
+    const ip = (forwardedIp || req.ip || req.socket?.remoteAddress || '').trim() || 'Unknown';
+    const userAgent = req.headers['user-agent'] || 'Unknown Browser';
+
+    user.clientData = user.clientData || {};
+    const existingHistory = Array.isArray(user.clientData.loginHistory) ? user.clientData.loginHistory : [];
+    const nextHistory = [
+        ...existingHistory,
+        {
+            timestamp: new Date(),
+            ip,
+            device: userAgent,
+            status: 'SUCCESS'
+        }
+    ];
+
+    user.clientData.loginHistory = nextHistory.slice(-LOGIN_HISTORY_LIMIT);
 };
 
 const register = async (req, res) => {
@@ -311,6 +335,7 @@ const login = async (req, res) => {
             userNeedsSave = true;
         }
         if (userNeedsSave) {
+            appendLoginHistoryEntry(user, req);
             await user.save({ validateBeforeSave: false });
         }
         const token = generateToken(user._id);
@@ -421,10 +446,11 @@ const loginWithAccount = async (req, res) => {
             user.security.twoFactorOtpExpires = undefined;
         }
 
+        let userNeedsSave = false;
         if (user.security && user.security.loginAttempts > 0) {
             user.security.loginAttempts = 0;
             user.security.lockUntil = undefined;
-            await user.save();
+            userNeedsSave = true;
         }
 
         if (user.security) {
@@ -432,7 +458,15 @@ const loginWithAccount = async (req, res) => {
         } else {
             user.security = { lastLogin: new Date() };
         }
-        await user.save({ validateBeforeSave: false });
+        userNeedsSave = true;
+        if (user.firstLogin) {
+            user.firstLogin = false;
+            userNeedsSave = true;
+        }
+        if (userNeedsSave) {
+            appendLoginHistoryEntry(user, req);
+            await user.save({ validateBeforeSave: false });
+        }
 
         const token = generateToken(user._id);
         const refreshToken = generateRefreshToken(user._id);
@@ -448,7 +482,8 @@ const loginWithAccount = async (req, res) => {
             bankDetails: user.bankDetails,
             profile: user.profile,
             preferences: user.preferences,
-            createdAt: user.createdAt // ensure createdAt is sent to frontend
+            createdAt: user.createdAt, // ensure createdAt is sent to frontend
+            firstLogin: user.firstLogin
         };
 
         res.cookie('token', token, cookieOptions);

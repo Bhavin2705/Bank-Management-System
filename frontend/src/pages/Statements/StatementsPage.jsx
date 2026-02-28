@@ -123,7 +123,7 @@ const Statements = ({ user }) => {
   };
 
   return (
-    <div className="container">
+    <div className="container statements-page">
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
           Account Statements
@@ -134,9 +134,9 @@ const Statements = ({ user }) => {
       </div>
 
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <div className="statements-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Receipt size={20} /> Mini Statement</h3>
-          <div>
+          <div className="statements-actions-inline">
             <button onClick={printMiniStatement} className="btn btn-secondary" style={{ marginRight: '1rem' }}><Printer size={16} style={{ marginRight: '0.5rem' }} />Print</button>
             <button onClick={downloadMiniStatement} className="btn btn-secondary"><Download size={16} style={{ marginRight: '0.5rem' }} />Download</button>
           </div>
@@ -306,9 +306,9 @@ const Statements = ({ user }) => {
       </div>
 
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div className="statements-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3>Transaction History</h3>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="statements-actions-inline" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button className="btn btn-secondary" onClick={printAccountStatement} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Printer size={16} /> Print
             </button>
@@ -349,8 +349,8 @@ const Statements = ({ user }) => {
                     <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{transaction.description}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                       {formatDate(transaction.createdAt)}
-                      {transaction.recipient && ` â€¢ To: ${transaction.recipient}`}
-                      {transaction.sender && ` â€¢ From: ${transaction.sender}`}
+                      {transaction.recipient && ` | To: ${transaction.recipient}`}
+                      {transaction.sender && ` | From: ${transaction.sender}`}
                     </div>
                   </div>
                 </div>

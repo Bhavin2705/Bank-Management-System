@@ -3362,3 +3362,62 @@ option {
   background: #de4254;
   color: #fff;
 }
+
+.statements-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .security-tab-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .security-tab-buttons .tab-btn {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 0;
+    text-align: center;
+  }
+
+  .security-history-list .transaction-item {
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+
+  .security-history-main {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .security-history-main > div:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .statements-section-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-start !important;
+  }
+
+  .statements-actions-inline {
+    width: 100%;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .security-tab-buttons .tab-btn {
+    flex-basis: 100%;
+  }
+
+  .statements-page .btn,
+  .statements-actions-inline .btn {
+    width: 100%;
+    justify-content: center;
+    margin-right: 0 !important;
+  }
+}

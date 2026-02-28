@@ -143,7 +143,7 @@ const Security = ({ user }) => {
   const loginHistory = getRecentLoginHistory(clientDataState);
 
   return (
-    <div className="container">
+    <div className="container security-page">
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
           Account Security
@@ -187,7 +187,7 @@ const Security = ({ user }) => {
 
       <div className="card">
         <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
-          <div className="tab-buttons">
+          <div className="tab-buttons security-tab-buttons">
             <button onClick={() => setActiveTab('password')} className={`tab-btn${activeTab === 'password' ? ' active' : ''}`}>Change Password</button>
             <button onClick={() => setActiveTab('pin')} className={`tab-btn${activeTab === 'pin' ? ' active' : ''}`}>Change PIN</button>
             <button onClick={() => setActiveTab('security')} className={`tab-btn${activeTab === 'security' ? ' active' : ''}`}>Security Questions</button>
@@ -356,10 +356,10 @@ const Security = ({ user }) => {
                 No login history available
               </div>
             ) : (
-              <div className="transaction-list">
+              <div className="transaction-list security-history-list">
                 {loginHistory.map((login, index) => (
                   <div key={index} className="transaction-item">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div className="security-history-main" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>
                         <Shield size={16} />
                       </div>
@@ -367,12 +367,12 @@ const Security = ({ user }) => {
                         <div style={{ fontWeight: '500' }}>Login</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(login.timestamp)}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {login.ip || 'Local'} â€¢ {login.device || 'Web Browser'}
+                          {login.ip || 'Local'} | {login.device || 'Web Browser'}
                         </div>
                       </div>
                     </div>
                     <div style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: '#28a745', color: 'white', fontSize: '0.75rem', fontWeight: '500' }}>
-                      SUCCESS
+                      {login.status || 'SUCCESS'}
                     </div>
                   </div>
                 ))}

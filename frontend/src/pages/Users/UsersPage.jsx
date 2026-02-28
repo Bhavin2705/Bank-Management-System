@@ -154,7 +154,7 @@ const Users = ({ user }) => {
                         {listedUser.name}
                       </div>
                       <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
-                        {listedUser.email} â€¢ {listedUser.accountNumber}
+                        {listedUser.email} | {listedUser.accountNumber}
                       </div>
                       <div style={{
                         fontSize: '0.75rem',
