@@ -1,15 +1,102 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
+const ACCESS_TOKEN_KEY = 'bank_auth_access_token';
+const REFRESH_TOKEN_KEY = 'bank_auth_refresh_token';
+let inMemoryAccessToken = null;
+let inMemoryRefreshToken = null;
+
+const readSessionValue = (key) => {
+    if (typeof window === 'undefined') return null;
+    try {
+        return window.sessionStorage.getItem(key);
+    } catch {
+        return null;
+    }
+};
+
+const writeSessionValue = (key, value) => {
+    if (typeof window === 'undefined') return;
+    try {
+        if (!value) {
+            window.sessionStorage.removeItem(key);
+            return;
+        }
+        window.sessionStorage.setItem(key, value);
+    } catch {
+        // no-op
+    }
+};
 
 export const getAuthToken = () => {
-    return null;
+    if (inMemoryAccessToken) return inMemoryAccessToken;
+    inMemoryAccessToken = readSessionValue(ACCESS_TOKEN_KEY);
+    return inMemoryAccessToken;
 };
 
 export const setAuthToken = (token) => {
+    inMemoryAccessToken = token || null;
+    writeSessionValue(ACCESS_TOKEN_KEY, inMemoryAccessToken);
     return token;
 };
 
 export const clearAuthToken = () => {
+    inMemoryAccessToken = null;
+    inMemoryRefreshToken = null;
+    writeSessionValue(ACCESS_TOKEN_KEY, null);
+    writeSessionValue(REFRESH_TOKEN_KEY, null);
     return true;
+};
+
+const getRefreshToken = () => {
+    if (inMemoryRefreshToken) return inMemoryRefreshToken;
+    inMemoryRefreshToken = readSessionValue(REFRESH_TOKEN_KEY);
+    return inMemoryRefreshToken;
+};
+
+const setRefreshToken = (token) => {
+    inMemoryRefreshToken = token || null;
+    writeSessionValue(REFRESH_TOKEN_KEY, inMemoryRefreshToken);
+    return token;
+};
+
+const shouldAttemptRefresh = (endpoint) => {
+    if (endpoint === '/auth/refresh') return false;
+    if (endpoint === '/auth/login') return false;
+    if (endpoint === '/auth/login-account') return false;
+    if (endpoint === '/auth/register') return false;
+    return true;
+};
+
+const requestNewAccessToken = async () => {
+    const refreshToken = getRefreshToken();
+    const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: refreshToken ? JSON.stringify({ refreshToken }) : undefined
+    });
+
+    if (!refreshResponse.ok) {
+        return null;
+    }
+
+    let refreshData = {};
+    try {
+        refreshData = await refreshResponse.json();
+    } catch {
+        refreshData = {};
+    }
+
+    const nextAccessToken = refreshData?.data?.token || null;
+    if (nextAccessToken) {
+        setAuthToken(nextAccessToken);
+        if (refreshData?.data?.refreshToken) {
+            setRefreshToken(refreshData.data.refreshToken);
+        }
+    }
+
+    return nextAccessToken;
 };
 const handleResponse = async (response, isLoginRequest = false) => {
     let data = {};
@@ -31,6 +118,7 @@ const handleResponse = async (response, isLoginRequest = false) => {
 
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
+    const accessToken = getAuthToken();
     const config = {
         headers: {
             'Content-Type': 'application/json'
@@ -45,12 +133,32 @@ const apiRequest = async (endpoint, options = {}) => {
             ...options.headers
         };
     }
+    if (accessToken && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+    }
 
     const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 15000)
     );
 
-    const response = await Promise.race([fetch(url, config), timeoutPromise]);
+    let response = await Promise.race([fetch(url, config), timeoutPromise]);
+
+    if (response.status === 401 && shouldAttemptRefresh(endpoint)) {
+        const refreshedAccessToken = await requestNewAccessToken();
+        if (refreshedAccessToken) {
+            const retryConfig = {
+                ...config,
+                headers: {
+                    ...config.headers,
+                    Authorization: `Bearer ${refreshedAccessToken}`
+                }
+            };
+            response = await Promise.race([fetch(url, retryConfig), timeoutPromise]);
+        } else {
+            clearAuthToken();
+        }
+    }
+
     const isLoginRequest = endpoint === '/auth/login';
     const result = await handleResponse(response, isLoginRequest);
 
@@ -60,6 +168,9 @@ const apiRequest = async (endpoint, options = {}) => {
 
     if (result && result.data && result.data.token) {
         setAuthToken(result.data.token);
+        if (result?.data?.refreshToken) {
+            setRefreshToken(result.data.refreshToken);
+        }
     }
 
     return result;
