@@ -169,6 +169,9 @@ transactionSchema.statics.getTransactionStats = function (userId, period = 'mont
         case 'year':
             startDate = new Date(now.getFullYear(), 0, 1);
             break;
+        case 'all':
+            startDate = new Date('1970-01-01');
+            break;
         default:
             startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     }
@@ -191,9 +194,7 @@ transactionSchema.statics.getTransactionStats = function (userId, period = 'mont
                 },
                 transactionCount: { $sum: 1 },
                 categories: {
-                    $push: {
-                        $cond: [{ $ne: ['$type', 'credit'] }, '$category', '$$REMOVE']
-                    }
+                    $push: '$category'
                 }
             }
         }

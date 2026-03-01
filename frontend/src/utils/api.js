@@ -258,7 +258,7 @@ export const api = {
         create: (data) => apiRequest('/transactions', { method: 'POST', body: JSON.stringify(data) }),
         update: (id, data) => apiRequest(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
         delete: (id) => apiRequest(`/transactions/${id}`, { method: 'DELETE' }),
-        getStats: () => apiRequest('/transactions/stats'),
+        getStats: (period = 'month') => apiRequest(`/transactions/stats?period=${period}`),
         getCategories: () => apiRequest('/transactions/categories'),
         transfer: (data) => apiRequest('/transactions/transfer', { method: 'POST', body: JSON.stringify(data) })
     },

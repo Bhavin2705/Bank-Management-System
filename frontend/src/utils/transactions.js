@@ -115,7 +115,7 @@ export const deleteTransaction = async (id) => {
 export const getTransactionStats = async () => {
   try {
     const [statsResponse, allTransactions] = await Promise.all([
-      api.transactions.getStats(),
+      api.transactions.getStats('all'),
       getTransactions({ fetchAll: true })
     ]);
 
