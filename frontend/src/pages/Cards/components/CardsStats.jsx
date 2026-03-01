@@ -25,7 +25,7 @@ const CardsStats = ({ cards }) => (
     <div className="stat-card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div className="stat-value">{cards.filter((c) => c.status === 'inactive' || c.status === 'blocked').length}</div>
+          <div className="stat-value">{cards.filter((c) => ['inactive', 'blocked', 'lost', 'expired'].includes(c.status)).length}</div>
           <div className="stat-label">Locked Cards</div>
         </div>
         <Lock size={32} style={{ color: '#dc3545' }} />

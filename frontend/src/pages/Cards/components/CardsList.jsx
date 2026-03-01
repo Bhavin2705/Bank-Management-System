@@ -13,6 +13,11 @@ const CardsList = ({
   updatingCardId,
   closingCardId,
 }) => {
+  const getCardId = (card) => card?.id || card?._id;
+  const getLast4 = (cardNumber) => String(cardNumber || '').slice(-4).padStart(4, '•');
+  const getCardTypeLabel = (cardType) => String(cardType || 'card').toUpperCase();
+  const isNonToggleStatus = (status) => ['blocked', 'lost', 'expired', 'closed'].includes(status);
+
   if (cards.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem 2rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
@@ -26,12 +31,19 @@ const CardsList = ({
   return (
     <div className="cards-list" style={{ display: 'grid', gap: '1rem' }}>
       {cards.map((card) => {
-        const cardId = card.id || card._id;
+        const cardId = getCardId(card);
         const isUpdatingCard = updatingCardId === cardId;
         const isClosingCard = closingCardId === cardId;
         const isBlockedByBank = card.status === 'blocked';
-        const lockButtonDisabled = isUpdatingCard || isClosingCard || isBlockedByBank;
-        const lockButtonTitle = isBlockedByBank ? 'Card blocked by bank. Contact support.' : card.status === 'active' ? 'Lock card' : 'Unlock card';
+        const isLockedByStatus = isNonToggleStatus(card.status);
+        const lockButtonDisabled = isUpdatingCard || isClosingCard || isBlockedByBank || isLockedByStatus;
+        const lockButtonTitle = isBlockedByBank
+          ? 'Card blocked by bank. Contact support.'
+          : isLockedByStatus
+            ? 'Card status cannot be changed'
+            : card.status === 'active'
+              ? 'Lock card'
+              : 'Unlock card';
         return (
           <div key={cardId} className="card-item" style={{
             padding: '1.5rem',
@@ -44,25 +56,25 @@ const CardsList = ({
               <div className="card-item-content" style={{ flex: 1, minWidth: 0 }}>
                 <div className="card-item-heading" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <CreditCard size={20} />
-                  <span style={{ fontWeight: '500' }}>{card.cardName}</span>
+                  <span style={{ fontWeight: '500' }}>{card.cardName || 'Card'}</span>
                   <span className={`cards-type-chip ${card.cardType === 'debit' ? 'is-debit' : 'is-credit'}`} style={{
                     padding: '0.25rem 0.5rem',
                     borderRadius: '4px',
                     fontSize: '0.75rem',
                   }}>
-                    {card.cardType.toUpperCase()}
+                    {getCardTypeLabel(card.cardType)}
                   </span>
                 </div>
 
                 <div className="card-item-number" style={{ fontSize: '1.2rem', fontFamily: 'monospace', marginBottom: '0.5rem' }}>
                   {visibleCards.has(cardId)
-                    ? formatCardNumber(card.cardNumber)
-                    : `**** **** **** ${card.cardNumber.slice(-4)}`}
+                    ? formatCardNumber(String(card.cardNumber || ''))
+                    : `**** **** **** ${getLast4(card.cardNumber)}`}
                 </div>
 
                 <div className="card-item-meta" style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="card-item-meta-value">Expires: {card.expiryDate}</span>
-                  <span className="card-item-meta-value">Status: <span style={{ color: card.status === 'active' ? 'var(--success)' : 'var(--error)', fontWeight: '500' }}>{card.status}</span></span>
+                  <span className="card-item-meta-value">Expires: {card.expiryDate || '--/----'}</span>
+                  <span className="card-item-meta-value">Status: <span style={{ color: card.status === 'active' ? 'var(--success)' : 'var(--error)', fontWeight: '500' }}>{card.status || 'unknown'}</span></span>
                   <span className="card-item-meta-value" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>CVV:
                     <strong style={{ letterSpacing: '2px' }}>{visibleCvvs.has(cardId) ? (card.cvv || '---') : '• • •'}</strong>
                     <button
@@ -101,7 +113,7 @@ const CardsList = ({
                     title={lockButtonTitle}
                     disabled={lockButtonDisabled}
                   >
-                    {card.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
+                    {card.status === 'active' || isLockedByStatus ? <Lock size={16} /> : <Unlock size={16} />}
                   </button>
                 </div>
 

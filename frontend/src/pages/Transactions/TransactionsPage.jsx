@@ -4,7 +4,6 @@ import { api } from '../../utils/api';
 import { getNonAdminUsers } from '../../utils/auth';
 import { formatCurrencyByPreference } from '../../utils/currency';
 import { addTransaction, getTransactions } from '../../utils/transactions';
-import { PinModal } from '../../shared/components/modals';
 import {
   ActionFormModal,
   BalanceCard,
@@ -37,7 +36,6 @@ export default function Transactions({ user, onUserUpdate }) {
   const [selfAccounts, setSelfAccounts] = useState([]);
   const [showBankSelector, setShowBankSelector] = useState(false);
 
-  const [showPinModal, setShowPinModal] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState(null);
   const [pin, setPin] = useState('');
   const [pinVerifying, setPinVerifying] = useState(false);
@@ -65,7 +63,7 @@ export default function Transactions({ user, onUserUpdate }) {
   const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const txs = await getTransactions();
+      const txs = await getTransactions({ fetchAll: true });
       setTransactions(txs || []);
     } catch (err) {
       showError('Failed to load transactions');
@@ -160,9 +158,12 @@ export default function Transactions({ user, onUserUpdate }) {
       const isDeposit = transaction.type === 'credit';
       showSuccess(isDeposit ? 'Deposit successful!' : 'Withdrawal successful!');
 
-      const newBalance = isDeposit
-        ? user.balance + transaction.amount
-        : user.balance - transaction.amount;
+      const serverBalance = typeof result?.balance === 'number' ? result.balance : null;
+      const newBalance = serverBalance !== null
+        ? serverBalance
+        : isDeposit
+          ? user.balance + transaction.amount
+          : user.balance - transaction.amount;
 
       onUserUpdate({ ...user, balance: newBalance });
       await loadTransactions();
@@ -188,8 +189,13 @@ export default function Transactions({ user, onUserUpdate }) {
       const successMsg = result.data?.message || 'Transfer completed!';
       showSuccess(successMsg);
 
+      const serverBalance = typeof result.data?.transaction?.balance === 'number'
+        ? result.data.transaction.balance
+        : null;
       const fee = result.data?.processingFee || 0;
-      const newBalance = user.balance - transaction.amount - fee;
+      const newBalance = serverBalance !== null
+        ? serverBalance
+        : user.balance - transaction.amount - fee;
       onUserUpdate({ ...user, balance: newBalance });
 
       await loadTransactions();
@@ -315,7 +321,7 @@ export default function Transactions({ user, onUserUpdate }) {
         return;
       }
 
-      const isExternal = transferData.recipientBank?.id !== 'bankpro';
+      const isExternal = (transferData.recipientBank?.id || 'bankpro') !== 'bankpro';
 
       if (isExternal && !transferData.recipientName) {
         showError('Recipient name is required for external transfers');
@@ -360,8 +366,8 @@ export default function Transactions({ user, onUserUpdate }) {
       if (isExternal) {
         payload.recipientName = transferData.recipientName;
         payload.recipientBank = {
-          bankName: transferData.recipientBank.name,
-          branchName: transferData.recipientBank.branchName || '',
+          bankName: transferData.recipientBank?.name || 'External Bank',
+          branchName: transferData.recipientBank?.branchName || '',
         };
       }
 
@@ -436,21 +442,6 @@ export default function Transactions({ user, onUserUpdate }) {
         setShowBankSelector={setShowBankSelector}
       />
 
-      <PinModal
-        show={showPinModal}
-        pinError={pinError}
-        pendingTransaction={pendingTransaction}
-        pin={pin}
-        setPin={setPin}
-        pinVerifying={pinVerifying}
-        onCancel={() => {
-          setShowPinModal(false);
-          setPendingTransaction(null);
-          setPin('');
-          setPinError('');
-        }}
-        onConfirm={verifyPin}
-      />
     </div>
   );
 }

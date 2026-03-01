@@ -1,38 +1,71 @@
-export const parseTransactionDate = (transaction, fromLocalYYYYMMDD) => {
-  if (transaction.createdAt) return new Date(transaction.createdAt);
-  if (transaction.date && typeof transaction.date === 'string' && transaction.date.length === 10) {
-    return fromLocalYYYYMMDD(transaction.date);
+const toNumber = (value) => (
+  typeof value === 'number' && Number.isFinite(value) ? value : Number(value) || 0
+);
+
+const parseLocalDateString = (dateString) => {
+  if (typeof dateString !== 'string') return null;
+  if (dateString.length === 10) {
+    const parsed = new Date(`${dateString}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
-  return new Date(transaction.date || transaction.createdAt);
+  const parsed = new Date(dateString);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const parseTransactionDate = (transaction, fromLocalYYYYMMDD) => {
+  if (!transaction) return null;
+  if (transaction.createdAt) {
+    const parsed = new Date(transaction.createdAt);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  if (transaction.timestamp) {
+    const parsed = new Date(transaction.timestamp);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  if (transaction.date && typeof transaction.date === 'string' && transaction.date.length === 10 && fromLocalYYYYMMDD) {
+    const parsed = fromLocalYYYYMMDD(transaction.date);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return parseLocalDateString(transaction.date);
 };
 
 export const buildMiniStatement = (transactions, user) => {
   if (!transactions.length) return null;
 
   const recentTransactions = [...transactions]
-    .sort((a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp))
+    .sort((a, b) => {
+      const dateA = parseTransactionDate(a);
+      const dateB = parseTransactionDate(b);
+      const timeA = dateA ? dateA.getTime() : 0;
+      const timeB = dateB ? dateB.getTime() : 0;
+      return timeB - timeA;
+    })
     .slice(0, 10);
 
   const credits = recentTransactions.filter((t) => t.type === 'credit').length;
   const debits = recentTransactions.filter((t) => t.type === 'debit').length;
   const totalCredits = recentTransactions
     .filter((t) => t.type === 'credit')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + toNumber(t.amount), 0);
   const totalDebits = recentTransactions
     .filter((t) => t.type === 'debit')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + toNumber(t.amount), 0);
+
+  const periodStart = recentTransactions.length > 0
+    ? parseTransactionDate(recentTransactions[recentTransactions.length - 1])
+    : null;
+  const periodEnd = recentTransactions.length > 0
+    ? parseTransactionDate(recentTransactions[0])
+    : null;
+  const nowIso = new Date().toISOString();
 
   return {
     accountHolder: user.name,
     accountNumber: user.accountNumber || '****1234',
-    generatedAt: new Date().toISOString(),
+    generatedAt: nowIso,
     period: {
-      from: recentTransactions.length > 0
-        ? (recentTransactions[recentTransactions.length - 1].createdAt || recentTransactions[recentTransactions.length - 1].timestamp)
-        : new Date().toISOString(),
-      to: recentTransactions.length > 0
-        ? (recentTransactions[0].createdAt || recentTransactions[0].timestamp)
-        : new Date().toISOString()
+      from: periodStart ? periodStart.toISOString() : nowIso,
+      to: periodEnd ? periodEnd.toISOString() : nowIso
     },
     summary: {
       totalTransactions: recentTransactions.length,
@@ -47,8 +80,27 @@ export const buildMiniStatement = (transactions, user) => {
 };
 
 export const isTransferTransaction = (transaction) => (
-  transaction.type === 'transfer' || (transaction.sender && transaction.recipient)
+  transaction?.type === 'transfer'
+  || transaction?.category === 'transfer'
+  || (transaction?.sender && transaction?.recipient)
+  || transaction?.recipientId
+  || transaction?.recipientName
+  || transaction?.recipientAccount
 );
+
+const escapeHtml = (value) => (
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+);
+
+const csvEscape = (value) => {
+  const text = String(value ?? '');
+  return `"${text.replace(/"/g, '""')}"`;
+};
 
 export const filterAndSortTransactions = ({
   transactions,
@@ -65,6 +117,7 @@ export const filterAndSortTransactions = ({
     const startDate = dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null;
     const endDate = dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null;
     if (startDate && endDate) {
+      if (!transactionDate) return false;
       endDate.setHours(23, 59, 59, 999);
       return transactionDate >= startDate && transactionDate <= endDate;
     }
@@ -73,33 +126,34 @@ export const filterAndSortTransactions = ({
 
   if (filterType !== 'all') {
     if (filterType === 'transfer') {
-      filtered = filtered.filter((transaction) =>
-        transaction.type === 'transfer' || (
-          transaction.sender && transaction.recipient && (!transaction.type || transaction.type === '')
-        ));
+      filtered = filtered.filter((transaction) => isTransferTransaction(transaction));
     } else {
-      filtered = filtered.filter((transaction) => transaction.type === filterType);
+      filtered = filtered.filter((transaction) => transaction.type === filterType && !isTransferTransaction(transaction));
     }
   }
 
   if (searchTerm) {
     const normalizedTerm = searchTerm.toLowerCase();
     filtered = filtered.filter((transaction) =>
-      transaction.description.toLowerCase().includes(normalizedTerm)
+      (transaction.description || '').toLowerCase().includes(normalizedTerm)
       || transaction.recipient?.toLowerCase().includes(normalizedTerm)
       || transaction.sender?.toLowerCase().includes(normalizedTerm));
   }
 
   filtered.sort((a, b) => {
+    const dateA = parseTransactionDate(a, fromLocalYYYYMMDD);
+    const dateB = parseTransactionDate(b, fromLocalYYYYMMDD);
+    const timeA = dateA ? dateA.getTime() : 0;
+    const timeB = dateB ? dateB.getTime() : 0;
     switch (sortBy) {
       case 'date-desc':
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        return timeB - timeA;
       case 'date-asc':
-        return new Date(a.createdAt) - new Date(b.createdAt);
+        return timeA - timeB;
       case 'amount-desc':
-        return b.amount - a.amount;
+        return toNumber(b.amount) - toNumber(a.amount);
       case 'amount-asc':
-        return a.amount - b.amount;
+        return toNumber(a.amount) - toNumber(b.amount);
       default:
         return 0;
     }
@@ -110,12 +164,12 @@ export const filterAndSortTransactions = ({
 
 export const calculateTransactionTotals = (filteredTransactions) => {
   const credits = filteredTransactions
-    .filter((t) => t.type === 'credit' && typeof t.amount === 'number')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t) => t.type === 'credit')
+    .reduce((sum, t) => sum + toNumber(t.amount), 0);
 
   const debits = filteredTransactions
-    .filter((t) => t.type === 'debit' && typeof t.amount === 'number')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter((t) => t.type === 'debit')
+    .reduce((sum, t) => sum + toNumber(t.amount), 0);
 
   return { credits, debits, net: credits - debits };
 };
@@ -137,11 +191,11 @@ export const buildCsvContent = (filteredTransactions, parseDateFn) => {
       : (transaction.type ? transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) : '');
 
     return [
-      `"${dateTime}"`,
-      `"${typeStr}"`,
-      `"${transaction.description || ''}"`,
-      `"${typeof transaction.amount === 'number' ? transaction.amount : 0}"`,
-      `"${typeof transaction.balance === 'number' ? transaction.balance : ''}"`
+      csvEscape(dateTime),
+      csvEscape(typeStr),
+      csvEscape(transaction.description || ''),
+      csvEscape(toNumber(transaction.amount)),
+      csvEscape(typeof transaction.balance === 'number' ? transaction.balance : '')
     ];
   });
 
@@ -154,7 +208,7 @@ export const buildMiniStatementPrintHtml = ({ miniStatement, formatDate, formatC
   <!DOCTYPE html>
   <html>
     <head>
-      <title>Mini Statement - ${miniStatement.accountHolder}</title>
+      <title>Mini Statement - ${escapeHtml(miniStatement.accountHolder)}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
@@ -174,8 +228,8 @@ export const buildMiniStatementPrintHtml = ({ miniStatement, formatDate, formatC
         <h2>Mini Statement</h2>
       </div>
       <div class="account-info">
-        <p><strong>Account Holder:</strong> ${miniStatement.accountHolder}</p>
-        <p><strong>Account Number:</strong> ${miniStatement.accountNumber}</p>
+        <p><strong>Account Holder:</strong> ${escapeHtml(miniStatement.accountHolder)}</p>
+        <p><strong>Account Number:</strong> ${escapeHtml(miniStatement.accountNumber)}</p>
         <p><strong>Generated:</strong> ${formatDate(miniStatement.generatedAt)}</p>
         <p><strong>Period:</strong> ${formatDate(miniStatement.period.from)} - ${formatDate(miniStatement.period.to)}</p>
       </div>
@@ -195,12 +249,15 @@ export const buildMiniStatementPrintHtml = ({ miniStatement, formatDate, formatC
         <div class="transaction">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <div style="font-weight: 500;">${transaction.description}</div>
-              <div style="font-size: 0.9em; color: #666;">${formatDate(transaction.createdAt || transaction.timestamp)}</div>
+              <div style="font-weight: 500;">${escapeHtml(transaction.description)}</div>
+              <div style="font-size: 0.9em; color: #666;">${formatDate(parseTransactionDate(transaction) || new Date())}</div>
             </div>
-            <div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
-              ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
-            </div>
+            ${isTransferTransaction(transaction)
+    ? `<div style="font-weight: 600; color: #667eea;">${formatCurrency(transaction.amount)} (Transfer)</div>`
+    : `<div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
+                ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
+              </div>`
+  }
           </div>
         </div>
       `).join('')}
@@ -220,17 +277,17 @@ export const buildAccountStatementPrintHtml = ({
 }) => {
   const totalCredits = filteredTransactions
     .filter((t) => t.type === 'credit')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + toNumber(t.amount), 0);
   const totalDebits = filteredTransactions
     .filter((t) => t.type === 'debit')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + toNumber(t.amount), 0);
   const net = totalCredits - totalDebits;
 
   return `
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Account Statement - ${user.name}</title>
+        <title>Account Statement - ${escapeHtml(user.name)}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
@@ -250,10 +307,10 @@ export const buildAccountStatementPrintHtml = ({
           <h2>Account Statement</h2>
         </div>
         <div class="account-info">
-          <p><strong>Account Holder:</strong> ${user.name}</p>
-          <p><strong>Account Number:</strong> ${user.accountNumber || '****1234'}</p>
+          <p><strong>Account Holder:</strong> ${escapeHtml(user.name)}</p>
+          <p><strong>Account Number:</strong> ${escapeHtml(user.accountNumber || '****1234')}</p>
           <p><strong>Generated:</strong> ${new Date().toLocaleString('en-US')}</p>
-          <p><strong>Period:</strong> ${dateRange.start} - ${dateRange.end}</p>
+          <p><strong>Period:</strong> ${escapeHtml(dateRange.start)} - ${escapeHtml(dateRange.end)}</p>
         </div>
         <div class="summary">
           <h3>Summary</h3>
@@ -271,12 +328,18 @@ export const buildAccountStatementPrintHtml = ({
             <div class="transaction">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  <div style="font-weight: 500;">${transaction.description}</div>
-                  <div style="font-size: 0.9em; color: #666;">${transaction.createdAt ? new Date(transaction.createdAt).toLocaleString('en-US') : ''}</div>
+                  <div style="font-weight: 500;">${escapeHtml(transaction.description)}</div>
+                  <div style="font-size: 0.9em; color: #666;">${(() => {
+    const date = parseTransactionDate(transaction);
+    return date ? date.toLocaleString('en-US') : '';
+  })()}</div>
                 </div>
-                <div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
-                  ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
-                </div>
+                ${isTransferTransaction(transaction)
+    ? `<div style="font-weight: 600; color: #667eea;">${formatCurrency(transaction.amount)} (Transfer)</div>`
+    : `<div class="${transaction.type === 'credit' ? 'credit' : 'debit'}">
+                    ${transaction.type === 'credit' ? '+' : '-'}${formatCurrency(transaction.amount)}
+                  </div>`
+  }
               </div>
             </div>
           `).join('')}

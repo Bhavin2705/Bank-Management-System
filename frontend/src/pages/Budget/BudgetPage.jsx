@@ -42,7 +42,7 @@ const Budget = ({ user }) => {
 
   const loadTransactions = async () => {
     try {
-      const userTransactions = await getTransactions();
+      const userTransactions = await getTransactions({ fetchAll: true });
       setTransactions(userTransactions);
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -114,10 +114,17 @@ const Budget = ({ user }) => {
     return formatCurrencyByPreference(amount, user);
   };
 
+  const normalizeCategory = (value) => {
+    if (!value) return '';
+    const normalized = String(value).toLowerCase();
+    if (normalized === 'transportation') return 'transport';
+    return normalized;
+  };
+
   const getCategoryExpenses = (category) => {
-    const categoryTransactions = transactions.filter(t =>
-      t.type === 'debit' &&
-      t.category === category
+    const normalizedCategory = normalizeCategory(category);
+    const categoryTransactions = transactions.filter((t) =>
+      t.type === 'debit' && normalizeCategory(t.category) === normalizedCategory
     );
     return categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
   };
@@ -128,7 +135,8 @@ const Budget = ({ user }) => {
   };
 
   const getCategoryLabel = (category) => {
-    const cat = categories.find(c => c.name === category);
+    const normalized = normalizeCategory(category);
+    const cat = categories.find((c) => c.name === normalized);
     return cat ? cat.label : category;
   };
 
@@ -196,7 +204,7 @@ const Budget = ({ user }) => {
                   <div>
                     <h3 style={{ margin: 0, color }}>{budget.name}</h3>
                     <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {getCategoryLabel(budget.category)} • {budget.period}
+                      {getCategoryLabel(budget.category)} - {budget.period}
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>

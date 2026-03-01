@@ -1,5 +1,5 @@
 export const formatTransactionDate = (value) => {
-  if (!value) return '—';
+  if (!value) return '-';
   return new Date(value).toLocaleString('en-IN', {
     year: 'numeric',
     month: 'short',
@@ -20,7 +20,7 @@ export const getVisibleTransactions = (transactions, activeTab) => {
       }
       return true;
     })
-    .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+    .sort((a, b) => new Date(b.createdAt || b.date || b.timestamp) - new Date(a.createdAt || a.date || a.timestamp));
 };
 
 export const getTabLabel = (tab) => {

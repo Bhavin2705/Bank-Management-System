@@ -29,7 +29,7 @@ const Statements = ({ user }) => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const txs = await getTransactions({ userId: user.id || user._id });
+        const txs = await getTransactions({ userId: user.id || user._id, fetchAll: true });
         setTransactions(Array.isArray(txs) ? txs : []);
       } catch (error) {
         console.error('Error loading transactions:', error);
@@ -52,25 +52,41 @@ const Statements = ({ user }) => {
   const totals = useMemo(() => calculateTransactionTotals(filteredTransactions), [filteredTransactions]);
 
   const formatCurrency = (amount) => formatCurrencyByPreference(amount, user);
+  const toNumber = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : Number(value) || 0);
+  const getDescription = (transaction) => transaction.description || 'Transaction';
+  const getRecipientLabel = (transaction) => {
+    if (transaction.recipientName) return transaction.recipientName;
+    if (transaction.recipientAccount) return transaction.recipientAccount;
+    if (transaction.recipient?.name) return transaction.recipient.name;
+    return transaction.recipient || '';
+  };
 
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const formatDate = (value) => {
+    const dateObj = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(dateObj.getTime())) return '';
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  const getTransactionIcon = (type) => {
-    if (type === 'transfer') return <FileText size={16} style={{ color: '#667eea' }} />;
-    if (type === 'credit') return <TrendingUp size={16} style={{ color: '#28a745' }} />;
-    if (type === 'debit') return <TrendingDown size={16} style={{ color: '#dc3545' }} />;
+  const getTransactionIcon = (transaction) => {
+    if (isTransferTransaction(transaction)) return <FileText size={16} style={{ color: '#667eea' }} />;
+    if (transaction.type === 'credit') return <TrendingUp size={16} style={{ color: '#28a745' }} />;
+    if (transaction.type === 'debit') return <TrendingDown size={16} style={{ color: '#dc3545' }} />;
     return <FileText size={16} />;
   };
 
   const printMiniStatement = () => {
     if (!miniStatement) return;
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Popup blocked. Please allow popups to print your statement.');
+      return;
+    }
     const statementHtml = buildMiniStatementPrintHtml({
       miniStatement,
       formatDate,
@@ -97,6 +113,10 @@ const Statements = ({ user }) => {
       alert('No transactions to export for the selected period.');
       return;
     }
+    if (filteredTransactions.length > 5000) {
+      alert('Too many transactions to export at once. Please narrow the date range.');
+      return;
+    }
     const csvContent = buildCsvContent(filteredTransactions, (transaction) => parseTransactionDate(transaction, fromLocalYYYYMMDD));
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -111,6 +131,10 @@ const Statements = ({ user }) => {
 
   const printAccountStatement = () => {
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Popup blocked. Please allow popups to print your statement.');
+      return;
+    }
     const statementHtml = buildAccountStatementPrintHtml({
       user,
       dateRange,
@@ -191,14 +215,14 @@ const Statements = ({ user }) => {
                 {miniStatement.transactions.map((transaction, index) => (
                   <div key={index} className="transaction-item">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>{getTransactionIcon(transaction.type)}</div>
+                      <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>{getTransactionIcon(transaction)}</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{transaction.description}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(transaction.createdAt || transaction.timestamp)}</div>
+                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{getDescription(transaction)}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(parseTransactionDate(transaction, fromLocalYYYYMMDD) || transaction.createdAt || transaction.timestamp)}</div>
                       </div>
                     </div>
                     <div style={{ fontWeight: '600', color: transaction.type === 'credit' ? '#28a745' : '#dc3545', fontSize: '1.1rem' }}>
-                      {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(toNumber(transaction.amount))}
                     </div>
                   </div>
                 ))}
@@ -264,7 +288,14 @@ const Statements = ({ user }) => {
           <div style={{ minWidth: 0, width: '100%', maxWidth: '220px' }}>
             <CustomCalendar
               value={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
-              onChange={(date) => setDateRange({ ...dateRange, start: date ? toLocalYYYYMMDD(date) : '' })}
+              onChange={(date) => {
+                const nextStart = date ? toLocalYYYYMMDD(date) : '';
+                if (nextStart && dateRange.end && nextStart > dateRange.end) {
+                  setDateRange({ start: nextStart, end: nextStart });
+                  return;
+                }
+                setDateRange({ ...dateRange, start: nextStart });
+              }}
               placeholder="Start date"
               maxDate={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
             />
@@ -273,7 +304,14 @@ const Statements = ({ user }) => {
           <div style={{ minWidth: 0, width: '100%', maxWidth: '220px' }}>
             <CustomCalendar
               value={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
-              onChange={(date) => setDateRange({ ...dateRange, end: date ? toLocalYYYYMMDD(date) : '' })}
+              onChange={(date) => {
+                const nextEnd = date ? toLocalYYYYMMDD(date) : '';
+                if (nextEnd && dateRange.start && nextEnd < dateRange.start) {
+                  setDateRange({ start: nextEnd, end: nextEnd });
+                  return;
+                }
+                setDateRange({ ...dateRange, end: nextEnd });
+              }}
               placeholder="End date"
               minDate={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
             />
@@ -343,14 +381,13 @@ const Statements = ({ user }) => {
               <div key={index} className="transaction-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>
-                    {getTransactionIcon(transaction.type)}
+                    {getTransactionIcon(transaction)}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{transaction.description}</div>
+                    <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{getDescription(transaction)}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {formatDate(transaction.createdAt)}
-                      {transaction.recipient && ` | To: ${transaction.recipient}`}
-                      {transaction.sender && ` | From: ${transaction.sender}`}
+                      {formatDate(parseTransactionDate(transaction, fromLocalYYYYMMDD) || transaction.createdAt)}
+                      {isTransferTransaction(transaction) && getRecipientLabel(transaction) && ` | To: ${getRecipientLabel(transaction)}`}
                     </div>
                   </div>
                 </div>
@@ -365,7 +402,7 @@ const Statements = ({ user }) => {
                     fontSize: '1.1rem'
                   }}>
                     {isTransferTransaction(transaction) ? '' : transaction.type === 'credit' ? '+' : '-'}
-                    {formatCurrency(transaction.amount)}
+                    {formatCurrency(toNumber(transaction.amount))}
                     {isTransferTransaction(transaction) && <span style={{ color: '#667eea', fontWeight: '500', marginLeft: 4 }}>(Transfer)</span>}
                   </div>
                   {transaction.balance && (

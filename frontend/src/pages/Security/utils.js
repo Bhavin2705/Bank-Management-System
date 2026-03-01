@@ -35,8 +35,13 @@ export const validatePasswordForm = (passwordForm) => {
     return 'New passwords do not match';
   }
 
-  if (passwordForm.newPassword.length < 6) {
-    return 'Password must be at least 6 characters long';
+  if (passwordForm.newPassword.length < 8) {
+    return 'Password must be at least 8 characters long';
+  }
+
+  const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+  if (!strongPassword.test(passwordForm.newPassword)) {
+    return 'Password must include uppercase, lowercase, number, and special character';
   }
 
   return '';
@@ -52,8 +57,8 @@ export const validatePinForm = ({ selectedCardId, cards, pinForm }) => {
     return 'The selected card is not active. Activate the card before changing its PIN.';
   }
 
-  if (pinForm.newPin.length !== 4 || !/^\d+$/.test(pinForm.newPin)) {
-    return 'PIN must be exactly 4 digits';
+  if (!/^\d{4,6}$/.test(pinForm.newPin)) {
+    return 'PIN must be 4 to 6 digits';
   }
 
   if (pinForm.newPin !== pinForm.confirmPin) {

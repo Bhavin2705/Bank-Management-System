@@ -94,6 +94,10 @@ const Users = ({ user }) => {
   };
 
   const handleCardStatusToggle = async (cardId, currentStatus) => {
+    if (currentStatus === 'closed' || currentStatus === 'lost' || currentStatus === 'expired') {
+      toast.error('This card status cannot be changed');
+      return;
+    }
     const nextStatus = currentStatus === 'active' ? 'blocked' : 'active';
     try {
       setLoading(true);
@@ -330,7 +334,7 @@ const Users = ({ user }) => {
                       <div key={card._id} className="transaction-item" style={{ alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600 }}>
-                            {card.cardName || card.cardBrand || 'Card'} •••• {String(card.cardNumber || '').slice(-4)}
+                            {card.cardName || card.cardBrand || 'Card'} **** {String(card.cardNumber || '').slice(-4)}
                           </div>
                           <div style={{ fontSize: '0.82rem', color: '#6c757d' }}>
                             Status: {(card.status || 'active').toUpperCase()}

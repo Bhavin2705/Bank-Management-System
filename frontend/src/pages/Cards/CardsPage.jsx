@@ -40,10 +40,12 @@ const Cards = ({ user }) => {
         setCards(res.data || []);
       } else {
         setCards([]);
+        showError(res?.error || 'Failed to load cards');
       }
     } catch (err) {
       console.error('Error loading cards:', err);
       setCards([]);
+      showError(err.message || 'Failed to load cards');
     }
   };
 
@@ -60,18 +62,21 @@ const Cards = ({ user }) => {
       return;
     }
 
-    if (formData.pin.length !== 4 || !/^\d+$/.test(formData.pin)) {
-      showError('PIN must be exactly 4 digits');
+    if (formData.pin.length < 4 || formData.pin.length > 6 || !/^\d+$/.test(formData.pin)) {
+      showError('PIN must be 4-6 digits');
       return;
     }
+
+    const safeCardType = formData.cardType === 'credit' ? 'credit' : 'debit';
+    const safeCardBrand = safeCardType === 'debit' ? 'visa' : 'mastercard';
 
     const newCard = {
       id: Date.now().toString(),
       cardNumber: generateCardNumber(),
       cardName: formData.cardName,
       expiryDate: generateExpiryDate(),
-      cardType: formData.cardType,
-      cardBrand: formData.cardType === 'debit' ? 'visa' : 'mastercard',
+      cardType: safeCardType,
+      cardBrand: safeCardBrand,
       pin: formData.pin,
       status: 'active',
     };
@@ -173,6 +178,10 @@ const Cards = ({ user }) => {
 
     if (card.status === 'blocked') {
       showError('This card is blocked by bank. Please contact bank support.');
+      return;
+    }
+    if (['lost', 'expired', 'closed'].includes(card.status)) {
+      showError('This card status cannot be changed.');
       return;
     }
 

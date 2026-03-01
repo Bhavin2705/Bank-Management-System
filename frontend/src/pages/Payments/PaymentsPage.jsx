@@ -99,6 +99,9 @@ const Payments = ({ user, onUserUpdate }) => {
 
     try {
       const createdTransaction = await addTransaction(transaction);
+      if (!createdTransaction) {
+        throw new Error('Transaction was not created');
+      }
       const nextBalance = typeof createdTransaction?.balance === 'number'
         ? createdTransaction.balance
         : user.balance - amount;
@@ -109,6 +112,13 @@ const Payments = ({ user, onUserUpdate }) => {
     } catch (err) {
       console.error('Error processing bill payment:', err);
       showBillError('Error processing bill payment');
+      if (billRes?.data?._id) {
+        try {
+          await api.bills.delete(billRes.data._id);
+        } catch (rollbackError) {
+          console.error('Error rolling back bill creation:', rollbackError);
+        }
+      }
     } finally {
       setSubmittingBill(false);
     }
@@ -227,7 +237,10 @@ const Payments = ({ user, onUserUpdate }) => {
       if (!transactionResult) {
         throw new Error('Transaction was not created');
       }
-      onUserUpdate({ ...user, balance: user.balance - amount });
+      const nextBalance = typeof transactionResult?.balance === 'number'
+        ? transactionResult.balance
+        : user.balance - amount;
+      onUserUpdate({ ...user, balance: nextBalance });
       showRecurringSuccess('Recurring payment created successfully! First payment deducted from your account.');
     } catch (err) {
       console.error('Error creating transaction:', err);

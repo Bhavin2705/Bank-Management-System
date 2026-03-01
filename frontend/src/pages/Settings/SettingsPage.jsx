@@ -107,6 +107,8 @@ const Settings = ({ user, onUserUpdate }) => {
         }
       } catch (loadError) {
         console.error('Error loading settings data:', loadError);
+        setError('Failed to load settings. Please refresh.');
+        showError('Failed to load settings. Please refresh.');
       } finally {
         setLoading((prev) => ({ ...prev, bootstrap: false }));
       }
@@ -185,6 +187,12 @@ const Settings = ({ user, onUserUpdate }) => {
 
     if (passwordData.newPassword.length < 8) {
       showError('Password must be at least 8 characters long!');
+      setLoading((prev) => ({ ...prev, password: false }));
+      return;
+    }
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    if (!strongPassword.test(passwordData.newPassword)) {
+      showError('Password must include uppercase, lowercase, number, and special character');
       setLoading((prev) => ({ ...prev, password: false }));
       return;
     }
@@ -330,6 +338,10 @@ const Settings = ({ user, onUserUpdate }) => {
 
     if (currentStatus === 'blocked') {
       showError('This card is blocked by bank. Please contact bank support.');
+      return;
+    }
+    if (currentStatus === 'lost' || currentStatus === 'expired') {
+      showError('This card status cannot be changed.');
       return;
     }
 

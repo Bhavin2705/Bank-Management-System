@@ -42,8 +42,30 @@ const inferCategoryFromTransaction = (tx) => {
 
 export const getTransactions = async (params = {}) => {
   try {
-    const response = await api.transactions.getAll(params);
-    return response.success ? response.data : [];
+    const { fetchAll, ...query } = params;
+    const response = await api.transactions.getAll(query);
+    if (!response.success) return [];
+    const data = Array.isArray(response.data) ? response.data : [];
+    const pagination = response.pagination;
+
+    if (!fetchAll || !pagination || !pagination.pages || pagination.pages <= 1) {
+      return data;
+    }
+
+    const pages = pagination.pages;
+    const baseQuery = {
+      ...query,
+      limit: pagination.limit || query.limit || 20
+    };
+    const allResults = [...data];
+
+    for (let page = 2; page <= pages; page += 1) {
+      const pageResponse = await api.transactions.getAll({ ...baseQuery, page });
+      if (!pageResponse?.success || !Array.isArray(pageResponse.data)) break;
+      allResults.push(...pageResponse.data);
+    }
+
+    return allResults;
   } catch (error) {
     console.error('Error fetching transactions:', error);
     return [];
@@ -92,9 +114,9 @@ export const deleteTransaction = async (id) => {
 
 export const getTransactionStats = async () => {
   try {
-    const [statsResponse, transactionsResponse] = await Promise.all([
+    const [statsResponse, allTransactions] = await Promise.all([
       api.transactions.getStats(),
-      api.transactions.getAll({ limit: 5 })
+      getTransactions({ fetchAll: true })
     ]);
 
     const backendStats = statsResponse.success ? statsResponse.data : {
@@ -104,7 +126,7 @@ export const getTransactionStats = async () => {
       categories: []
     };
 
-    const recentTransactions = transactionsResponse.success ? transactionsResponse.data : [];
+    const recentTransactions = Array.isArray(allTransactions) ? allTransactions : [];
 
     return {
       totalTransactions: backendStats.transactionCount || 0,
