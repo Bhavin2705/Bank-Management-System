@@ -252,7 +252,7 @@ const createTransaction = async (req, res) => {
             userId: req.user._id,
             type: 'transaction',
             title: type === 'credit' ? 'Deposit Successful' : 'Withdrawal Successful',
-            message: `Rs${numericAmount.toLocaleString('en-IN')} ${type === 'credit' ? 'credited to' : 'debited from'} your account.`,
+            message: `Rs ${numericAmount.toLocaleString('en-IN')} ${type === 'credit' ? 'credited to' : 'debited from'} your account.`,
             relatedId: transaction._id,
             relatedModel: 'Transaction',
             metadata: {
@@ -268,7 +268,7 @@ const createTransaction = async (req, res) => {
         if (user?.preferences?.notifications?.email !== false) {
             emailHelpers.sendTransactionNotification(user.email, transactionDetails)
                 .then((sent) => { emailSent = !!sent; })
-                .catch(() => {});
+                .catch(() => { });
         }
 
         const transactionData = transaction.toObject();
@@ -690,7 +690,7 @@ const transferMoney = async (req, res) => {
                 currency: 'INR',
                 description: senderTransaction.description,
                 timestamp: senderTransaction.createdAt
-            }).then((sent) => { senderEmailSent = !!sent; }).catch(() => {});
+            }).then((sent) => { senderEmailSent = !!sent; }).catch(() => { });
         }
 
 
@@ -719,7 +719,7 @@ const transferMoney = async (req, res) => {
                     currency: 'INR',
                     description: `Transfer from ${sender.name}`,
                     timestamp: recipientTransactionCreatedAt || new Date()
-                }).then((sent) => { recipientEmailSent = !!sent; }).catch(() => {});
+                }).then((sent) => { recipientEmailSent = !!sent; }).catch(() => { });
             }
         }
 

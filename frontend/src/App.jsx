@@ -16,7 +16,6 @@ import {
   Budget,
   Cards,
   CurrencyExchange,
-  Insights,
   Notifications,
   Payments,
   Security,
@@ -290,7 +289,6 @@ function App() {
           <Route path="/security" element={<ProtectedRoute><Layout><Security user={user} onUserUpdate={handleUserUpdate} /></Layout></ProtectedRoute>} />
           <Route path="/statements" element={<ProtectedRoute><Layout><Statements user={user} /></Layout></ProtectedRoute>} />
           <Route path="/currency-exchange" element={<ProtectedRoute><Layout><CurrencyExchange user={user} /></Layout></ProtectedRoute>} />
-          <Route path="/insights" element={<ProtectedRoute><Layout><Insights user={user} /></Layout></ProtectedRoute>} />
           <Route path="/budget" element={<ProtectedRoute><Layout><Budget user={user} /></Layout></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Layout><Settings user={user} onUserUpdate={handleUserUpdate} /></Layout></ProtectedRoute>} />

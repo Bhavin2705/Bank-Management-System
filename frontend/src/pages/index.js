@@ -2,7 +2,6 @@ export { default as AdminBanks } from './AdminBanks/AdminBanksPage';
 export { default as Budget } from './Budget/BudgetPage';
 export { default as Cards } from './Cards/CardsPage';
 export { default as CurrencyExchange } from './CurrencyExchange/CurrencyExchangePage';
-export { default as Insights } from './Insights/InsightsPage';
 export { default as Notifications } from './Notifications/NotificationsPage';
 export { default as Payments } from './Payments/PaymentsPage';
 export { default as Security } from './Security/SecurityPage';

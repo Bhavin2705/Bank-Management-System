@@ -1,5 +1,4 @@
-﻿import {
-  BarChart3,
+import {
   Bell,
   CreditCard,
   DollarSign,
@@ -28,7 +27,6 @@ const BASE_NAV_ITEMS = [
   { id: 'security', label: 'Security', icon: Shield, path: '/security' },
   { id: 'statements', label: 'Statements & Reports', icon: FileText, path: '/statements' },
   { id: 'currency-exchange', label: 'Currency Exchange', icon: DollarSign, path: '/currency-exchange' },
-  { id: 'insights', label: 'Insights', icon: BarChart3, path: '/insights' },
   { id: 'notifications', label: 'Notifications', icon: Bell, path: '/notifications' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
@@ -185,3 +183,4 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
 };
 
 export default Sidebar;
+

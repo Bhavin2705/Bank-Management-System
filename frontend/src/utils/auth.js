@@ -1,67 +1,62 @@
-
 import api, { clearAuthToken } from './api.js';
 
 export const AUTH_KEY = 'bank_auth_user';
 
-export const initializeUsers = () => {
-  return Promise.resolve();
+const TWO_FACTOR_DEFAULT_MESSAGE = 'Enter the OTP sent to your registered email.';
+
+const withOptionalOtp = (payload, otp) => (otp ? { ...payload, otp } : payload);
+
+const mapAuthResponse = (response) => {
+  if (response?.success) {
+    return { success: true, user: response.data.user };
+  }
+
+  if (response?.requiresTwoFactor) {
+    return {
+      success: false,
+      requiresTwoFactor: true,
+      message: response.message || TWO_FACTOR_DEFAULT_MESSAGE,
+    };
+  }
+
+  return { success: false, error: 'Login failed' };
 };
+
+const handleAccountSelectionError = (error) => {
+  if (error?.status === 300 && error?.data?.needsAccountSelection) {
+    return {
+      success: false,
+      error: error.data.error,
+      needsAccountSelection: true,
+      accounts: error.data.accounts,
+      message: error.data.message,
+    };
+  }
+
+  return null;
+};
+
+export const initializeUsers = () => Promise.resolve();
 
 export const login = async (identifier, password, otp) => {
   try {
-    const payload = { identifier, password };
-    if (otp) payload.otp = otp;
+    const payload = withOptionalOtp({ identifier, password }, otp);
     const response = await api.auth.login(payload);
-
-    if (response.success) {
-      return { success: true, user: response.data.user };
-    }
-
-    if (response.requiresTwoFactor) {
-      return {
-        success: false,
-        requiresTwoFactor: true,
-        message: response.message || 'Enter the OTP sent to your registered email.'
-      };
-    }
-
-    return { success: false, error: 'Login failed' };
+    return mapAuthResponse(response);
   } catch (error) {
-    if (error.status === 300 && error.data && error.data.needsAccountSelection) {
-      return {
-        success: false,
-        error: error.data.error,
-        needsAccountSelection: true,
-        accounts: error.data.accounts,
-        message: error.data.message
-      };
-    }
-
-    return { success: false, error: error.message };
+    const accountSelection = handleAccountSelectionError(error);
+    if (accountSelection) return accountSelection;
+    return { success: false, error: error?.message || 'Login failed' };
   }
 };
 
 export const loginWithAccount = async (identifier, password, accountId, otp) => {
   try {
-    const payload = { identifier, password, accountId };
-    if (otp) payload.otp = otp;
+    const payload = withOptionalOtp({ identifier, password, accountId }, otp);
     const response = await api.auth.loginWithAccount(payload);
-
-    if (response.success) {
-      return { success: true, user: response.data.user };
-    }
-
-    if (response.requiresTwoFactor) {
-      return {
-        success: false,
-        requiresTwoFactor: true,
-        message: response.message || 'Enter the OTP sent to your registered email.'
-      };
-    }
-
-    return { success: false, error: 'Login failed' };
+    return mapAuthResponse(response);
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error?.message || 'Login failed' };
   }
 };
 
@@ -83,7 +78,7 @@ export const logout = async () => {
   try {
     await Promise.race([
       api.auth.logout(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 3000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 3000)),
     ]);
   } catch (error) {
     console.warn('Logout API error:', error);
@@ -98,9 +93,7 @@ export const logout = async () => {
   }
 };
 
-export const getCurrentUser = () => {
-  return null;
-};
+export const getCurrentUser = () => null;
 
 export const updateUserBalance = async (userId, newBalance) => {
   try {
@@ -112,9 +105,7 @@ export const updateUserBalance = async (userId, newBalance) => {
 
     const currentUserId = String(currentUser._id || currentUser.id || '');
     const providedUserId = String(userId || '');
-    
-    console.debug('Comparing IDs - current:', currentUserId, 'provided:', providedUserId);
-    
+
     if (!currentUserId || !providedUserId || currentUserId !== providedUserId) {
       console.warn('User ID mismatch or missing - current:', currentUserId, 'provided:', providedUserId);
       return { ...currentUser, balance: newBalance };
@@ -182,13 +173,9 @@ export const getNonAdminUsers = async () => {
   }
 };
 
-export const isAdmin = (user) => {
-  return user && user.role === 'admin';
-};
+export const isAdmin = (user) => user && user.role === 'admin';
 
-export const canAccessAdminFeatures = (user) => {
-  return isAdmin(user);
-};
+export const canAccessAdminFeatures = (user) => isAdmin(user);
 
 export const updateUserDetails = async (userData) => {
   try {
