@@ -497,7 +497,7 @@ const validateTransferDetails = async (req, res) => {
             success: true,
             data: preview,
             message: hasSufficientBalance
-                ? `Transfer preview: Rs${amt.toLocaleString('en-IN')} transfer${processingFee > 0 ? ` + Rs${processingFee.toLocaleString('en-IN')} fee = Rs${totalDebit.toLocaleString('en-IN')} total` : ''}`
+                ? `Transfer preview: Rs ${amt.toLocaleString('en-IN')} transfer${processingFee > 0 ? ` + Rs ${processingFee.toLocaleString('en-IN')} fee = Rs ${totalDebit.toLocaleString('en-IN')} total` : ''}`
                 : 'Insufficient balance for this transfer'
         });
     } catch (error) {
@@ -632,7 +632,7 @@ const transferMoney = async (req, res) => {
                 clientRequestId,
                 description: isInternalTransfer
                     ? (description || `Transfer to ${recipient ? recipient.name : recipientAccount}`)
-                    : `${description || `Transfer to ${recipient ? recipient.name : recipientAccount}`} (includes processing fee Rs${processingFee.toLocaleString('en-IN')})`,
+                    : `${description || `Transfer to ${recipient ? recipient.name : recipientAccount}`} (includes processing fee Rs ${processingFee.toLocaleString('en-IN')})`,
                 category: 'transfer',
                 recipientId: recipient ? recipient._id : null,
                 recipientAccount,
@@ -674,7 +674,7 @@ const transferMoney = async (req, res) => {
             userId: req.user._id,
             type: 'transaction',
             title: 'Transfer Sent',
-            message: `Rs${amt.toLocaleString('en-IN')} transferred ${recipient ? `to ${recipient.name}` : 'to external account'}.`,
+            message: `Rs ${amt.toLocaleString('en-IN')} transferred ${recipient ? `to ${recipient.name}` : 'to external account'}.`,
             relatedId: senderTransaction._id,
             relatedModel: 'Transaction',
             metadata: {
@@ -702,7 +702,7 @@ const transferMoney = async (req, res) => {
                 userId: recipient._id,
                 type: 'transaction',
                 title: 'Money Received',
-                message: `Rs${amt.toLocaleString('en-IN')} received from ${sender.name}.`,
+                message: `Rs ${amt.toLocaleString('en-IN')} received from ${sender.name}.`,
                 relatedId: recipientTransactionId || senderTransaction._id,
                 relatedModel: 'Transaction',
                 metadata: {
@@ -723,15 +723,15 @@ const transferMoney = async (req, res) => {
             }
         }
 
-        let message = `Successfully transferred Rs${amt.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
+        let message = `Successfully transferred Rs ${amt.toLocaleString('en-IN')} to ${recipient ? recipient.name : recipientAccount}`;
         if (!isInternalTransfer) {
             message += ` (${recipientBank ? recipientBank.bankName : 'External Bank'})`;
             if (processingFee > 0) {
-                message += `. Processing fee: Rs${processingFee.toLocaleString('en-IN')} (Total debited: Rs${totalDebit.toLocaleString('en-IN')})`;
+                message += `. Processing fee: Rs ${processingFee.toLocaleString('en-IN')} (Total debited: Rs ${totalDebit.toLocaleString('en-IN')})`;
             }
         }
 
-        message += `\nNote: A processing fee of Rs${processingFee.toLocaleString('en-IN')} was deducted. Total debited from your account: Rs${totalDebit.toLocaleString('en-IN')}.`;
+        message += `\nNote: A processing fee of Rs ${processingFee.toLocaleString('en-IN')} was deducted. Total debited from your account: Rs ${totalDebit.toLocaleString('en-IN')}.`;
 
         res.status(201).json({
             success: true,
