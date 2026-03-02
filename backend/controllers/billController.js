@@ -219,7 +219,7 @@ const payBill = async (req, res) => {
       userId: req.user._id,
       type: 'bill_paid',
       title: 'Bill Paid Successfully',
-      message: `${bill.name} bill paid for Rs${paymentAmount.toLocaleString('en-IN')}.`,
+      message: `${bill.name} bill paid for Rs ${paymentAmount.toLocaleString('en-IN')}.`,
       priority: 'medium',
       relatedId: bill._id,
       relatedModel: 'Bill',

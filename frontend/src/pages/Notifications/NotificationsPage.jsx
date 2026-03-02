@@ -95,6 +95,11 @@ const Notifications = () => {
     });
   };
 
+  const normalizeCurrencySpacing = (text) => {
+    if (typeof text !== 'string') return '';
+    return text.replace(/\bRs\s*(?=\d)/g, 'Rs ');
+  };
+
   const hasUnread = notifications.some((n) => !n.read);
 
   if (loading) {
@@ -208,7 +213,7 @@ const Notifications = () => {
                   color: 'var(--text-primary)',
                   lineHeight: 1.45
                 }}>
-                  {n.message}
+                  {normalizeCurrencySpacing(n.message)}
                 </p>
                 <p style={{
                   margin: '0.4rem 0 0',

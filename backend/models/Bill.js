@@ -149,7 +149,7 @@ billSchema.methods.markAsPaid = function (paymentAmount, paymentMethod = 'online
     }
 
     this.notes.push({
-        content: `Bill paid: Rs${paymentAmount.toLocaleString('en-IN')} via ${paymentMethod}`
+        content: `Bill paid: Rs ${paymentAmount.toLocaleString('en-IN')} via ${paymentMethod}`
     });
 
     if (this.isRecurring) {
