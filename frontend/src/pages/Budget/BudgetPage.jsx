@@ -1,4 +1,4 @@
-import { Edit, Plus, Trash2 } from 'lucide-react';
+﻿import { Edit, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api } from '../../utils/api';
 import { formatCurrencyByPreference } from '../../utils/currency';
@@ -44,19 +44,19 @@ const Budget = ({ user }) => {
     try {
       const userTransactions = await getTransactions({ fetchAll: true });
       setTransactions(userTransactions);
-    } catch (error) {
-      console.error('Error loading transactions:', error);
+    } catch (loadError) {
+      console.error('Error loading transactions:', loadError);
       setTransactions([]);
     }
   };
 
   const categories = [
-    { name: 'food', label: 'Food & Dining', color: '#FF6B6B' },
-    { name: 'transport', label: 'Transportation', color: '#4ECDC4' },
-    { name: 'entertainment', label: 'Entertainment', color: '#45B7D1' },
-    { name: 'utilities', label: 'Utilities', color: '#96CEB4' },
-    { name: 'shopping', label: 'Shopping', color: '#FFEAA7' },
-    { name: 'healthcare', label: 'Healthcare', color: '#DDA0DD' }
+    { name: 'food', label: 'Food & Dining' },
+    { name: 'transport', label: 'Transportation' },
+    { name: 'entertainment', label: 'Entertainment' },
+    { name: 'utilities', label: 'Utilities' },
+    { name: 'shopping', label: 'Shopping' },
+    { name: 'healthcare', label: 'Healthcare' }
   ];
 
   const handleSubmit = async (e) => {
@@ -70,7 +70,7 @@ const Budget = ({ user }) => {
       if (editingId) {
         const response = await api.budgets.update(editingId, submitData);
         if (response.success) {
-          setBudgets(budgets.map(b => b._id === editingId ? response.data : b));
+          setBudgets(budgets.map((b) => (b._id === editingId ? response.data : b)));
         }
       } else {
         const response = await api.budgets.create(submitData);
@@ -92,7 +92,7 @@ const Budget = ({ user }) => {
     if (!window.confirm('Are you sure you want to delete this budget?')) return;
     try {
       await api.budgets.delete(id);
-      setBudgets(budgets.filter(b => b._id !== id));
+      setBudgets(budgets.filter((b) => b._id !== id));
     } catch (err) {
       console.error('Error deleting budget:', err);
       setError('Failed to delete budget');
@@ -110,9 +110,7 @@ const Budget = ({ user }) => {
     setShowForm(true);
   };
 
-  const formatCurrency = (amount) => {
-    return formatCurrencyByPreference(amount, user);
-  };
+  const formatCurrency = (amount) => formatCurrencyByPreference(amount, user);
 
   const normalizeCategory = (value) => {
     if (!value) return '';
@@ -129,27 +127,24 @@ const Budget = ({ user }) => {
     return categoryTransactions.reduce((sum, t) => sum + t.amount, 0);
   };
 
-  const getCategoryColor = (category) => {
-    const cat = categories.find(c => c.name === category);
-    return cat ? cat.color : '#667eea';
-  };
-
   const getCategoryLabel = (category) => {
     const normalized = normalizeCategory(category);
     const cat = categories.find((c) => c.name === normalized);
     return cat ? cat.label : category;
   };
 
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData({ name: '', category: 'food', amount: '', period: 'monthly' });
+  };
+
   return (
-    <div className="container">
-      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="container budget-page">
+      <div className="budget-header">
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-            Budget Overview
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Track your spending against your budgets
-          </p>
+          <h1 className="budget-title">Budget Overview</h1>
+          <p className="budget-subtitle">Track your spending against your budgets</p>
         </div>
         <button
           onClick={() => {
@@ -157,106 +152,60 @@ const Budget = ({ user }) => {
             setFormData({ name: '', category: 'food', amount: '', period: 'monthly' });
             setShowForm(true);
           }}
-          className="btn btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          className="btn btn-primary budget-new-btn"
         >
           <Plus size={18} />
           New Budget
         </button>
       </div>
 
-      {error && (
-        <div style={{
-          background: 'var(--error-bg)',
-          color: 'var(--error)',
-          padding: '1rem',
-          borderRadius: '8px',
-          marginBottom: '1rem'
-        }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="budget-error">{error}</div>}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading budgets...</div>
+        <div className="budget-loading">Loading budgets...</div>
       ) : budgets.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>No budgets yet. Create one to get started!</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn btn-primary"
-          >
-            <Plus size={18} style={{ marginRight: '0.5rem' }} />
+        <div className="card budget-empty-card">
+          <p className="budget-empty-text">No budgets yet. Create one to get started!</p>
+          <button onClick={() => setShowForm(true)} className="btn btn-primary budget-create-btn">
+            <Plus size={18} />
             Create Budget
           </button>
         </div>
       ) : (
-        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))' }}>
+        <div className="dashboard-grid budget-grid">
           {budgets.map((budget) => {
             const spent = getCategoryExpenses(budget.category);
             const remaining = budget.amount - spent;
             const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
-            const color = getCategoryColor(budget.category);
+            const normalizedCategory = normalizeCategory(budget.category) || 'default';
 
             return (
-              <div key={budget._id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div key={budget._id} className="card budget-card">
+                <div className="budget-card-header">
                   <div>
-                    <h3 style={{ margin: 0, color }}>{budget.name}</h3>
-                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {getCategoryLabel(budget.category)} - {budget.period}
-                    </p>
+                    <h3 className={`budget-card-title budget-cat-${normalizedCategory}`}>{budget.name}</h3>
+                    <p className="budget-card-meta">{getCategoryLabel(budget.category)} - {budget.period}</p>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      onClick={() => handleEdit(budget)}
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px' }}
-                    >
+                  <div className="budget-card-actions">
+                    <button onClick={() => handleEdit(budget)} className="btn btn-secondary budget-card-action-btn" aria-label="Edit budget">
                       <Edit size={14} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(budget._id)}
-                      className="btn btn-secondary"
-                      style={{ padding: '4px 8px', background: '#dc3545' }}
-                    >
+                    <button onClick={() => handleDelete(budget._id)} className="btn btn-secondary budget-card-action-btn budget-card-delete-btn" aria-label="Delete budget">
                       <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div className="budget-progress-wrap">
+                  <div className="budget-progress-meta">
                     <span>Spent: {formatCurrency(spent)}</span>
                     <span>Budget: {formatCurrency(budget.amount)}</span>
                   </div>
-                  <div style={{
-                    width: '100%',
-                    height: '8px',
-                    background: 'var(--border-color)',
-                    borderRadius: '4px',
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${Math.min(percentage, 100)}%`,
-                      height: '100%',
-                      background: percentage > 100 ? '#dc3545' : color,
-                      transition: 'width 0.3s ease'
-                    }}></div>
-                  </div>
-                  <div style={{ textAlign: 'center', marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    {percentage.toFixed(1)}% used
-                  </div>
+                  <progress className={`budget-progress budget-cat-${normalizedCategory} ${percentage > 100 ? 'is-over' : ''}`} max="100" value={Math.min(percentage, 100)} />
+                  <div className="budget-progress-used">{percentage.toFixed(1)}% used</div>
                 </div>
 
-                <div style={{
-                  padding: '0.5rem',
-                  borderRadius: '4px',
-                  background: remaining < 0 ? '#f8d7da' : '#d4edda',
-                  color: remaining < 0 ? '#721c24' : '#155724',
-                  textAlign: 'center',
-                  fontWeight: '500'
-                }}>
+                <div className={`budget-remaining ${remaining < 0 ? 'is-over' : 'is-safe'}`}>
                   {remaining < 0 ? 'Over budget' : 'Remaining'}: {formatCurrency(Math.abs(remaining))}
                 </div>
               </div>
@@ -266,20 +215,9 @@ const Budget = ({ user }) => {
       )}
 
       {showForm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div className="card" style={{ maxWidth: '400px', width: '100%', margin: '1rem' }}>
-            <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Edit Budget' : 'Create Budget'}</h3>
+        <div className="budget-modal-overlay">
+          <div className="card budget-modal-card">
+            <h3 className="budget-modal-title">{editingId ? 'Edit Budget' : 'Create Budget'}</h3>
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -301,7 +239,7 @@ const Budget = ({ user }) => {
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
-                  {categories.map(cat => (
+                  {categories.map((cat) => (
                     <option key={cat.name} value={cat.name}>{cat.label}</option>
                   ))}
                 </select>
@@ -333,20 +271,11 @@ const Budget = ({ user }) => {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1rem' }}>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
+              <div className="budget-modal-actions">
+                <button type="submit" className="btn btn-primary budget-modal-btn">
                   {editingId ? 'Update' : 'Create'} Budget
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingId(null);
-                    setFormData({ name: '', category: 'food', amount: '', period: 'monthly' });
-                  }}
-                  className="btn btn-secondary"
-                  style={{ flex: 1 }}
-                >
+                <button type="button" onClick={resetForm} className="btn btn-secondary budget-modal-btn">
                   Cancel
                 </button>
               </div>

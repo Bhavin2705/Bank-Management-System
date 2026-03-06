@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   BarChart3,
   CreditCard,
@@ -58,8 +58,8 @@ const Users = ({ user }) => {
 
   const loadUsers = async () => {
     try {
-      const allUsers = await getAllUsers();
-      setUsers(allUsers);
+      const response = await getAllUsers();
+      setUsers(Array.isArray(response?.users) ? response.users : []);
     } catch (error) {
       console.error('Error loading users:', error);
       setUsers([]);
@@ -145,73 +145,64 @@ const Users = ({ user }) => {
   const totalDeposits = bankMetrics?.totalDeposits ?? totalBalance;
 
   return (
-    <div className="container">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-          User Management
-        </h1>
-        <p style={{ color: '#6c757d' }}>
-          Manage all bank users and accounts
-        </p>
+    <div className="container users-page">
+      <div className="users-header">
+        <h1 className="users-title">User Management</h1>
+        <p className="users-subtitle">Manage all bank users and accounts</p>
       </div>
 
-      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' }}>
+      <div className="dashboard-grid users-stats-grid">
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="users-stats-row">
             <div>
               <div className="stat-value">{adminStats?.totalUsers ?? users.length}</div>
               <div className="stat-label">Total Users</div>
             </div>
-            <UsersIcon size={32} style={{ color: '#667eea' }} />
+            <UsersIcon size={32} className="users-stats-icon users-stats-icon-total" />
           </div>
         </div>
 
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="users-stats-row">
             <div>
               <div className="stat-value">{adminStats?.activeUsers ?? 0}</div>
               <div className="stat-label">Active Users</div>
             </div>
-            <Shield size={32} style={{ color: '#00a3ff' }} />
+            <Shield size={32} className="users-stats-icon users-stats-icon-active" />
           </div>
         </div>
 
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="users-stats-row">
             <div>
               <div className="stat-value">{adminStats?.adminUsers ?? 0}</div>
               <div className="stat-label">Admin Users</div>
             </div>
-            <BarChart3 size={32} style={{ color: '#f59e0b' }} />
+            <BarChart3 size={32} className="users-stats-icon users-stats-icon-admin" />
           </div>
         </div>
 
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="users-stats-row">
             <div>
               <div className="stat-value">{formatCurrency(totalDeposits)}</div>
               <div className="stat-label">Total Deposits</div>
             </div>
-            <DollarSign size={32} style={{ color: '#28a745' }} />
+            <DollarSign size={32} className="users-stats-icon users-stats-icon-deposit" />
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="card users-list-card">
+        <h3 className="users-section-title">
           <UsersIcon size={20} />
           All Users
         </h3>
 
         <div className="transaction-list">
           {users.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '3rem 2rem',
-              color: 'var(--text-secondary)',
-              fontStyle: 'italic'
-            }}>
-              <UserIcon size={48} style={{ color: 'var(--text-secondary)', marginBottom: '1rem', opacity: 0.5 }} />
+            <div className="users-empty-state">
+              <UserIcon size={48} className="users-empty-icon" />
               <div>No users registered yet.</div>
               <small>Users will appear here once they register for accounts.</small>
             </div>
@@ -221,60 +212,40 @@ const Users = ({ user }) => {
               const listedUserId = getUserId(listedUser);
               const isSelf = listedUserId === currentUserId;
               return (
-                <div key={listedUserId} className="transaction-item">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
-                    <div style={{
-                      padding: '12px',
-                      borderRadius: '50%',
-                      background: '#f8f9fa',
-                      border: '2px solid #e9ecef'
-                    }}>
-                      <UserIcon size={20} style={{ color: '#667eea' }} />
+                <div key={listedUserId} className="transaction-item users-row-item">
+                  <div className="users-row-main">
+                    <div className="users-avatar-wrap">
+                      <UserIcon size={20} className="users-avatar-icon" />
                     </div>
 
                     <div>
-                      <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
-                        {listedUser.name}
-                      </div>
-                      <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
-                        {listedUser.email} | {listedUser.accountNumber}
-                      </div>
-                      <div style={{
-                        fontSize: '0.75rem',
-                        color: listedUser.role === 'admin' ? '#667eea' : '#6c757d',
-                        fontWeight: '500',
-                        textTransform: 'uppercase'
-                      }}>
+                      <div className="users-name">{listedUser.name}</div>
+                      <div className="users-meta">{listedUser.email} | {listedUser.accountNumber}</div>
+                      <div className={`users-role-status ${listedUser.role === 'admin' ? 'is-admin' : 'is-user'}`}>
                         {listedUser.role} | {listedUser.status || 'active'}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: '600', fontSize: '1.1rem', color: '#28a745' }}>
-                      {formatCurrency(listedUser.balance)}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6c757d' }}>
-                      Balance
-                    </div>
-                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <div className="users-row-actions">
+                    <div className="users-balance">{formatCurrency(listedUser.balance)}</div>
+                    <div className="users-balance-label">Balance</div>
+                    <div className="users-action-group">
                       <button
                         disabled={loading}
-                        style={{ background: '#0ea5e9', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.85rem' }}
+                        className="users-action-btn users-action-activity"
                         onClick={() => loadUserDetails(listedUser)}
                       >
                         Activity
                       </button>
                       {!isAdmin && !isSelf && (
-                        <>
-                          <button
-                            disabled={loading}
-                            style={{ background: listedUser.status === 'active' ? '#ffc107' : '#28a745', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.85rem' }}
-                            onClick={() => handleBlock(listedUserId, listedUser.status, listedUser.name)}
-                          >
-                            {listedUser.status === 'active' ? 'Block' : 'Unblock'}
-                          </button>
-                        </>
+                        <button
+                          disabled={loading}
+                          className={`users-action-btn ${listedUser.status === 'active' ? 'users-action-block' : 'users-action-unblock'}`}
+                          onClick={() => handleBlock(listedUserId, listedUser.status, listedUser.name)}
+                        >
+                          {listedUser.status === 'active' ? 'Block' : 'Unblock'}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -286,34 +257,30 @@ const Users = ({ user }) => {
       </div>
 
       {selectedUser && (
-        <div className="card">
-          <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="card users-activity-card">
+          <h3 className="users-section-title">
             <Activity size={20} />
             Activity Console: {selectedUser.name}
           </h3>
 
           {detailsLoading ? (
-            <div style={{ color: '#6c757d' }}>Loading user activity...</div>
+            <div className="users-loading-note">Loading user activity...</div>
           ) : (
-            <div style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' }}>
+            <div className="users-activity-grid">
               <div>
-                <h4 style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <h4 className="users-subsection-title">
                   <Activity size={16} />
                   Recent Transactions
                 </h4>
                 <div className="transaction-list">
                   {userTransactions.length === 0 ? (
-                    <div style={{ color: '#6c757d', padding: '1rem' }}>No transactions found.</div>
+                    <div className="users-muted-note">No transactions found.</div>
                   ) : (
                     userTransactions.map((transaction) => (
-                      <div key={transaction._id} className="transaction-item" style={{ alignItems: 'center' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600 }}>
-                            {(transaction.type || '').toUpperCase()} - {formatCurrency(transaction.amount || 0)}
-                          </div>
-                          <div style={{ fontSize: '0.82rem', color: '#6c757d', overflowWrap: 'anywhere' }}>
-                            {transaction.description || 'No description'}
-                          </div>
+                      <div key={transaction._id} className="transaction-item users-activity-item">
+                        <div className="users-activity-main">
+                          <div className="users-activity-amount">{(transaction.type || '').toUpperCase()} - {formatCurrency(transaction.amount || 0)}</div>
+                          <div className="users-activity-desc">{transaction.description || 'No description'}</div>
                         </div>
                       </div>
                     ))
@@ -322,27 +289,23 @@ const Users = ({ user }) => {
               </div>
 
               <div>
-                <h4 style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <h4 className="users-subsection-title">
                   <CreditCard size={16} />
                   User Cards
                 </h4>
                 <div className="transaction-list">
                   {userCards.length === 0 ? (
-                    <div style={{ color: '#6c757d', padding: '1rem' }}>No active cards found.</div>
+                    <div className="users-muted-note">No active cards found.</div>
                   ) : (
                     userCards.map((card) => (
-                      <div key={card._id} className="transaction-item" style={{ alignItems: 'center' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 600 }}>
-                            {card.cardName || card.cardBrand || 'Card'} **** {String(card.cardNumber || '').slice(-4)}
-                          </div>
-                          <div style={{ fontSize: '0.82rem', color: '#6c757d' }}>
-                            Status: {(card.status || 'active').toUpperCase()}
-                          </div>
+                      <div key={card._id} className="transaction-item users-activity-item">
+                        <div className="users-card-main">
+                          <div className="users-activity-amount">{card.cardName || card.cardBrand || 'Card'} **** {String(card.cardNumber || '').slice(-4)}</div>
+                          <div className="users-activity-desc">Status: {(card.status || 'active').toUpperCase()}</div>
                         </div>
                         <button
                           disabled={loading || card.status === 'closed'}
-                          style={{ background: card.status === 'active' ? '#f59e0b' : '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.82rem' }}
+                          className={`users-card-action-btn ${card.status === 'active' ? 'is-block' : 'is-unblock'}`}
                           onClick={() => handleCardStatusToggle(card._id, card.status)}
                         >
                           {card.status === 'active' ? 'Block' : card.status === 'blocked' ? 'Unblock' : 'Activate'}

@@ -10,6 +10,8 @@ yarn-error.log*
 
 # Environment variables
 .env
+config/environments/*.env
+!config/environments/test.env
 
 # Build output
 dist/
@@ -28,6 +30,7 @@ Thumbs.db
 
 # Coverage
 coverage/
+tests/.jest-server-state.json
 
 *.txt
 *.md

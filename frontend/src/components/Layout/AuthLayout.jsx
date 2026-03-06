@@ -10,73 +10,21 @@ const AuthLayout = ({ children, darkMode, toggleDarkMode }) => {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside
-        className="sidebar"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
-          color: 'white',
-          width: 'min(280px, 84vw)',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          height: '100vh',
-          zIndex: 1000,
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-        }}
-      >
-        <div
-          className="sidebar-header"
-          style={{
-            padding: '1.5rem 1rem',
-            borderBottom: '1px solid rgba(0, 212, 255, 0.2)'
-          }}
-        >
-          <div
-            className="sidebar-brand"
-            style={{
-              fontSize: '1.5rem',
-              fontWeight: '700',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            🏦 BankPro
-          </div>
+    <div className="auth-layout">
+      <aside className="sidebar auth-layout-sidebar">
+        <div className="sidebar-header auth-layout-sidebar-header">
+          <div className="sidebar-brand auth-layout-sidebar-brand">BankPro</div>
         </div>
 
-        <nav style={{ flex: 1, padding: '1rem 0' }}>
-          <ul className="sidebar-nav" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <nav className="auth-layout-nav">
+          <ul className="sidebar-nav auth-layout-nav-list">
             {navItems.map(item => {
               const Icon = item.icon;
               return (
-                <li key={item.id} className="sidebar-nav-item" style={{ margin: 0 }}>
+                <li key={item.id} className="sidebar-nav-item auth-layout-nav-item">
                   <Link
                     to={item.path}
-                    className="sidebar-nav-link"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.75rem 1rem',
-                      color: 'white',
-                      textDecoration: 'none',
-                      transition: 'all 0.3s ease',
-                      borderLeft: '3px solid transparent',
-                      fontSize: '0.95rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(0, 212, 255, 0.15)';
-                      e.currentTarget.style.borderLeftColor = '#00D4FF';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.borderLeftColor = 'transparent';
-                    }}
+                    className="sidebar-nav-link auth-layout-nav-link"
                   >
                     <Icon size={20} />
                     {!isCollapsed && <span>{item.label}</span>}
@@ -87,37 +35,10 @@ const AuthLayout = ({ children, darkMode, toggleDarkMode }) => {
           </ul>
         </nav>
 
-        <div
-          className="sidebar-footer"
-          style={{
-            borderTop: '1px solid rgba(0, 212, 255, 0.3)',
-            padding: '1.2rem 1rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem'
-          }}
-        >
+        <div className="sidebar-footer auth-layout-footer">
           <button
             onClick={toggleDarkMode}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              background: 'rgba(0, 212, 255, 0.1)',
-              border: 'none',
-              color: 'white',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              fontSize: '0.9rem'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0, 212, 255, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(0, 212, 255, 0.1)';
-            }}
+            className="auth-layout-theme-toggle"
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             {!isCollapsed && (darkMode ? 'Light Mode' : 'Dark Mode')}
@@ -125,14 +46,7 @@ const AuthLayout = ({ children, darkMode, toggleDarkMode }) => {
         </div>
       </aside>
 
-      <main
-        style={{
-          marginLeft: 'min(280px, 84vw)',
-          flex: 1,
-          background: 'var(--bg-secondary)',
-          minHeight: '100vh'
-        }}
-      >
+      <main className="auth-layout-main">
         {children}
       </main>
     </div>

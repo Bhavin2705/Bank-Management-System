@@ -5,7 +5,7 @@ const {
     updateTwoFactor,
     getLinkedAccounts,
     getSessions
-} = require('../controllers/settingsController');
+} = require('../controllers/settings.controller');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();

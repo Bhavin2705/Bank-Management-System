@@ -3,7 +3,8 @@ const { spawn } = require('child_process');
 const { isServerUp, waitForServer, writeState } = require('./helpers/serverControl');
 
 module.exports = async () => {
-    const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:5000';
+    const testPort = process.env.TEST_PORT || '5055';
+    const baseUrl = process.env.TEST_BASE_URL || `http://127.0.0.1:${testPort}`;
     const alreadyRunning = await isServerUp(baseUrl);
 
     if (alreadyRunning) {
@@ -16,7 +17,8 @@ module.exports = async () => {
         cwd: backendDir,
         env: {
             ...process.env,
-            NODE_ENV: process.env.NODE_ENV || 'development'
+            PORT: String(new URL(baseUrl).port || testPort),
+            NODE_ENV: process.env.NODE_ENV || 'test'
         },
         detached: true,
         stdio: 'ignore'

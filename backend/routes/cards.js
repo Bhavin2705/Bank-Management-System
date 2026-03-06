@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validateCardCreation } = require('../middleware/validation');
-const cardsController = require('../controllers/cardsController');
+const cardsController = require('../controllers/cards.controller');
 
 router.use(protect);
 

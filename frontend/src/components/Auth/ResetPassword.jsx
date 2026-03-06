@@ -116,10 +116,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       <div
-        className="hidden-mobile lg:w-1/2 flex-col justify-between p-12 text-white"
-        style={{
-          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
-        }}
+        className="hidden-mobile lg:w-1/2 auth-hero-gradient flex-col justify-between p-12 text-white"
       >
         <div className="flex items-center space-x-2">
           <h1 className="text-2xl font-bold">BankPro</h1>
@@ -217,8 +214,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div
-                        className={`h-1.5 rounded-full ${getPasswordStrengthColor()}`}
-                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                        className={`reset-password-strength-fill reset-password-strength-${passwordStrength} h-1.5 rounded-full ${getPasswordStrengthColor()}`}
                       ></div>
                     </div>
                   </div>
@@ -260,10 +256,7 @@ const ResetPassword = ({ resetToken, email, onBack, onSuccess }) => {
 
               <button
                 type="submit"
-                className="w-full text-white py-3.5 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
-                }}
+                className="auth-primary-cta w-full text-white py-3.5 px-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={loading || !formData.password || !formData.confirmPassword || formData.password !== formData.confirmPassword}
               >
                 {loading ? (

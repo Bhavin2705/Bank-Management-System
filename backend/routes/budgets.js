@@ -11,7 +11,7 @@ const {
   deleteBudget,
   updateBudgetSpent,
   getBudgetStats
-} = require('../controllers/budgetController');
+} = require('../controllers/budget.controller');
 
 router.get('/', protect, getBudgets);
 

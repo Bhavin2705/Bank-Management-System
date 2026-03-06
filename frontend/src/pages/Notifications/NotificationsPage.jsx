@@ -73,14 +73,14 @@ const Notifications = () => {
     return <Bell size={20} />;
   };
 
-  const getIconColor = (type) => {
+  const getIconColorClass = (type) => {
     const t = type?.toLowerCase() || '';
-    if (t.includes('warning') || t.includes('alert')) return '#f59e0b';
-    if (t.includes('transaction') || t.includes('debit') || t.includes('credit')) return '#3b82f6';
-    if (t.includes('payment') || t.includes('success')) return '#10b981';
-    if (t.includes('security') || t.includes('login')) return '#f59e0b';
-    if (t.includes('card')) return '#ef4444';
-    return '#667eea';
+    if (t.includes('warning') || t.includes('alert')) return 'is-warning';
+    if (t.includes('transaction') || t.includes('debit') || t.includes('credit')) return 'is-transaction';
+    if (t.includes('payment') || t.includes('success')) return 'is-success';
+    if (t.includes('security') || t.includes('login')) return 'is-security';
+    if (t.includes('card')) return 'is-card';
+    return 'is-default';
   };
 
   const formatTimestamp = (ts) => {
@@ -105,7 +105,7 @@ const Notifications = () => {
   if (loading) {
     return (
       <div className="container">
-        <div style={{ textAlign: 'center', padding: '6rem 1rem', color: 'var(--text-secondary)' }}>
+        <div className="notifications-loading">
           Loading notifications...
         </div>
       </div>
@@ -114,19 +114,12 @@ const Notifications = () => {
 
   return (
     <div className="container notifications-page">
-      <div className="notifications-header" style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: '2.5rem',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
+      <div className="notifications-header">
         <div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: 700, marginBottom: '0.4rem' }}>
+          <h1 className="notifications-title">
             Notifications
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <p className="notifications-subtitle">
             Recent account and transaction updates
           </p>
         </div>
@@ -135,16 +128,6 @@ const Notifications = () => {
           <button
             className="notifications-mark-all-btn"
             onClick={markAllAsRead}
-            style={{
-              padding: '0.6rem 1.25rem',
-              background: 'var(--text-accent)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '0.95rem',
-              cursor: 'pointer',
-              fontWeight: 500
-            }}
           >
             Mark all as read
           </button>
@@ -152,97 +135,41 @@ const Notifications = () => {
       </div>
 
       {error && (
-        <div className="notifications-list-wrap" style={{
-          background: 'rgba(220, 53, 69, 0.1)',
-          color: '#dc3545',
-          padding: '1rem 1.25rem',
-          borderRadius: '8px',
-          marginBottom: '2rem',
-          border: '1px solid rgba(220, 53, 69, 0.3)'
-        }}>
+        <div className="notifications-error">
           {error}
         </div>
       )}
 
       {notifications.length === 0 ? (
-        <div style={{
-          textAlign: 'center',
-          padding: '7rem 1rem',
-          color: 'var(--text-secondary)',
-          fontSize: '1.15rem'
-        }}>
+        <div className="notifications-empty">
           <p>No notifications available</p>
         </div>
       ) : (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1px',
-          background: 'var(--bg-secondary)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          border: '1px solid var(--border)'
-        }}>
+        <div className="notifications-list-wrap">
           {notifications.map((n) => (
             <div
               className={`notifications-row ${n.read ? 'is-read' : 'is-unread'}`}
               key={n.id || n._id}
-              style={{
-                padding: '1.25rem 1.5rem',
-                background: n.read ? 'transparent' : 'rgba(99, 102, 241, 0.07)',
-                borderBottom: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '1.2rem'
-              }}
             >
-              <div style={{
-                padding: '10px',
-                background: `${getIconColor(n.type)}15`,
-                borderRadius: '10px',
-                color: getIconColor(n.type),
-                flexShrink: 0
-              }}>
+              <div className={`notifications-icon-wrap ${getIconColorClass(n.type)}`}>
                 {getIcon(n.type)}
               </div>
 
-              <div style={{ flex: 1 }}>
-                <p style={{
-                  margin: 0,
-                  fontWeight: n.read ? 400 : 600,
-                  color: 'var(--text-primary)',
-                  lineHeight: 1.45
-                }}>
+              <div className="notifications-content">
+                <p className={`notifications-message ${n.read ? 'is-read' : 'is-unread'}`}>
                   {normalizeCurrencySpacing(n.message)}
                 </p>
-                <p style={{
-                  margin: '0.4rem 0 0',
-                  fontSize: '0.84rem',
-                  color: 'var(--text-secondary)'
-                }}>
+                <p className="notifications-timestamp">
                   {formatTimestamp(n.timestamp)}
                 </p>
               </div>
 
               {!n.read && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
-                  <div style={{
-                    width: '10px',
-                    height: '10px',
-                    background: 'var(--text-accent)',
-                    borderRadius: '50%'
-                  }} />
+                <div className="notifications-actions">
+                  <div className="notifications-unread-dot" />
                   <button
                     onClick={() => markAsRead(n.id || n._id)}
-                    style={{
-                      padding: '5px 12px',
-                      fontSize: '0.82rem',
-                      background: 'transparent',
-                      border: '1px solid var(--border)',
-                      borderRadius: '6px',
-                      color: 'var(--text-secondary)',
-                      cursor: 'pointer'
-                    }}
+                    className="notifications-mark-read-btn"
                   >
                     Mark read
                   </button>

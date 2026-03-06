@@ -9,7 +9,7 @@ const {
   deleteBill,
   payBill,
   getBillStats
-} = require('../controllers/billController');
+} = require('../controllers/bill.controller');
 
 router.get('/', protect, getBills);
 

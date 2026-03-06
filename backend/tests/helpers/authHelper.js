@@ -7,6 +7,10 @@ const registerUser = async (overrides = {}) => {
         .post('/api/auth/register')
         .send(payload);
 
+    if (!response.body?.success || !response.body?.data?.user || !response.body?.data?.token) {
+        throw new Error(`User registration failed in test helper (status: ${response.status}). Response: ${JSON.stringify(response.body)}`);
+    }
+
     return {
         payload,
         response,
@@ -26,6 +30,10 @@ const createAuthenticatedUser = async (overrides = {}) => {
         identifier: registration.payload.email,
         password: registration.payload.password
     });
+
+    if (!loginResponse.body?.success || !loginResponse.body?.data?.token || !loginResponse.body?.data?.user) {
+        throw new Error(`User login failed in test helper (status: ${loginResponse.status}). Response: ${JSON.stringify(loginResponse.body)}`);
+    }
 
     return {
         payload: registration.payload,

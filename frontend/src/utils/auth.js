@@ -36,12 +36,49 @@ const handleAccountSelectionError = (error) => {
   return null;
 };
 
-export const initializeUsers = () => Promise.resolve();
+const readStoredUser = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredUser = (user) => {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!user) {
+      window.sessionStorage.removeItem(AUTH_KEY);
+      return null;
+    }
+    window.sessionStorage.setItem(AUTH_KEY, JSON.stringify(user));
+    return user;
+  } catch {
+    return null;
+  }
+};
+
+const clearStoredUser = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(AUTH_KEY);
+  } catch {
+    // no-op
+  }
+};
+
+export const initializeUsers = () => Promise.resolve(getCurrentUser());
 
 export const login = async (identifier, password, otp) => {
   try {
     const payload = withOptionalOtp({ identifier, password }, otp);
     const response = await api.auth.login(payload);
+    if (response?.success && response?.data?.user) {
+      writeStoredUser(response.data.user);
+    }
     return mapAuthResponse(response);
   } catch (error) {
     const accountSelection = handleAccountSelectionError(error);
@@ -54,6 +91,9 @@ export const loginWithAccount = async (identifier, password, accountId, otp) => 
   try {
     const payload = withOptionalOtp({ identifier, password, accountId }, otp);
     const response = await api.auth.loginWithAccount(payload);
+    if (response?.success && response?.data?.user) {
+      writeStoredUser(response.data.user);
+    }
     return mapAuthResponse(response);
   } catch (error) {
     return { success: false, error: error?.message || 'Login failed' };
@@ -65,6 +105,7 @@ export const register = async (userData) => {
     const response = await api.auth.register(userData);
 
     if (response.success) {
+      writeStoredUser(response.data.user);
       return { success: true, user: response.data.user };
     }
 
@@ -85,15 +126,18 @@ export const logout = async () => {
   } finally {
     try {
       clearAuthToken();
+      clearStoredUser();
       document.cookie = 'bank_auth_token=; path=/; max-age=0';
       document.cookie = 'bank_auth_refresh_token=; path=/; max-age=0';
+      document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = 'refreshToken=; path=/; max-age=0';
     } catch (clearError) {
       console.debug('Failed to clear auth cookies:', clearError?.message || 'unknown error');
     }
   }
 };
 
-export const getCurrentUser = () => null;
+export const getCurrentUser = () => readStoredUser();
 
 export const updateUserBalance = async (userId, newBalance) => {
   try {
@@ -108,10 +152,14 @@ export const updateUserBalance = async (userId, newBalance) => {
 
     if (!currentUserId || !providedUserId || currentUserId !== providedUserId) {
       console.warn('User ID mismatch or missing - current:', currentUserId, 'provided:', providedUserId);
-      return { ...currentUser, balance: newBalance };
+      const nextUser = { ...currentUser, balance: newBalance };
+      writeStoredUser(nextUser);
+      return nextUser;
     }
 
-    return { ...currentUser, balance: newBalance };
+    const nextUser = { ...currentUser, balance: newBalance };
+    writeStoredUser(nextUser);
+    return nextUser;
   } catch (error) {
     console.error('Error updating user balance:', error);
     return { balance: newBalance };
@@ -122,6 +170,7 @@ export const refreshUserData = async () => {
   try {
     const response = await api.auth.getMe();
     if (response.success) {
+      writeStoredUser(response.data);
       return response.data;
     }
   } catch (error) {
@@ -133,7 +182,10 @@ export const refreshUserData = async () => {
         const refreshResponse = await api.auth.refreshToken();
         if (refreshResponse && refreshResponse.success) {
           const retryResponse = await api.auth.getMe();
-          if (retryResponse.success) return retryResponse.data;
+          if (retryResponse.success) {
+            writeStoredUser(retryResponse.data);
+            return retryResponse.data;
+          }
           return null;
         }
         return null;
@@ -150,16 +202,28 @@ export const refreshUserData = async () => {
   return null;
 };
 
-export const getAllUsers = async () => {
+export const getAllUsers = async (params = {}) => {
+  const fallback = {
+    users: [],
+    pagination: { page: 1, limit: 20, total: 0, pages: 1 }
+  };
+
   try {
-    const response = await api.users.getAll();
-    return response.success ? response.data : [];
+    const response = await api.users.getAll(params);
+    if (!response?.success) {
+      return fallback;
+    }
+
+    return {
+      users: response.data || [],
+      pagination: response.pagination || fallback.pagination
+    };
   } catch (error) {
     if (error.message && error.message.includes('not authorized')) {
-      return [];
+      return fallback;
     }
     console.error('Error fetching users:', error);
-    return [];
+    return fallback;
   }
 };
 
@@ -181,6 +245,7 @@ export const updateUserDetails = async (userData) => {
   try {
     const response = await api.auth.updateDetails(userData);
     if (response.success) {
+      writeStoredUser(response.data);
       return { success: true, user: response.data };
     }
     return { success: false, error: 'Update failed' };

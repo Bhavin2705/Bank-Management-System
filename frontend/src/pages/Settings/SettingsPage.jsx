@@ -400,23 +400,23 @@ const Settings = ({ user, onUserUpdate }) => {
   };
 
   return (
-    <div className="container">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>Account Settings</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Manage your account preferences and security</p>
+    <div className="container settings-page">
+      <div className="settings-page-header">
+        <h1 className="settings-page-title">Account Settings</h1>
+        <p className="settings-page-subtitle">Manage your account preferences and security</p>
       </div>
 
       <div className="card">
         <SettingsTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {error && (
-          <div className="error-message" style={{ marginBottom: '1rem' }}>
+          <div className="error-message settings-flash">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="success-message" style={{ marginBottom: '1rem' }}>
+          <div className="success-message settings-flash">
             {message}
           </div>
         )}

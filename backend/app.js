@@ -6,7 +6,7 @@ const hpp = require('hpp');
 const cookieParser = require('cookie-parser');
 const cors = require('./middleware/cors');
 const errorHandler = require('./middleware/errorHandler');
-const emailService = require('./utils/emailService');
+const emailService = require('./services/email');
 const registerApiRoutes = require('./routes');
 
 const createApp = () => {

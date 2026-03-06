@@ -1,35 +1,33 @@
-import { Building2 } from 'lucide-react';
+﻿import { Building2 } from 'lucide-react';
 
 const BankTab = ({ user, bankData, handleFormKeyDown, handleBankChange, handleBankUpdate, loading }) => (
   <div>
-    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <h3 className="settings-section-title">
       <Building2 size={20} />
       Bank Information
     </h3>
 
     <form onKeyDown={handleFormKeyDown} onSubmit={handleBankUpdate}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1rem' }}>
+      <div className="settings-grid-300">
         <div className="form-group">
           <label className="form-label">Bank</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="settings-bank-row">
             <input
               type="text"
               name="bankName"
-              className="form-input"
+              className="form-input settings-flex-input"
               value={bankData.bankName}
               onChange={handleBankChange}
-              style={{ flex: 1, minWidth: 0 }}
             />
             <input
               type="text"
               name="ifscCode"
-              className="form-input"
+              className="form-input settings-flex-input"
               value={bankData.ifscCode}
               onChange={handleBankChange}
-              style={{ flex: 1, minWidth: 0 }}
             />
           </div>
-          <small style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+          <small className="settings-help-text">
             Keep these details accurate to avoid transfer and settlement issues.
           </small>
         </div>
@@ -46,14 +44,13 @@ const BankTab = ({ user, bankData, handleFormKeyDown, handleBankChange, handleBa
         </div>
       </div>
 
-      <div className="form-group" style={{ marginTop: '1rem' }}>
+      <div className="form-group settings-top-gap">
         <label className="form-label">Account Number</label>
         <input
           type="text"
-          className="form-input"
+          className="form-input settings-readonly"
           value={user.accountNumber || 'Not assigned'}
           disabled
-          style={{ background: 'var(--bg-tertiary)' }}
         />
       </div>
 
@@ -61,7 +58,7 @@ const BankTab = ({ user, bankData, handleFormKeyDown, handleBankChange, handleBa
         <strong>Important:</strong> Your bank information is used for transfers and transactions. Make sure the
         details are accurate for successful transactions.
       </div>
-      <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: '1rem' }}>
+      <button type="submit" className="btn btn-primary settings-top-gap" disabled={loading}>
         {loading ? 'Saving...' : 'Save Bank Details'}
       </button>
     </form>

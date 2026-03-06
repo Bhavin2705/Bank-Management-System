@@ -18,6 +18,7 @@ const explicitAllowedOrigins = [
 ].filter(Boolean);
 
 const allowedOrigins = new Set(explicitAllowedOrigins);
+const allowVercelPreviewOrigins = String(process.env.ALLOW_VERCEL_PREVIEWS || '').toLowerCase() === 'true';
 
 const isAllowedOrigin = (origin) => {
     if (!origin) return true;
@@ -28,7 +29,7 @@ const isAllowedOrigin = (origin) => {
             return true;
         }
 
-        if (parsed.hostname.endsWith('.vercel.app')) {
+        if (allowVercelPreviewOrigins && parsed.hostname.endsWith('.vercel.app')) {
             return true;
         }
     } catch (e) {

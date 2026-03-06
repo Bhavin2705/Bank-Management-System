@@ -88,18 +88,12 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
 
       <aside
         className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
-          color: 'white',
-        }}
       >
         <div className="sidebar-header">
           <div className="sidebar-brand">BankPro</div>
         </div>
 
-        <nav style={{ flex: 1 }}>
+        <nav className="sidebar-nav-wrap">
           <ul className="sidebar-nav">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -120,50 +114,20 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
           </ul>
         </nav>
 
-        <div
-          className="sidebar-footer"
-          style={{
-            borderTop: '1px solid rgba(0, 212, 255, 0.3)',
-            padding: '1.2rem 1rem',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.9rem',
-              padding: '0.7rem 0.8rem',
-              marginBottom: '0.7rem',
-              color: 'white',
-            }}
-          >
+        <div className="sidebar-footer">
+          <div className="sidebar-user-row">
             <User size={22} />
             {!isCollapsed && (
-              <div style={{ lineHeight: 1.35 }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white' }}>{user?.name}</div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.7, color: 'white' }}>{user?.role}</div>
+              <div className="sidebar-user-meta">
+                <div className="sidebar-user-name">{user?.name}</div>
+                <div className="sidebar-user-role">{user?.role}</div>
               </div>
             )}
           </div>
 
           <button
             onClick={handleLogoutClick}
-            style={{
-              padding: '0.75rem 1rem',
-              fontSize: '0.95rem',
-              width: '100%',
-              gap: '0.6rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              borderRadius: '6px',
-              background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
-              color: 'white',
-              fontWeight: '500',
-              cursor: 'pointer',
-              marginTop: '0.5rem',
-            }}
+            className="sidebar-logout-btn"
           >
             <LogOut size={18} />
             {!isCollapsed && <span>Logout</span>}

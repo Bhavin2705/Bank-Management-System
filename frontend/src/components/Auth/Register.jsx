@@ -308,10 +308,7 @@ const Register = ({ onLogin, switchToLogin }) => {
   return (
     <div className="auth-page min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-50">
       <div 
-        className="hidden lg:flex auth-hero-panel flex-col justify-between p-12 text-white"
-        style={{
-          background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)'
-        }}
+        className="hidden lg:flex auth-hero-panel auth-hero-gradient flex-col justify-between p-12 text-white"
       >
         <div className="flex items-center space-x-2">
           <Building2 size={32} className="text-blue-200" />
@@ -389,8 +386,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type="text"
                     name="name"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.name}
                     onChange={handleNameChange}
                     required
@@ -409,8 +405,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type="email"
                     name="email"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.email}
                     onChange={handleChange}
                     required
@@ -437,8 +432,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type="tel"
                     name="phone"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.phone}
                     onChange={handlePhoneChange}
                     required
@@ -468,8 +462,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
-                    className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.password}
                     onChange={handleChange}
                     required
@@ -501,8 +494,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div
-                        className={`h-1.5 rounded-full ${getPasswordStrengthColor()}`}
-                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                        className={`register-strength-fill register-password-strength-${passwordStrength} h-1.5 rounded-full ${getPasswordStrengthColor()}`}
                       ></div>
                     </div>
                   </div>
@@ -520,8 +512,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
-                    className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
@@ -546,8 +537,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type={showPin ? 'text' : 'password'}
                     name="pin"
-                    className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.pin}
                     onChange={handlePinChange}
                     required
@@ -583,8 +573,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div
-                        className={`h-1.5 rounded-full ${getPinStrengthColor()}`}
-                        style={{ width: `${(pinStrength / 4) * 100}%` }}
+                        className={`register-strength-fill register-pin-strength-${pinStrength} h-1.5 rounded-full ${getPinStrengthColor()}`}
                       ></div>
                     </div>
                   </div>
@@ -602,8 +591,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type={showConfirmPin ? 'text' : 'password'}
                     name="confirmPin"
-                    className="w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-12 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.confirmPin}
                     onChange={handleConfirmPinChange}
                     required
@@ -635,8 +623,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   <input
                     type="text"
                     name="initialDeposit"
-                    className="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                    style={{ backgroundColor: '#ffffff', color: '#111827' }}
+                    className="auth-white-input w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                     value={formData.initialDeposit}
                     onChange={handleInitialDepositChange}
                     inputMode="decimal"
@@ -649,11 +636,7 @@ const Register = ({ onLogin, switchToLogin }) => {
               </div>
               <button
                 type="submit"
-                style={{
-                  background: 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 50%, #00D4FF 100%)',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                }}
-                className="w-full text-white py-3.5 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="auth-primary-cta w-full text-white py-3.5 px-4 rounded-lg font-medium hover:shadow-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={!isFormValid() || loading}
               >
                 {loading ? (

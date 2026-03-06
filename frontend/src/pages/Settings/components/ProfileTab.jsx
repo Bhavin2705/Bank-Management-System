@@ -11,13 +11,13 @@ const ProfileTab = ({
   handleFormKeyDown
 }) => (
   <div>
-    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <h3 className="settings-section-title">
       <User size={20} />
       Profile Information
     </h3>
 
     <form onSubmit={handleProfileUpdate} onKeyDown={handleFormKeyDown}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '1rem' }}>
+      <div className="settings-grid-300">
         <div className="form-group">
           <label className="form-label">Full Name</label>
           <input
@@ -32,51 +32,31 @@ const ProfileTab = ({
 
         <div className="form-group">
           <label className="form-label">Email Address</label>
-          <div style={{ position: 'relative' }}>
+          <div className="settings-input-icon-wrap">
             <input
               type="email"
               name="email"
-              className="form-input"
+              className="form-input settings-input-icon-pad"
               value={profileData.email}
               onChange={handleProfileChange}
               required
-              style={{ paddingRight: '40px' }}
             />
-            <Mail
-              size={18}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-secondary)'
-              }}
-            />
+            <Mail size={18} className="settings-input-icon" />
           </div>
         </div>
 
         <div className="form-group">
           <label className="form-label">Phone Number</label>
-          <div style={{ position: 'relative' }}>
+          <div className="settings-input-icon-wrap">
             <input
               type="tel"
               name="phone"
-              className="form-input"
+              className="form-input settings-input-icon-pad"
               value={profileData.phone}
               onChange={handleProfileChange}
               placeholder="Enter 10-digit phone number"
-              style={{ paddingRight: '40px' }}
             />
-            <Phone
-              size={18}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-secondary)'
-              }}
-            />
+            <Phone size={18} className="settings-input-icon" />
           </div>
         </div>
 
@@ -115,38 +95,27 @@ const ProfileTab = ({
 
         <div className="form-group">
           <label className="form-label">Address</label>
-          <div style={{ position: 'relative' }}>
+          <div className="settings-input-icon-wrap">
             <input
               type="text"
               name="address"
-              className="form-input"
+              className="form-input settings-input-icon-pad"
               value={profileData.address}
               onChange={handleProfileChange}
               placeholder="Enter your address"
-              style={{ paddingRight: '40px' }}
             />
-            <MapPin
-              size={18}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-secondary)'
-              }}
-            />
+            <MapPin size={18} className="settings-input-icon" />
           </div>
         </div>
       </div>
 
-      <div className="form-group" style={{ marginTop: '1rem' }}>
+      <div className="form-group settings-top-gap">
         <label className="form-label">Account Number</label>
         <input
           type="text"
-          className="form-input"
+          className="form-input settings-readonly"
           value={user.accountNumber || 'Not assigned'}
           disabled
-          style={{ background: 'var(--bg-tertiary)' }}
         />
       </div>
 
@@ -158,5 +127,3 @@ const ProfileTab = ({
 );
 
 export default ProfileTab;
-
-

@@ -6,7 +6,7 @@ const {
   createRecurringPayment,
   updateRecurringPayment,
   deleteRecurringPayment
-} = require('../controllers/recurringController');
+} = require('../controllers/recurring.controller');
 
 router.use(protect);
 

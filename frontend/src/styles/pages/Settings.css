@@ -1,0 +1,319 @@
+﻿.settings-page {
+  position: relative;
+}
+
+.settings-page-header {
+  margin-bottom: 2rem;
+}
+
+.settings-page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.settings-page-subtitle {
+  color: var(--text-secondary);
+}
+
+.settings-flash {
+  margin-bottom: 1rem;
+}
+
+.settings-tabs-wrap {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.settings-tab-btn {
+  margin-right: 1rem;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 0.5rem;
+}
+
+.settings-section-title {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-no-margin {
+  margin-bottom: 0;
+}
+
+.settings-grid-300 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 1rem;
+}
+
+.settings-grid-250 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 1rem;
+}
+
+.settings-preferences-grid {
+  margin-bottom: 2rem;
+}
+
+.settings-input-icon-wrap {
+  position: relative;
+}
+
+.settings-input-icon-pad {
+  padding-right: 40px;
+}
+
+.settings-input-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+
+.settings-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 40px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+}
+
+.settings-top-gap {
+  margin-top: 1rem;
+}
+
+.settings-top-gap-lg {
+  margin-bottom: 2rem;
+}
+
+.settings-readonly {
+  background: var(--bg-tertiary);
+}
+
+.settings-bank-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-flex-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-help-text {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.settings-panel,
+.settings-security-panel {
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.settings-panel {
+  background-color: var(--bg-tertiary);
+}
+
+.settings-panel-title,
+.settings-password-title {
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.settings-list-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-row-between,
+.settings-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-header-row {
+  margin-bottom: 1.5rem;
+}
+
+.settings-item-title {
+  font-weight: 500;
+}
+
+.settings-item-subtitle,
+.settings-security-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.settings-checkbox {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+
+.settings-security-header {
+  margin-bottom: 1.5rem;
+}
+
+.settings-security-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.settings-security-subtitle {
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.settings-2fa-btn {
+  padding: 0.5rem 1rem;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.settings-2fa-btn.is-enabled {
+  background-color: #10b981;
+}
+
+.settings-2fa-btn.is-disabled {
+  background-color: #ef4444;
+}
+
+.settings-security-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 1rem;
+  background-color: var(--bg-tertiary);
+  border-radius: 6px;
+}
+
+.settings-accounts-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-account-card {
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.settings-align-start {
+  align-items: flex-start;
+}
+
+.settings-account-name {
+  font-weight: 600;
+}
+
+.settings-account-meta {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 0.3rem;
+}
+
+.settings-account-expiry {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.settings-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-status-badge {
+  padding: 0.25rem 0.75rem;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.settings-status-badge.is-active {
+  background-color: #10b981;
+}
+
+.settings-status-badge.is-blocked {
+  background-color: #f59e0b;
+}
+
+.settings-status-badge.is-inactive {
+  background-color: #6b7280;
+}
+
+.settings-status-badge.is-lost {
+  background-color: #f97316;
+}
+
+.settings-status-badge.is-expired {
+  background-color: #7c3aed;
+}
+
+.settings-status-badge.is-closed {
+  background-color: #ef4444;
+}
+
+.settings-account-toggle-btn {
+  min-width: 0;
+}
+
+.settings-closed-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.settings-sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 1rem;
+}
+
+.settings-session-card,
+.settings-empty-box {
+  padding: 1.5rem;
+  background-color: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+.settings-session-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.settings-session-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.settings-empty-box {
+  text-align: center;
+  padding: 2rem;
+}
+
+.settings-empty-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}

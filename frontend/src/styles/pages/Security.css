@@ -1,0 +1,158 @@
+﻿.security-header,
+.security-stats-grid {
+  margin-bottom: 2rem;
+}
+
+.security-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.security-subtitle,
+.security-section-subtitle {
+  color: var(--text-secondary);
+}
+
+.security-section-subtitle {
+  margin-bottom: 1.5rem;
+}
+
+.security-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.security-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.security-stats-icon-ok {
+  color: #28a745;
+}
+
+.security-stats-icon-lock {
+  color: #667eea;
+}
+
+.security-tab-header {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.security-section-title {
+  margin-bottom: 1.5rem;
+}
+
+.security-input-wrap {
+  position: relative;
+}
+
+.security-input-toggle {
+  position: absolute;
+  right: 10px;
+  top: 40px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.security-empty-note {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.security-history-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.security-history-main-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.security-history-icon-wrap {
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+}
+
+.security-history-title {
+  font-weight: 500;
+}
+
+.security-history-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.security-history-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.security-history-status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: #28a745;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .security-tab-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .security-tab-buttons .tab-btn {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 0;
+    text-align: center;
+  }
+
+  .security-history-list .transaction-item {
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+
+  .security-history-main {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .security-history-main > div:last-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .statements-section-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-start !important;
+  }
+
+  .statements-actions-inline {
+    width: 100%;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .security-tab-buttons .tab-btn {
+    flex-basis: 100%;
+  }
+
+  .statements-page .btn,
+  .statements-actions-inline .btn {
+    width: 100%;
+    justify-content: center;
+    margin-right: 0 !important;
+  }
+}

@@ -74,9 +74,9 @@ const Statements = ({ user }) => {
   };
 
   const getTransactionIcon = (transaction) => {
-    if (isTransferTransaction(transaction)) return <FileText size={16} style={{ color: '#667eea' }} />;
-    if (transaction.type === 'credit') return <TrendingUp size={16} style={{ color: '#28a745' }} />;
-    if (transaction.type === 'debit') return <TrendingDown size={16} style={{ color: '#dc3545' }} />;
+    if (isTransferTransaction(transaction)) return <FileText size={16} className="statements-icon-transfer" />;
+    if (transaction.type === 'credit') return <TrendingUp size={16} className="statements-icon-credit" />;
+    if (transaction.type === 'debit') return <TrendingDown size={16} className="statements-icon-debit" />;
     return <FileText size={16} />;
   };
 
@@ -148,80 +148,76 @@ const Statements = ({ user }) => {
 
   return (
     <div className="container statements-page">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-          Account Statements
-        </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          View and download your transaction history and account statements
-        </p>
+      <div className="statements-header">
+        <h1 className="statements-title">Account Statements</h1>
+        <p className="statements-subtitle">View and download your transaction history and account statements</p>
       </div>
 
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <div className="statements-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Receipt size={20} /> Mini Statement</h3>
+      <div className="card statements-block">
+        <div className="statements-section-header statements-mini-header">
+          <h3 className="statements-icon-title"><Receipt size={20} /> Mini Statement</h3>
           <div className="statements-actions-inline">
-            <button onClick={printMiniStatement} className="btn btn-secondary" style={{ marginRight: '1rem' }}><Printer size={16} style={{ marginRight: '0.5rem' }} />Print</button>
-            <button onClick={downloadMiniStatement} className="btn btn-secondary"><Download size={16} style={{ marginRight: '0.5rem' }} />Download</button>
+            <button onClick={printMiniStatement} className="btn btn-secondary statements-btn-gap-right"><Printer size={16} className="statements-btn-icon" />Print</button>
+            <button onClick={downloadMiniStatement} className="btn btn-secondary"><Download size={16} className="statements-btn-icon" />Download</button>
           </div>
         </div>
 
         {miniStatement ? (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="statements-mini-grid">
               <div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Account Holder</div>
-                <div style={{ fontWeight: '500' }}>{miniStatement.accountHolder}</div>
+                <div className="statements-label">Account Holder</div>
+                <div className="statements-strong">{miniStatement.accountHolder}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Account Number</div>
-                <div style={{ fontWeight: '500' }}>{miniStatement.accountNumber}</div>
+                <div className="statements-label">Account Number</div>
+                <div className="statements-strong">{miniStatement.accountNumber}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Period</div>
-                <div style={{ fontWeight: '500' }}>{formatDate(miniStatement.period.from)} - {formatDate(miniStatement.period.to)}</div>
+                <div className="statements-label">Period</div>
+                <div className="statements-strong">{formatDate(miniStatement.period.from)} - {formatDate(miniStatement.period.to)}</div>
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: '4px', marginBottom: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0' }}>Summary</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '1rem' }}>
+            <div className="statements-summary-wrap">
+              <h4 className="statements-summary-title">Summary</h4>
+              <div className="statements-summary-grid">
                 <div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Total Transactions</div>
-                  <div style={{ fontWeight: '600', fontSize: '1.2rem' }}>{miniStatement.summary.totalTransactions}</div>
+                  <div className="statements-label">Total Transactions</div>
+                  <div className="statements-total-value">{miniStatement.summary.totalTransactions}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Credits</div>
-                  <div style={{ fontWeight: '600', color: '#28a745' }}>{miniStatement.summary.credits} ({formatCurrency(miniStatement.summary.totalCredits)})</div>
+                  <div className="statements-label">Credits</div>
+                  <div className="statements-credit-value">{miniStatement.summary.credits} ({formatCurrency(miniStatement.summary.totalCredits)})</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Debits</div>
-                  <div style={{ fontWeight: '600', color: '#dc3545' }}>{miniStatement.summary.debits} ({formatCurrency(miniStatement.summary.totalDebits)})</div>
+                  <div className="statements-label">Debits</div>
+                  <div className="statements-debit-value">{miniStatement.summary.debits} ({formatCurrency(miniStatement.summary.totalDebits)})</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Net Change</div>
-                  <div style={{ fontWeight: '600', fontSize: '1.2rem', color: miniStatement.summary.netChange >= 0 ? '#28a745' : '#dc3545' }}>
+                  <div className="statements-label">Net Change</div>
+                  <div className={`statements-total-value ${miniStatement.summary.netChange >= 0 ? 'is-credit' : 'is-debit'}`}>
                     {formatCurrency(miniStatement.summary.netChange)}
                   </div>
                 </div>
               </div>
             </div>
 
-            <h4 style={{ marginBottom: '1rem' }}>Recent Transactions</h4>
+            <h4 className="statements-recent-title">Recent Transactions</h4>
             {miniStatement.transactions.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>No transactions found</div>
+              <div className="statements-empty-note">No transactions found</div>
             ) : (
               <div className="transaction-list">
                 {miniStatement.transactions.map((transaction, index) => (
-                  <div key={index} className="transaction-item">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>{getTransactionIcon(transaction)}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{getDescription(transaction)}</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(parseTransactionDate(transaction, fromLocalYYYYMMDD) || transaction.createdAt || transaction.timestamp)}</div>
+                  <div key={index} className="transaction-item statements-item-row">
+                    <div className="statements-item-main">
+                      <div className="statements-item-icon-bg">{getTransactionIcon(transaction)}</div>
+                      <div className="statements-item-content">
+                        <div className="statements-item-title">{getDescription(transaction)}</div>
+                        <div className="statements-item-meta">{formatDate(parseTransactionDate(transaction, fromLocalYYYYMMDD) || transaction.createdAt || transaction.timestamp)}</div>
                       </div>
                     </div>
-                    <div style={{ fontWeight: '600', color: transaction.type === 'credit' ? '#28a745' : '#dc3545', fontSize: '1.1rem' }}>
+                    <div className={`statements-item-amount ${transaction.type === 'credit' ? 'is-credit' : 'is-debit'}`}>
                       {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(toNumber(transaction.amount))}
                     </div>
                   </div>
@@ -230,62 +226,60 @@ const Statements = ({ user }) => {
             )}
           </>
         ) : (
-          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-            <Receipt size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+          <div className="statements-empty-block">
+            <Receipt size={48} className="statements-empty-icon" />
             <h3>Generate Your Mini Statement</h3>
             <p>Recent transactions summary will appear here.</p>
           </div>
         )}
       </div>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', marginBottom: '2rem' }}>
+      <div className="dashboard-grid statements-stats-grid">
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="statements-stats-row">
             <div>
               <div className="stat-value">{filteredTransactions.length}</div>
               <div className="stat-label">Transactions</div>
             </div>
-            <FileText size={32} style={{ color: '#667eea' }} />
+            <FileText size={32} className="statements-icon-transfer" />
           </div>
         </div>
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="statements-stats-row">
             <div>
               <div className="stat-value">{formatCurrency(totals.credits)}</div>
               <div className="stat-label">Total Credits</div>
             </div>
-            <TrendingUp size={32} style={{ color: '#28a745' }} />
+            <TrendingUp size={32} className="statements-icon-credit" />
           </div>
         </div>
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="statements-stats-row">
             <div>
               <div className="stat-value">{formatCurrency(totals.debits)}</div>
               <div className="stat-label">Total Debits</div>
             </div>
-            <TrendingDown size={32} style={{ color: '#dc3545' }} />
+            <TrendingDown size={32} className="statements-icon-debit" />
           </div>
         </div>
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="statements-stats-row">
             <div>
-              <div className="stat-value" style={{ color: totals.net >= 0 ? '#28a745' : '#dc3545' }}>
-                {formatCurrency(totals.net)}
-              </div>
+              <div className={`stat-value ${totals.net >= 0 ? 'statements-credit-value' : 'statements-debit-value'}`}>{formatCurrency(totals.net)}</div>
               <div className="stat-label">Net Change</div>
             </div>
-            {totals.net >= 0 ? <TrendingUp size={32} style={{ color: '#28a745' }} /> : <TrendingDown size={32} style={{ color: '#dc3545' }} />}
+            {totals.net >= 0 ? <TrendingUp size={32} className="statements-icon-credit" /> : <TrendingDown size={32} className="statements-icon-debit" />}
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="card statements-block">
+        <div className="statements-filter-row">
+          <div className="statements-filter-title-row">
             <Calendar size={16} />
-            <span style={{ fontWeight: '500' }}>Date Range:</span>
+            <span className="statements-filter-title">Date Range:</span>
           </div>
-          <div style={{ minWidth: 0, width: '100%', maxWidth: '220px' }}>
+          <div className="statements-date-input-wrap">
             <CustomCalendar
               value={dateRange.start ? fromLocalYYYYMMDD(dateRange.start) : null}
               onChange={(date) => {
@@ -301,7 +295,7 @@ const Statements = ({ user }) => {
             />
           </div>
           <span>to</span>
-          <div style={{ minWidth: 0, width: '100%', maxWidth: '220px' }}>
+          <div className="statements-date-input-wrap">
             <CustomCalendar
               value={dateRange.end ? fromLocalYYYYMMDD(dateRange.end) : null}
               onChange={(date) => {
@@ -318,40 +312,40 @@ const Statements = ({ user }) => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="statements-filter-row">
+          <div className="statements-filter-title-row">
             <Filter size={16} />
-            <span style={{ fontWeight: '500' }}>Filter:</span>
+            <span className="statements-filter-title">Filter:</span>
           </div>
-          <select value={filterType} onChange={(event) => setFilterType(event.target.value)} className="form-input" style={{ width: '100%', minWidth: 0, maxWidth: '220px' }}>
+          <select value={filterType} onChange={(event) => setFilterType(event.target.value)} className="form-input statements-select-220">
             <option value="all">All Types</option>
             <option value="credit">Credits</option>
             <option value="debit">Debits</option>
             <option value="transfer">Transfers</option>
           </select>
-          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="form-input" style={{ width: '100%', minWidth: 0, maxWidth: '220px' }}>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="form-input statements-select-220">
             <option value="date-desc">Newest First</option>
             <option value="date-asc">Oldest First</option>
             <option value="amount-desc">Highest Amount</option>
             <option value="amount-asc">Lowest Amount</option>
           </select>
-          <input type="text" placeholder="Search transactions..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-input" style={{ width: '100%', minWidth: 0, maxWidth: '280px' }} />
-          <button onClick={exportToCsv} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input type="text" placeholder="Search transactions..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="form-input statements-search-280" />
+          <button onClick={exportToCsv} className="btn btn-secondary statements-inline-btn">
             <Download size={16} />
             Export CSV
           </button>
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <div className="statements-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div className="card statements-block">
+        <div className="statements-section-header statements-history-header">
           <h3>Transaction History</h3>
-          <div className="statements-actions-inline" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <button className="btn btn-secondary" onClick={printAccountStatement} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="statements-actions-inline">
+            <button className="btn btn-secondary statements-inline-btn" onClick={printAccountStatement}>
               <Printer size={16} /> Print
             </button>
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary statements-inline-btn"
               onClick={async () => {
                 await generateAccountStatementPDF(
                   filteredTransactions,
@@ -361,54 +355,37 @@ const Statements = ({ user }) => {
                   dateRange.end ? new Date(dateRange.end) : new Date()
                 );
               }}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
               <Download size={16} /> Download PDF
             </button>
           </div>
         </div>
-        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          Showing {filteredTransactions.length} of {transactions.length} transactions
-        </div>
+        <div className="statements-count-note">Showing {filteredTransactions.length} of {transactions.length} transactions</div>
 
         {filteredTransactions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-            No transactions found for the selected period
-          </div>
+          <div className="statements-empty-note">No transactions found for the selected period</div>
         ) : (
           <div className="transaction-list">
             {filteredTransactions.map((transaction, index) => (
-              <div key={index} className="transaction-item">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>
-                    {getTransactionIcon(transaction)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{getDescription(transaction)}</div>
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              <div key={index} className="transaction-item statements-item-row">
+                <div className="statements-item-main">
+                  <div className="statements-item-icon-bg">{getTransactionIcon(transaction)}</div>
+                  <div className="statements-item-content">
+                    <div className="statements-item-title">{getDescription(transaction)}</div>
+                    <div className="statements-item-meta">
                       {formatDate(parseTransactionDate(transaction, fromLocalYYYYMMDD) || transaction.createdAt)}
                       {isTransferTransaction(transaction) && getRecipientLabel(transaction) && ` | To: ${getRecipientLabel(transaction)}`}
                     </div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{
-                    fontWeight: '600',
-                    color: isTransferTransaction(transaction)
-                      ? '#667eea'
-                      : transaction.type === 'credit'
-                        ? '#28a745'
-                        : '#dc3545',
-                    fontSize: '1.1rem'
-                  }}>
+                <div className="statements-right-col">
+                  <div className={`statements-item-amount ${isTransferTransaction(transaction) ? 'is-transfer' : transaction.type === 'credit' ? 'is-credit' : 'is-debit'}`}>
                     {isTransferTransaction(transaction) ? '' : transaction.type === 'credit' ? '+' : '-'}
                     {formatCurrency(toNumber(transaction.amount))}
-                    {isTransferTransaction(transaction) && <span style={{ color: '#667eea', fontWeight: '500', marginLeft: 4 }}>(Transfer)</span>}
+                    {isTransferTransaction(transaction) && <span className="statements-transfer-tag">(Transfer)</span>}
                   </div>
                   {transaction.balance && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      Balance: {formatCurrency(transaction.balance)}
-                    </div>
+                    <div className="statements-balance-note">Balance: {formatCurrency(transaction.balance)}</div>
                   )}
                 </div>
               </div>
@@ -421,5 +398,3 @@ const Statements = ({ user }) => {
 };
 
 export default Statements;
-
-

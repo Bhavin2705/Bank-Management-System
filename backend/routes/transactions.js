@@ -10,7 +10,7 @@ const {
     getTransactionCategories,
     validateTransferDetails,
     transferMoney
-} = require('../controllers/transactionController');
+} = require('../controllers/transaction.controller');
 const { protect, authorize } = require('../middleware/auth');
 const {
     validateObjectId,

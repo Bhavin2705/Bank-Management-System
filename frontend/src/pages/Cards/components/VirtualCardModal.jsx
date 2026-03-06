@@ -1,5 +1,5 @@
 ﻿import { CreditCard, Wifi, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const formatCard = (cardNumber = '') => {
   const digits = String(cardNumber).replace(/\D/g, '');
@@ -37,12 +37,7 @@ export default function VirtualCardModal({
     }
   }, [show, card?._id, card?.id]);
 
-  const cardTheme = useMemo(() => {
-    if ((card?.cardType || '').toLowerCase() === 'credit') {
-      return 'linear-gradient(135deg, #0F172A 0%, #1E293B 48%, #334155 100%)';
-    }
-    return 'linear-gradient(135deg, #0A1F44 0%, #1E3A8A 52%, #00D4FF 100%)';
-  }, [card?.cardType]);
+  const isCreditCard = (card?.cardType || '').toLowerCase() === 'credit';
 
   if (!show || !card) return null;
 
@@ -60,7 +55,7 @@ export default function VirtualCardModal({
         </div>
 
         <div className="virtual-card-stage">
-          <div className={`virtual-card-face ${showBack ? 'virtual-card-face-back' : ''}`} style={{ background: cardTheme }}>
+          <div className={`virtual-card-face ${isCreditCard ? 'is-credit' : 'is-debit'} ${showBack ? 'virtual-card-face-back' : ''}`}>
             {!showBack ? (
               <>
                 <div className="virtual-card-top-row">

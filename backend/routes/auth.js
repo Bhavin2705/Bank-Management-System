@@ -11,7 +11,7 @@ const {
     resetPassword,
     refreshToken,
     verifyResetToken
-} = require('../controllers/authController');
+} = require('../services/auth.service');
 const { protect } = require('../middleware/auth');
 const {
     validateUserRegistration,

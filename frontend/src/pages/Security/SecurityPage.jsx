@@ -187,49 +187,49 @@ const Security = ({ user }) => {
 
   return (
     <div className="container security-page">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+      <div className="security-header">
+        <h1 className="security-title">
           Account Security
         </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
+        <p className="security-subtitle">
           Manage your account security settings and preferences
         </p>
       </div>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
+      <div className="dashboard-grid security-stats-grid">
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="security-stats-row">
             <div>
               <div className="stat-value">Strong</div>
               <div className="stat-label">Password Strength</div>
             </div>
-            <Shield size={32} style={{ color: '#28a745' }} />
+            <Shield size={32} className="security-stats-icon security-stats-icon-ok" />
           </div>
         </div>
 
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="security-stats-row">
             <div>
               <div className="stat-value">{loginHistory.length}</div>
               <div className="stat-label">Recent Logins</div>
             </div>
-            <Lock size={32} style={{ color: '#667eea' }} />
+            <Lock size={32} className="security-stats-icon security-stats-icon-lock" />
           </div>
         </div>
 
         <div className="stat-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="security-stats-row">
             <div>
               <div className="stat-value">Active</div>
               <div className="stat-label">Account Status</div>
             </div>
-            <Key size={32} style={{ color: '#28a745' }} />
+            <Key size={32} className="security-stats-icon security-stats-icon-ok" />
           </div>
         </div>
       </div>
 
       <div className="card">
-        <div style={{ borderBottom: '1px solid var(--border)', marginBottom: '1.5rem' }}>
+        <div className="security-tab-header">
           <div className="tab-buttons security-tab-buttons">
             <button onClick={() => setActiveTab('password')} className={`tab-btn${activeTab === 'password' ? ' active' : ''}`}>Change Password</button>
             <button onClick={() => setActiveTab('account-pin')} className={`tab-btn${activeTab === 'account-pin' ? ' active' : ''}`}>Account PIN</button>
@@ -244,13 +244,13 @@ const Security = ({ user }) => {
 
         {activeTab === 'password' && (
           <form onSubmit={handlePasswordChange}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Change Password</h3>
+            <h3 className="security-section-title">Change Password</h3>
 
             <div className="form-group">
               <label className="form-label">Current Password</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showCurrentPassword ? 'text' : 'password'} className="form-input" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} required />
-                <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }}>
+                <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="security-input-toggle">
                   {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
@@ -258,9 +258,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">New Password</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showNewPassword ? 'text' : 'password'} className="form-input" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} required />
-                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }}>
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="security-input-toggle">
                   {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
@@ -268,9 +268,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">Confirm New Password</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showConfirmPassword ? 'text' : 'password'} className="form-input" value={passwordForm.confirmPassword} onChange={(event) => setPasswordForm({ ...passwordForm, confirmPassword: event.target.value })} required />
-                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }}>
+                <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="security-input-toggle">
                   {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
@@ -282,12 +282,12 @@ const Security = ({ user }) => {
 
         {activeTab === 'pin' && (
           <form onSubmit={handlePinChange}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Change Card PIN</h3>
+            <h3 className="security-section-title">Change Card PIN</h3>
 
             <div className="form-group">
               <label className="form-label">Select Card</label>
               {cards.length === 0 ? (
-                <div style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No cards found. Add a card first.</div>
+                <div className="security-empty-note">No cards found. Add a card first.</div>
               ) : (
                 <div className="card-selection">
                   {cards.map((card, idx) => {
@@ -321,9 +321,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">Current PIN</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showCurrentPin ? 'text' : 'password'} className="form-input" value={pinForm.currentPin} onChange={(event) => setPinForm({ ...pinForm, currentPin: event.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} maxLength="6" required />
-                <button type="button" onClick={() => setShowCurrentPin(!showCurrentPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showCurrentPin ? 'Hide PIN' : 'Show PIN'}>
+                <button type="button" onClick={() => setShowCurrentPin(!showCurrentPin)} className="security-input-toggle" title={showCurrentPin ? 'Hide PIN' : 'Show PIN'}>
                   {showCurrentPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -331,9 +331,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">New PIN (4-6 digits)</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showNewPin ? 'text' : 'password'} className="form-input" value={pinForm.newPin} onChange={(event) => setPinForm({ ...pinForm, newPin: event.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} maxLength="6" required />
-                <button type="button" onClick={() => setShowNewPin(!showNewPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showNewPin ? 'Hide PIN' : 'Show PIN'}>
+                <button type="button" onClick={() => setShowNewPin(!showNewPin)} className="security-input-toggle" title={showNewPin ? 'Hide PIN' : 'Show PIN'}>
                   {showNewPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -341,9 +341,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">Confirm New PIN</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showConfirmPin ? 'text' : 'password'} className="form-input" value={pinForm.confirmPin} onChange={(event) => setPinForm({ ...pinForm, confirmPin: event.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} maxLength="6" required />
-                <button type="button" onClick={() => setShowConfirmPin(!showConfirmPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showConfirmPin ? 'Hide PIN' : 'Show PIN'}>
+                <button type="button" onClick={() => setShowConfirmPin(!showConfirmPin)} className="security-input-toggle" title={showConfirmPin ? 'Hide PIN' : 'Show PIN'}>
                   {showConfirmPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -357,16 +357,16 @@ const Security = ({ user }) => {
 
         {activeTab === 'account-pin' && (
           <form onSubmit={handleAccountPinChange}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Change Account PIN</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            <h3 className="security-section-title">Change Account PIN</h3>
+            <p className="security-section-subtitle">
               This is the 4 to 6 digit PIN set during registration.
             </p>
 
             <div className="form-group">
               <label className="form-label">Current Account PIN</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showCurrentAccountPin ? 'text' : 'password'} className="form-input" value={accountPinForm.currentPin} onChange={(event) => setAccountPinForm({ ...accountPinForm, currentPin: event.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} maxLength="6" required />
-                <button type="button" onClick={() => setShowCurrentAccountPin(!showCurrentAccountPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showCurrentAccountPin ? 'Hide PIN' : 'Show PIN'}>
+                <button type="button" onClick={() => setShowCurrentAccountPin(!showCurrentAccountPin)} className="security-input-toggle" title={showCurrentAccountPin ? 'Hide PIN' : 'Show PIN'}>
                   {showCurrentAccountPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -374,9 +374,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">New Account PIN</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showNewAccountPin ? 'text' : 'password'} className="form-input" value={accountPinForm.newPin} onChange={(event) => setAccountPinForm({ ...accountPinForm, newPin: event.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} maxLength="6" required />
-                <button type="button" onClick={() => setShowNewAccountPin(!showNewAccountPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showNewAccountPin ? 'Hide PIN' : 'Show PIN'}>
+                <button type="button" onClick={() => setShowNewAccountPin(!showNewAccountPin)} className="security-input-toggle" title={showNewAccountPin ? 'Hide PIN' : 'Show PIN'}>
                   {showNewAccountPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -384,9 +384,9 @@ const Security = ({ user }) => {
 
             <div className="form-group">
               <label className="form-label">Confirm New Account PIN</label>
-              <div style={{ position: 'relative' }}>
+              <div className="security-input-wrap">
                 <input type={showConfirmAccountPin ? 'text' : 'password'} className="form-input" value={accountPinForm.confirmPin} onChange={(event) => setAccountPinForm({ ...accountPinForm, confirmPin: event.target.value.replace(/[^0-9]/g, '').slice(0, 6) })} maxLength="6" required />
-                <button type="button" onClick={() => setShowConfirmAccountPin(!showConfirmAccountPin)} style={{ position: 'absolute', right: '10px', top: '40px', border: 'none', background: 'none', cursor: 'pointer' }} title={showConfirmAccountPin ? 'Hide PIN' : 'Show PIN'}>
+                <button type="button" onClick={() => setShowConfirmAccountPin(!showConfirmAccountPin)} className="security-input-toggle" title={showConfirmAccountPin ? 'Hide PIN' : 'Show PIN'}>
                   {showConfirmAccountPin ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -400,8 +400,8 @@ const Security = ({ user }) => {
 
         {activeTab === 'security' && (
           <form onSubmit={handleSecurityQuestions}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Security Questions</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            <h3 className="security-section-title">Security Questions</h3>
+            <p className="security-section-subtitle">
               Set up security questions to help recover your account if needed.
             </p>
 
@@ -437,30 +437,30 @@ const Security = ({ user }) => {
 
         {activeTab === 'history' && (
           <div>
-            <h3 style={{ marginBottom: '1.5rem' }}>Login History</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Your recent login activity</p>
+            <h3 className="security-section-title">Login History</h3>
+            <p className="security-section-subtitle">Your recent login activity</p>
 
             {loginHistory.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+              <div className="security-history-empty">
                 No login history available
               </div>
             ) : (
               <div className="transaction-list security-history-list">
                 {loginHistory.map((login, index) => (
                   <div key={index} className="transaction-item">
-                    <div className="security-history-main" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ padding: '8px', borderRadius: '50%', background: 'var(--bg-tertiary)' }}>
+                    <div className="security-history-main security-history-main-row">
+                      <div className="security-history-icon-wrap">
                         <Shield size={16} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: '500' }}>Login</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{formatDate(login.timestamp)}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        <div className="security-history-title">Login</div>
+                        <div className="security-history-date">{formatDate(login.timestamp)}</div>
+                        <div className="security-history-meta">
                           {login.ip || 'Local'} | {login.device || 'Web Browser'}
                         </div>
                       </div>
                     </div>
-                    <div style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', background: '#28a745', color: 'white', fontSize: '0.75rem', fontWeight: '500' }}>
+                    <div className="security-history-status-badge">
                       {login.status || 'SUCCESS'}
                     </div>
                   </div>

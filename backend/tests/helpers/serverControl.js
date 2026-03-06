@@ -1,7 +1,8 @@
 const fs = require('fs');
 const http = require('http');
+const path = require('path');
 
-const STATE_FILE = '.jest-server-state.json';
+const STATE_FILE = path.resolve(__dirname, '..', '.jest-server-state.json');
 
 const isServerUp = (baseUrl) => new Promise((resolve) => {
     const url = new URL('/health', baseUrl);

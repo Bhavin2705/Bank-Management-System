@@ -1,21 +1,14 @@
-import { Bell } from 'lucide-react';
+﻿import { Bell } from 'lucide-react';
 
 const PreferencesTab = ({ preferencesData, handlePreferencesChange, handlePreferencesUpdate, loading }) => (
   <div>
-    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <h3 className="settings-section-title">
       <Bell size={20} />
       Preferences & Notifications
     </h3>
 
     <form onSubmit={handlePreferencesUpdate}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem'
-        }}
-      >
+      <div className="settings-grid-250 settings-preferences-grid">
         <div className="form-group">
           <label className="form-label">Currency</label>
           <select name="currency" className="form-input" value={preferencesData.currency} onChange={handlePreferencesChange}>
@@ -45,56 +38,48 @@ const PreferencesTab = ({ preferencesData, handlePreferencesChange, handlePrefer
         </div>
       </div>
 
-      <div
-        style={{
-          marginBottom: '2rem',
-          padding: '1.5rem',
-          border: '1px solid var(--border-color)',
-          borderRadius: '8px',
-          backgroundColor: 'var(--bg-tertiary)'
-        }}
-      >
-        <h4 style={{ marginBottom: '1rem', fontWeight: '600' }}>Notification Channels</h4>
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="settings-panel settings-top-gap-lg">
+        <h4 className="settings-panel-title">Notification Channels</h4>
+        <div className="settings-list-grid">
+          <div className="settings-row-between">
             <div>
-              <div style={{ fontWeight: '500' }}>Email Notifications</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive updates via email</div>
+              <div className="settings-item-title">Email Notifications</div>
+              <div className="settings-item-subtitle">Receive updates via email</div>
             </div>
             <input
               type="checkbox"
               name="email"
               checked={preferencesData.notifications.email}
               onChange={handlePreferencesChange}
-              style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+              className="settings-checkbox"
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="settings-row-between">
             <div>
-              <div style={{ fontWeight: '500' }}>SMS Notifications</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive updates via SMS</div>
+              <div className="settings-item-title">SMS Notifications</div>
+              <div className="settings-item-subtitle">Receive updates via SMS</div>
             </div>
             <input
               type="checkbox"
               name="sms"
               checked={preferencesData.notifications.sms}
               onChange={handlePreferencesChange}
-              style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+              className="settings-checkbox"
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="settings-row-between">
             <div>
-              <div style={{ fontWeight: '500' }}>Push Notifications</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Receive real-time alerts</div>
+              <div className="settings-item-title">Push Notifications</div>
+              <div className="settings-item-subtitle">Receive real-time alerts</div>
             </div>
             <input
               type="checkbox"
               name="push"
               checked={preferencesData.notifications.push}
               onChange={handlePreferencesChange}
-              style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+              className="settings-checkbox"
             />
           </div>
         </div>

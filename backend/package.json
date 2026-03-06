@@ -7,7 +7,21 @@
         "start": "node server.js",
         "dev": "node server.js",
         "test": "jest",
-        "init": "node init.js"
+        "init": "node init.js",
+        "seed:admin": "node seeders/seedAdmin.js",
+        "seed:banks": "node seeders/seedBanks.js",
+        "seed": "node seeders/index.js"
+    },
+    "jest": {
+        "globalSetup": "./tests/globalSetup.js",
+        "globalTeardown": "./tests/globalTeardown.js",
+        "testEnvironment": "node",
+        "testTimeout": 30000,
+        "testMatch": [
+            "**/tests/unit/**/*.test.js",
+            "**/tests/integration/**/*.test.js",
+            "**/tests/e2e/**/*.test.js"
+        ]
     },
     "keywords": [
         "bank",

@@ -180,15 +180,15 @@ const CurrencyExchangePage = () => {
 
   return (
     <div className="container">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Currency Exchange</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
+      <div className="currency-header">
+        <h1 className="currency-title">Currency Exchange</h1>
+        <p className="currency-subtitle">
           Convert between currencies using {useLiveData ? 'real-time' : 'stable'} exchange rates
           {useLiveData && ' (rates may fluctuate)'}
         </p>
       </div>
 
-      {error && <div className="error-message" style={{ marginBottom: '2rem' }}>{error}</div>}
+      {error && <div className="error-message currency-error">{error}</div>}
 
       <KeyRates popularCurrencies={popularCurrencies} exchangeRates={exchangeRates} />
 

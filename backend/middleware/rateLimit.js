@@ -1,6 +1,7 @@
 const rateLimit = require('express-rate-limit');
 
-const inTestMode = process.env.NODE_ENV === 'test';
+const inTestMode = () =>
+    process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
 const toInt = (value, fallback) => {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) ? parsed : fallback;
@@ -15,7 +16,7 @@ const apiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode
+    skip: () => inTestMode()
 });
 
 const authLimiter = rateLimit({
@@ -27,7 +28,7 @@ const authLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode
+    skip: () => inTestMode()
 });
 
 const passwordResetLimiter = rateLimit({
@@ -39,7 +40,7 @@ const passwordResetLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode
+    skip: () => inTestMode()
 });
 
 const transactionLimiter = rateLimit({
@@ -51,7 +52,7 @@ const transactionLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode
+    skip: () => inTestMode()
 });
 
 const uploadLimiter = rateLimit({
@@ -63,7 +64,7 @@ const uploadLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode
+    skip: () => inTestMode()
 });
 
 module.exports = {

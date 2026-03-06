@@ -5,11 +5,27 @@ import { useBanksManagement } from './hooks/useBanksManagement';
 
 export default function AdminBanks() {
   const { showError, showSuccess } = useNotification();
-  const { banks, newBank, setNewBank, handleAddBank, handleDeleteBank } = useBanksManagement(showError, showSuccess);
+  const {
+    banks,
+    newBank,
+    setNewBank,
+    editingBankId,
+    editBank,
+    setEditBank,
+    isSavingEdit,
+    handleAddBank,
+    handleDeleteBank,
+    startEditBank,
+    cancelEditBank,
+    saveEditBank
+  } = useBanksManagement(showError, showSuccess);
 
   return (
-    <div className="container">
-      <h1 className="text-2xl font-bold mb-4">Manage Banks</h1>
+    <div className="container admin-banks-page">
+      <div className="admin-banks-header">
+        <h1 className="admin-banks-title">Manage Banks</h1>
+        <p className="admin-banks-subtitle">Add, review, and remove supported banks.</p>
+      </div>
 
       <AddBankForm
         newBank={newBank}
@@ -17,7 +33,17 @@ export default function AdminBanks() {
         onAddBank={handleAddBank}
       />
 
-      <BanksList banks={banks} onDeleteBank={handleDeleteBank} />
+      <BanksList
+        banks={banks}
+        editingBankId={editingBankId}
+        editBank={editBank}
+        setEditBank={setEditBank}
+        isSavingEdit={isSavingEdit}
+        onStartEdit={startEditBank}
+        onCancelEdit={cancelEditBank}
+        onSaveEdit={saveEditBank}
+        onDeleteBank={handleDeleteBank}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ const {
     getUser,
     updateUser,
     getUserStats,
+    getAdminActions,
     getBanks,
     getBankMetrics,
     getTransferRecipients,
@@ -11,7 +12,7 @@ const {
     updateClientData,
     verifyPin,
     updatePin
-} = require('../controllers/userController');
+} = require('../controllers/user.controller');
 const { protect, authorize } = require('../middleware/auth');
 const { validateObjectId, validatePagination } = require('../middleware/validation');
 
@@ -61,6 +62,7 @@ router.get('/me/client-data', getClientData);
 router.put('/me/client-data', updateClientData);
 
 router.get('/stats', authorize('admin'), getUserStats);
+router.get('/admin-actions', authorize('admin'), getAdminActions);
 router.get('/bank-metrics', authorize('admin'), getBankMetrics);
 router.get('/transfer-recipients', getTransferRecipients);
 

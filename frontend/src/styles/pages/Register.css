@@ -1,0 +1,52 @@
+.auth-white-input {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.register-strength-fill {
+  transition: width 0.3s ease;
+}
+
+.register-password-strength-0 {
+  width: 0;
+}
+
+.register-password-strength-1 {
+  width: 20%;
+}
+
+.register-password-strength-2 {
+  width: 40%;
+}
+
+.register-password-strength-3 {
+  width: 60%;
+}
+
+.register-password-strength-4 {
+  width: 80%;
+}
+
+.register-password-strength-5 {
+  width: 100%;
+}
+
+.register-pin-strength-0 {
+  width: 0;
+}
+
+.register-pin-strength-1 {
+  width: 25%;
+}
+
+.register-pin-strength-2 {
+  width: 50%;
+}
+
+.register-pin-strength-3 {
+  width: 75%;
+}
+
+.register-pin-strength-4 {
+  width: 100%;
+}

@@ -1,0 +1,252 @@
+﻿.payments-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.bills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.payments-page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.payments-page-subtitle {
+  color: var(--text-secondary);
+}
+
+.bills-form-card,
+.recurring-form-card,
+.recurring-header-wrap,
+.recurring-add-wrap {
+  margin-bottom: 2rem;
+}
+
+.payments-section-title {
+  margin-bottom: 1.5rem;
+}
+
+.payments-history-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bills-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.bills-form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.payments-transaction-main {
+  flex: 1;
+}
+
+.payments-transaction-description {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.payments-transaction-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.payments-transaction-amount {
+  font-weight: 600;
+  color: var(--error);
+}
+
+.payments-empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.payments-empty-icon {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.recurring-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-bottom: 2rem;
+}
+
+.recurring-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.recurring-stats-icon-repeat {
+  color: #667eea;
+}
+
+.recurring-stats-icon-user {
+  color: #ffc107;
+}
+
+.recurring-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recurring-warning {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.recurring-warning-insufficient {
+  background: rgba(220, 53, 69, 0.14);
+  border: 1px solid rgba(220, 53, 69, 0.45);
+  color: var(--error);
+}
+
+.recurring-warning-high {
+  background: rgba(255, 193, 7, 0.14);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  color: #b78900;
+}
+
+.recurring-empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.recurring-empty-icon {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.recurring-item-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.recurring-item-icon-wrap {
+  padding: 12px;
+  border-radius: 50%;
+}
+
+.recurring-item-icon-wrap.is-active {
+  background: rgba(40, 167, 69, 0.14);
+  border: 2px solid var(--success);
+}
+
+.recurring-item-icon-wrap.is-inactive {
+  background: rgba(108, 117, 125, 0.16);
+  border: 2px solid var(--text-secondary);
+}
+
+.recurring-item-icon.is-active {
+  color: var(--success);
+}
+
+.recurring-item-icon.is-inactive {
+  color: var(--text-secondary);
+}
+
+.recurring-item-details {
+  flex: 1;
+}
+
+.recurring-item-description {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.recurring-item-meta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.recurring-item-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.recurring-item-status.is-active {
+  color: var(--success);
+}
+
+.recurring-item-status.is-inactive {
+  color: var(--error);
+}
+
+.recurring-item-actions-wrap {
+  text-align: right;
+}
+
+.recurring-item-amount {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--success);
+  margin-bottom: 0.5rem;
+}
+
+.recurring-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.recurring-action-btn {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.recurring-action-btn.is-pause {
+  background: var(--error);
+}
+
+.recurring-action-btn.is-resume {
+  background: var(--success);
+}
+
+.recurring-action-delete {
+  background: var(--error);
+}
+
+/* Payments polish */
+[data-theme="dark"] .bills-header h1,
+[data-theme="dark"] .recurring-header h1 {
+  color: #eaf1ff;
+}
+
+[data-theme="dark"] .bills-header p,
+[data-theme="dark"] .recurring-header p {
+  color: #a9bedc !important;
+}
+
+[data-theme="dark"] .transaction-item {
+  border-color: #2e4a69 !important;
+  background: #13243b !important;
+}

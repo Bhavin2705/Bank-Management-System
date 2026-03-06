@@ -1,4 +1,4 @@
-import { Activity, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
+﻿import { Activity, Wallet, TrendingDown, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { formatCurrencyByPreference } from '../../utils/currency';
 import { getTransactionStats } from '../../utils/transactions';
@@ -23,9 +23,9 @@ const Dashboard = ({ user }) => {
         const transactionStats = await getTransactionStats();
         setStats(transactionStats);
         setError('');
-      } catch (error) {
+      } catch (fetchError) {
         setError('Failed to load dashboard data');
-        console.error('Dashboard error:', error);
+        console.error('Dashboard error:', fetchError);
       } finally {
         setLoading(false);
       }
@@ -36,48 +36,33 @@ const Dashboard = ({ user }) => {
     }
   }, [user?._id]);
 
-  const formatCurrency = (amount) => {
-    return formatCurrencyByPreference(amount, user);
-  };
+  const formatCurrency = (amount) => formatCurrencyByPreference(amount, user);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString) => (
+    new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
-  };
+    })
+  );
 
-
-  const isNewUser = (() => {
-    if (user && user.firstLogin) {
-      return true;
-    }
-    return false;
-  })();
+  const isNewUser = Boolean(user?.firstLogin);
 
   return (
     <div className="container dashboard-container">
-      <div className="dashboard-header" style={{ marginBottom: '2rem' }}>
-        <h1 className="dashboard-title" style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+      <div className="dashboard-header">
+        <h1 className="dashboard-title dashboard-title-main">
           {isNewUser ? 'Welcome' : 'Welcome back'}, {user?.name}!
         </h1>
-        <p className="dashboard-account" style={{ color: 'var(--text-secondary)' }}>
+        <p className="dashboard-account dashboard-account-muted">
           Account No.: {user?.accountNumber}
         </p>
 
         {isNewUser && (
-          <div className="dashboard-welcome-banner" style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            padding: '1rem',
-            borderRadius: '8px',
-            marginTop: '1rem',
-            textAlign: 'center'
-          }}>
-            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>🎉 Welcome to Your New Account!</h3>
-            <p style={{ margin: '0', fontSize: '0.9rem' }}>
+          <div className="dashboard-welcome-banner">
+            <h3 className="dashboard-welcome-title">Welcome to Your New Account!</h3>
+            <p className="dashboard-welcome-text">
               Your account is ready! Make your first deposit to start using banking features.
             </p>
           </div>
@@ -85,68 +70,61 @@ const Dashboard = ({ user }) => {
       </div>
 
       {error && (
-        <div style={{
-          background: 'var(--error-bg)',
-          color: 'var(--error)',
-          padding: '1rem',
-          borderRadius: '8px',
-          marginBottom: '1rem',
-          border: '1px solid var(--error-border)'
-        }}>
+        <div className="dashboard-error-banner">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
+        <div className="dashboard-loading">
           <div>Loading dashboard...</div>
         </div>
       ) : (
         <>
           <div className="dashboard-grid">
             <div className="stat-card">
-              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row">
                 <div>
                   <div className="stat-value">{formatCurrency(user?.balance || 0)}</div>
                   <div className="stat-label">Current Balance</div>
                 </div>
-                <Wallet size={32} style={{ color: '#1E3A8A' }} />
+                <Wallet size={32} className="dashboard-stat-icon dashboard-stat-icon-balance" />
               </div>
             </div>
 
             <div className="stat-card">
-              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row">
                 <div>
                   <div className="stat-value">{formatCurrency(stats.monthlyIncome)}</div>
                   <div className="stat-label">Monthly Income</div>
                 </div>
-                <TrendingUp size={32} style={{ color: '#28a745' }} />
+                <TrendingUp size={32} className="dashboard-stat-icon dashboard-stat-icon-income" />
               </div>
             </div>
 
             <div className="stat-card">
-              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row">
                 <div>
                   <div className="stat-value">{formatCurrency(stats.monthlyExpenses)}</div>
                   <div className="stat-label">Monthly Expenses</div>
                 </div>
-                <TrendingDown size={32} style={{ color: '#dc3545' }} />
+                <TrendingDown size={32} className="dashboard-stat-icon dashboard-stat-icon-expense" />
               </div>
             </div>
 
             <div className="stat-card">
-              <div className="dashboard-stat-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="dashboard-stat-row">
                 <div>
                   <div className="stat-value">{stats.totalTransactions}</div>
                   <div className="stat-label">Total Transactions</div>
                 </div>
-                <Activity size={32} style={{ color: '#1E3A8A' }} />
+                <Activity size={32} className="dashboard-stat-icon dashboard-stat-icon-activity" />
               </div>
             </div>
           </div>
 
           <div className="card">
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 className="dashboard-recent-title">
               <Activity size={20} />
               Recent Transactions
             </h3>
@@ -155,30 +133,25 @@ const Dashboard = ({ user }) => {
               <div className="transaction-list">
                 {stats.recentTransactions.map((transaction) => (
                   <div key={transaction.id} className="transaction-item">
-                    <div className="transaction-main" style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>
+                    <div className="transaction-main dashboard-transaction-main">
+                      <div className="dashboard-transaction-description">
                         {transaction.description}
                       </div>
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      <div className="dashboard-transaction-date">
                         {formatDate(transaction.date)}
                       </div>
                     </div>
-                    <div
-                    className="transaction-amount"
-                    style={{
-                      fontWeight: '600',
-                      color: transaction.type === 'credit' ? 'var(--success)' : 'var(--error)'
-                    }}>
+                    <div className={`transaction-amount ${transaction.type === 'credit' ? 'is-credit' : 'is-debit'}`}>
                       {transaction.type === 'credit' ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+              <div className="dashboard-empty-wrap">
                 {user?.balance === 0 ? (
                   <div className="dashboard-empty-state">
-                    <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>💰 Ready to Start Banking?</div>
+                    <div className="dashboard-empty-title">Ready to Start Banking?</div>
                     <div>Make your first deposit to begin tracking transactions</div>
                   </div>
                 ) : (

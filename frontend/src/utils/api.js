@@ -1,8 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
 const ACCESS_TOKEN_KEY = 'bank_auth_access_token';
-const REFRESH_TOKEN_KEY = 'bank_auth_refresh_token';
 let inMemoryAccessToken = null;
-let inMemoryRefreshToken = null;
 
 const readSessionValue = (key) => {
     if (typeof window === 'undefined') return null;
@@ -40,22 +38,8 @@ export const setAuthToken = (token) => {
 
 export const clearAuthToken = () => {
     inMemoryAccessToken = null;
-    inMemoryRefreshToken = null;
     writeSessionValue(ACCESS_TOKEN_KEY, null);
-    writeSessionValue(REFRESH_TOKEN_KEY, null);
     return true;
-};
-
-const getRefreshToken = () => {
-    if (inMemoryRefreshToken) return inMemoryRefreshToken;
-    inMemoryRefreshToken = readSessionValue(REFRESH_TOKEN_KEY);
-    return inMemoryRefreshToken;
-};
-
-const setRefreshToken = (token) => {
-    inMemoryRefreshToken = token || null;
-    writeSessionValue(REFRESH_TOKEN_KEY, inMemoryRefreshToken);
-    return token;
 };
 
 const shouldAttemptRefresh = (endpoint) => {
@@ -67,14 +51,12 @@ const shouldAttemptRefresh = (endpoint) => {
 };
 
 const requestNewAccessToken = async () => {
-    const refreshToken = getRefreshToken();
     const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        credentials: 'include',
-        body: refreshToken ? JSON.stringify({ refreshToken }) : undefined
+        credentials: 'include'
     });
 
     if (!refreshResponse.ok) {
@@ -91,9 +73,6 @@ const requestNewAccessToken = async () => {
     const nextAccessToken = refreshData?.data?.token || null;
     if (nextAccessToken) {
         setAuthToken(nextAccessToken);
-        if (refreshData?.data?.refreshToken) {
-            setRefreshToken(refreshData.data.refreshToken);
-        }
     }
 
     return nextAccessToken;
@@ -168,9 +147,6 @@ const apiRequest = async (endpoint, options = {}) => {
 
     if (result && result.data && result.data.token) {
         setAuthToken(result.data.token);
-        if (result?.data?.refreshToken) {
-            setRefreshToken(result.data.refreshToken);
-        }
     }
 
     return result;
@@ -224,7 +200,9 @@ export const api = {
     banks: {
         getAll: () => apiRequest('/banks'),
         addBank: (data) => apiRequest('/banks', { method: 'POST', body: JSON.stringify(data) }),
+        updateBank: (id, data) => apiRequest(`/banks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
         add: (data) => apiRequest('/banks', { method: 'POST', body: JSON.stringify(data) }), // Legacy alias
+        update: (id, data) => apiRequest(`/banks/${id}`, { method: 'PUT', body: JSON.stringify(data) }), // Legacy alias
         delete: (id) => apiRequest(`/banks/${id}`, { method: 'DELETE' }), // Legacy alias
         deleteBank: (id) => apiRequest(`/banks/${id}`, { method: 'DELETE' })
     },

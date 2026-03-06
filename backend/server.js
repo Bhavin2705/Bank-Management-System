@@ -1,5 +1,5 @@
 const http = require('http');
-const { loadEnv, validateEnv } = require('./config/env');
+const { loadEnv, validateEnv } = require('./config');
 
 loadEnv();
 validateEnv();
@@ -7,7 +7,7 @@ validateEnv();
 const connectDB = require('./config/database');
 const createApp = require('./app');
 const configureSocket = require('./socket');
-const emailService = require('./utils/emailService');
+const emailService = require('./services/email');
 
 connectDB();
 

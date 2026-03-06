@@ -21,6 +21,7 @@ export const getBlockModalConfig = (userId, currentStatus, userName) => ({
   cancelText: 'Cancel'
 });
 
-export const calculateTotalBalance = (users = []) => (
-  users.reduce((sum, currentUser) => sum + (currentUser.balance || 0), 0)
-);
+export const calculateTotalBalance = (users = []) => {
+  if (!Array.isArray(users)) return 0;
+  return users.reduce((sum, currentUser) => sum + (currentUser.balance || 0), 0);
+};
