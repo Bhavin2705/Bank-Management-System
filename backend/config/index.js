@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 
 const requiredEnv = ['MONGODB_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
 
@@ -9,11 +10,32 @@ const resolveEnvFile = () => {
     return 'development.env';
 };
 
-const loadEnv = () => {
-    const envFile = resolveEnvFile();
+const loadIfExists = (envPath) => {
+    if (!fs.existsSync(envPath)) return false;
     require('dotenv').config({
-        path: path.resolve(__dirname, 'environments', envFile)
+        path: envPath,
+        override: false
     });
+    return true;
+};
+
+const loadEnv = () => {
+    const envName = String(process.env.NODE_ENV || 'development').toLowerCase();
+    const projectRoot = path.resolve(__dirname, '..');
+
+    // Prioritize real environment setup (.env and process env) before legacy fallback files.
+    const candidatePaths = [
+        path.resolve(projectRoot, '.env'),
+        path.resolve(projectRoot, `.env.${envName}`),
+        path.resolve(projectRoot, '.env.local'),
+        path.resolve(projectRoot, `.env.${envName}.local`)
+    ];
+
+    candidatePaths.forEach(loadIfExists);
+
+    // Backward-compatible fallback for existing config/environments/*.env files.
+    const envFile = resolveEnvFile();
+    loadIfExists(path.resolve(__dirname, 'environments', envFile));
 };
 
 const validateEnv = () => {

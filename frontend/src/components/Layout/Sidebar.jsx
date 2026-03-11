@@ -33,6 +33,7 @@ const BASE_NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { id: 'users', label: 'User Management', icon: Users, path: '/users' },
+  { id: 'card-controls', label: 'Card Controls', icon: Shield, path: '/card-controls' },
   { id: 'admin-banks', label: 'Manage Banks', icon: Users, path: '/admin-banks' },
 ];
 

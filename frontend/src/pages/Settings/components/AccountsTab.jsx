@@ -16,6 +16,8 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
       <div className="settings-accounts-grid">
         {linkedAccounts.map((card) => {
           const status = (card.status || 'active').toLowerCase();
+          const hasPendingRequest = card?.statusRequest?.status === 'pending';
+          const isNonToggleStatus = ['blocked', 'lost', 'expired', 'closed'].includes(status);
           return (
             <div key={card._id} className="settings-account-card">
               <div className="settings-row-between settings-align-start">
@@ -23,6 +25,11 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
                   <div className="settings-account-name">{card.cardHolder || card.cardName || 'Card'}</div>
                   <div className="settings-account-meta">{(card.cardType || 'Credit Card').toUpperCase()} | ******{card.cardNumber?.slice(-4)}</div>
                   <div className="settings-account-expiry">Expires: {card.expiryMonth}/{card.expiryYear}</div>
+                  {hasPendingRequest && (
+                    <div className="settings-account-expiry">
+                      Request pending: {card?.statusRequest?.requestedStatus === 'inactive' ? 'Lock' : 'Unlock'}
+                    </div>
+                  )}
                 </div>
                 <div className="settings-account-actions">
                   <span className={`settings-status-badge is-${status}`}>{status}</span>
@@ -30,10 +37,16 @@ const AccountsTab = ({ linkedAccounts, loading, onRefresh, onToggleCardStatus })
                     <button
                       type="button"
                       className="btn btn-secondary settings-account-toggle-btn"
-                      disabled={loading || card.status === 'blocked'}
-                      onClick={() => onToggleCardStatus(card._id, card.status)}
+                      disabled={loading || isNonToggleStatus || hasPendingRequest}
+                      onClick={() => onToggleCardStatus(card)}
                     >
-                      {card.status === 'blocked' ? 'Contact Bank' : card.status === 'active' ? 'Lock Card' : 'Unlock Card'}
+                      {card.status === 'blocked'
+                        ? 'Contact Bank'
+                        : hasPendingRequest
+                          ? 'Request Pending'
+                          : card.status === 'active'
+                            ? 'Request Lock'
+                            : 'Request Unlock'}
                     </button>
                   ) : (
                     <span className="settings-closed-note">Permanently closed</span>

@@ -14,13 +14,24 @@ const {
     updatePin
 } = require('../controllers/user.controller');
 const { protect, authorize } = require('../middleware/auth');
-const { validateObjectId, validatePagination } = require('../middleware/validation');
+const {
+    validateObjectId,
+    validatePagination,
+    validateEmailAvailabilityQuery,
+    validatePhoneAvailabilityQuery,
+    validatePinVerification,
+    validatePinUpdate,
+    validateClientDataUpdate,
+    validateUserStatusUpdate,
+    validateUserUpdatePayload
+} = require('../middleware/validation');
+const { apiLimiter, lookupLimiter, pinLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
-router.get('/banks', getBanks);
+router.get('/banks', apiLimiter, getBanks);
 
-router.get('/check-email', async (req, res) => {
+router.get('/check-email', lookupLimiter, validateEmailAvailabilityQuery, async (req, res) => {
     try {
         const { email } = req.query;
         if (!email) {
@@ -34,7 +45,7 @@ router.get('/check-email', async (req, res) => {
     }
 });
 
-router.get('/check-phone', async (req, res) => {
+router.get('/check-phone', lookupLimiter, validatePhoneAvailabilityQuery, async (req, res) => {
     try {
         const { phone } = req.query;
         if (!phone) {
@@ -55,11 +66,12 @@ router.get('/check-phone', async (req, res) => {
 });
 
 router.use(protect);
+router.use(apiLimiter);
 
-router.post('/verify-pin', verifyPin);
-router.put('/update-pin', updatePin);
+router.post('/verify-pin', pinLimiter, validatePinVerification, verifyPin);
+router.put('/update-pin', pinLimiter, validatePinUpdate, updatePin);
 router.get('/me/client-data', getClientData);
-router.put('/me/client-data', updateClientData);
+router.put('/me/client-data', apiLimiter, validateClientDataUpdate, updateClientData);
 
 router.get('/stats', authorize('admin'), getUserStats);
 router.get('/admin-actions', authorize('admin'), getAdminActions);
@@ -67,11 +79,11 @@ router.get('/bank-metrics', authorize('admin'), getBankMetrics);
 router.get('/transfer-recipients', getTransferRecipients);
 
 router.get('/', authorize('admin'), validatePagination, getUsers);
-router.put('/:id/status', authorize('admin'), validateObjectId, (req, res, next) => {
+router.put('/:id/status', authorize('admin'), validateObjectId, validateUserStatusUpdate, (req, res, next) => {
     req.body = { status: req.body.status };
     next();
 }, updateUser);
 router.get('/:id', validateObjectId, getUser);
-router.put('/:id', validateObjectId, updateUser);
+router.put('/:id', validateObjectId, validateUserUpdatePayload, updateUser);
 
 module.exports = router;

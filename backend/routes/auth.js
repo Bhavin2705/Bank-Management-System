@@ -18,9 +18,10 @@ const {
     validateUserLogin,
     validatePasswordReset,
     validatePasswordResetToken,
-    validatePasswordUpdate
+    validatePasswordUpdate,
+    validateProfileUpdate
 } = require('../middleware/validation');
-const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimit');
+const { apiLimiter, authLimiter, passwordResetLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -28,15 +29,16 @@ router.post('/register', authLimiter, validateUserRegistration, register);
 router.post('/login', authLimiter, validateUserLogin, login);
 router.post('/login-account', authLimiter, validateUserLogin, loginWithAccount);
 router.post('/forgotpassword', passwordResetLimiter, validatePasswordReset, forgotPassword);
-router.put('/resetpassword/:resettoken', validatePasswordResetToken, resetPassword);
-router.get('/resetpassword/:resettoken', verifyResetToken);
-router.post('/refresh', refreshToken);
+router.put('/resetpassword/:resettoken', passwordResetLimiter, validatePasswordResetToken, resetPassword);
+router.get('/resetpassword/:resettoken', passwordResetLimiter, verifyResetToken);
+router.post('/refresh', authLimiter, refreshToken);
 
 router.use(protect); // All routes below require authentication
+router.use(apiLimiter);
 
 router.post('/logout', logout);
 router.get('/me', getMe);
-router.put('/updatedetails', updateDetails);
+router.put('/updatedetails', validateProfileUpdate, updateDetails);
 router.put('/updatepassword', validatePasswordUpdate, updatePassword);
 
 module.exports = router;

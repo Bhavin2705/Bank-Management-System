@@ -27,6 +27,7 @@ export default function VirtualCardModal({
   cvvVisible,
   onToggleCardNumber,
   onToggleCvv,
+  onResetCvvVisibility,
   onClose,
 }) {
   const [showBack, setShowBack] = useState(false);
@@ -34,8 +35,16 @@ export default function VirtualCardModal({
   useEffect(() => {
     if (show) {
       setShowBack(false);
+      onResetCvvVisibility?.();
     }
   }, [show, card?._id, card?.id]);
+
+  const handleToggleFace = () => {
+    if (showBack) {
+      onResetCvvVisibility?.();
+    }
+    setShowBack((prev) => !prev);
+  };
 
   const isCreditCard = (card?.cardType || '').toLowerCase() === 'credit';
 
@@ -100,7 +109,7 @@ export default function VirtualCardModal({
         </div>
 
         <div className="virtual-card-controls">
-          <button type="button" className="btn btn-primary" onClick={() => setShowBack((prev) => !prev)}>
+          <button type="button" className="btn btn-primary" onClick={handleToggleFace}>
             {showBack ? 'Show Front' : 'Show Back'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={onToggleCardNumber}>

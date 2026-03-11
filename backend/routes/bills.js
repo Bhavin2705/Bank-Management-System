@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const { apiLimiter, transactionLimiter } = require('../middleware/rateLimit');
+const { validateBillCreate, validateBillUpdate, validateBillPayment, validateObjectId } = require('../middleware/validation');
 const {
   getBills,
   getBill,
@@ -11,18 +13,21 @@ const {
   getBillStats
 } = require('../controllers/bill.controller');
 
-router.get('/', protect, getBills);
+router.use(protect);
+router.use(apiLimiter);
 
-router.get('/stats', protect, getBillStats);
+router.get('/', getBills);
 
-router.get('/:id', protect, getBill);
+router.get('/stats', getBillStats);
 
-router.post('/', protect, createBill);
+router.get('/:id', validateObjectId, getBill);
 
-router.post('/:id/pay', protect, payBill);
+router.post('/', transactionLimiter, validateBillCreate, createBill);
 
-router.put('/:id', protect, updateBill);
+router.post('/:id/pay', transactionLimiter, validateObjectId, validateBillPayment, payBill);
 
-router.delete('/:id', protect, deleteBill);
+router.put('/:id', validateObjectId, validateBillUpdate, updateBill);
+
+router.delete('/:id', validateObjectId, deleteBill);
 
 module.exports = router;

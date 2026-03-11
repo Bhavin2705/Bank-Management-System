@@ -13,6 +13,7 @@ import PasswordResetSuccess from './components/Auth/PasswordResetSuccess';
 import Dashboard from './components/Dashboard/Dashboard';
 import {
   AdminBanks,
+  CardControls,
   Budget,
   Cards,
   CurrencyExchange,
@@ -296,6 +297,7 @@ function App() {
           {/* Admin routes */}
           <Route path="/admin-banks" element={<ProtectedRoute adminOnly><Layout><AdminBanks /></Layout></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute adminOnly><Layout><Users user={user} /></Layout></ProtectedRoute>} />
+          <Route path="/card-controls" element={<ProtectedRoute adminOnly><Layout><CardControls /></Layout></ProtectedRoute>} />
 
           {/* Fallback / root */}
           <Route path="*" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />

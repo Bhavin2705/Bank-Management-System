@@ -189,6 +189,8 @@ export const api = {
         create: (data) => apiRequest('/cards', { method: 'POST', body: JSON.stringify(data) }),
         updatePin: (id, data) => apiRequest(`/cards/${id}/pin`, { method: 'PUT', body: JSON.stringify(data) }),
         updateStatus: (id, data) => apiRequest(`/cards/${id}/status`, { method: 'PUT', body: JSON.stringify(data) }),
+        requestStatusChange: (id) => apiRequest(`/cards/${id}/status-request`, { method: 'POST' }),
+        reviewStatusRequest: (id, data) => apiRequest(`/cards/${id}/status-request`, { method: 'PUT', body: JSON.stringify(data) }),
         revealCvv: (id, data) => apiRequest(`/cards/${id}/reveal-cvv`, { method: 'POST', body: JSON.stringify(data) })
     },
 

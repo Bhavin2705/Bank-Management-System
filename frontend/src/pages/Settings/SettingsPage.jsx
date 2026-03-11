@@ -330,7 +330,11 @@ const Settings = ({ user, onUserUpdate }) => {
     }
   };
 
-  const handleCardStatusToggle = async (cardId, currentStatus) => {
+  const handleCardStatusToggle = async (card) => {
+    const cardId = card?._id || card?.id;
+    const currentStatus = card?.status;
+    if (!cardId) return;
+
     if (currentStatus === 'closed') {
       showError('Closed cards cannot be reopened');
       return;
@@ -344,23 +348,24 @@ const Settings = ({ user, onUserUpdate }) => {
       showError('This card status cannot be changed.');
       return;
     }
+    if (card?.statusRequest?.status === 'pending') {
+      showError('A lock/unlock request is already pending review.');
+      return;
+    }
 
-    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
     setLoading((prev) => ({ ...prev, accounts: true }));
 
     try {
-      const result = await api.cards.updateStatus(cardId, { status: nextStatus });
+      const result = await api.cards.requestStatusChange(cardId);
       if (result?.success) {
-        setLinkedAccounts((prev) =>
-          prev.map((card) => (card._id === cardId ? { ...card, status: nextStatus } : card))
-        );
-        showSuccess(`Card ${nextStatus === 'active' ? 'unlocked' : 'locked'} successfully`);
+        showSuccess(result.message || 'Request submitted. Bank will review your card status change.');
+        await refreshLinkedAccounts(false);
       } else {
-        showError(result?.error || 'Failed to update card status');
+        showError(result?.error || 'Failed to submit card status request');
       }
     } catch (cardStatusError) {
       console.error('Card status update error:', cardStatusError);
-      showError('Failed to update card status. Please try again.');
+      showError('Failed to submit card status request. Please try again.');
     } finally {
       setLoading((prev) => ({ ...prev, accounts: false }));
     }

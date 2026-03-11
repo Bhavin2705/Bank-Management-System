@@ -7,14 +7,17 @@ const {
     getSessions
 } = require('../controllers/settings.controller');
 const { protect } = require('../middleware/auth');
+const { validateSettingsPreferencesUpdate, validateTwoFactorUpdate } = require('../middleware/validation');
+const { apiLimiter, settingsWriteLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
 router.use(protect);
+router.use(apiLimiter);
 
 router.get('/', getSettings);
-router.put('/preferences', updatePreferences);
-router.put('/two-factor', updateTwoFactor);
+router.put('/preferences', settingsWriteLimiter, validateSettingsPreferencesUpdate, updatePreferences);
+router.put('/two-factor', settingsWriteLimiter, validateTwoFactorUpdate, updateTwoFactor);
 router.get('/linked-accounts', getLinkedAccounts);
 router.get('/sessions', getSessions);
 

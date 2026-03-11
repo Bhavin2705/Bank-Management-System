@@ -36,9 +36,14 @@ const CardsList = ({
         const isClosingCard = closingCardId === cardId;
         const isBlockedByBank = card.status === 'blocked';
         const isLockedByStatus = isNonToggleStatus(card.status);
-        const lockButtonDisabled = isUpdatingCard || isClosingCard || isBlockedByBank || isLockedByStatus;
+        const hasPendingRequest = card.statusRequest?.status === 'pending';
+        const requestedStatus = card.statusRequest?.requestedStatus;
+        const pendingLabel = requestedStatus === 'inactive' ? 'Lock request pending review' : 'Unlock request pending review';
+        const lockButtonDisabled = isUpdatingCard || isClosingCard || isBlockedByBank || isLockedByStatus || hasPendingRequest;
         const lockButtonTitle = isBlockedByBank
           ? 'Card blocked by bank. Contact support.'
+          : hasPendingRequest
+            ? 'Request pending bank review'
           : isLockedByStatus
             ? 'Card status cannot be changed'
             : card.status === 'active'
@@ -74,6 +79,9 @@ const CardsList = ({
                       {card.status || 'unknown'}
                     </span>
                   </span>
+                  {hasPendingRequest && (
+                    <span className="card-item-meta-value card-item-request-pending">{pendingLabel}</span>
+                  )}
                   <span className="card-item-meta-value card-item-cvv-wrap">
                     CVV:
                     <strong className="card-item-cvv-value">{visibleCvvs.has(cardId) ? (card.cvv || '---') : '• • •'}</strong>

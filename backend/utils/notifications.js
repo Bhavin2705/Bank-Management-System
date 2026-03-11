@@ -2,14 +2,7 @@ const Notification = require('../models/Notification');
 
 const MONEY_NOTIFICATION_TYPES = new Set(['transaction', 'bill_paid']);
 
-const isMoneyMovementNotification = ({ type, metadata }) => {
-  if (!MONEY_NOTIFICATION_TYPES.has(type)) {
-    return false;
-  }
-
-  const amount = Number(metadata?.amount);
-  return Number.isFinite(amount) && amount > 0;
-};
+const shouldValidateMoneyAmount = (type) => MONEY_NOTIFICATION_TYPES.has(type);
 
 const createInAppNotification = async ({
   userId,
@@ -24,7 +17,11 @@ const createInAppNotification = async ({
   dedupeWindowMs = 5 * 60 * 1000
 }) => {
   if (!userId || !title || !message) return null;
-  if (!isMoneyMovementNotification({ type, metadata })) return null;
+
+  if (shouldValidateMoneyAmount(type)) {
+    const amount = Number(metadata?.amount);
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+  }
 
   try {
     if (dedupe) {

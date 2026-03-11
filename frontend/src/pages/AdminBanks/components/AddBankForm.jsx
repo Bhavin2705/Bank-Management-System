@@ -1,8 +1,10 @@
 export default function AddBankForm({ newBank, setNewBank, onAddBank }) {
   const bankCode = String(newBank.bankCode || '').trim().toUpperCase();
   const normalizedCode = bankCode.replace(/[^A-Z0-9]/g, '').slice(0, 4);
-  const sampleIfscPrimary = `${normalizedCode.padEnd(4, 'X')}0001234`;
-  const sampleIfscSecondary = `${normalizedCode.padEnd(4, 'X')}0005678`;
+  const knownIfscByBankCode = {
+    INDB: 'INDB0000001'
+  };
+  const ifscPattern = knownIfscByBankCode[normalizedCode] || `${normalizedCode.padEnd(4, 'X')}0XXXXXX`;
 
   const isDisabled = (
     !String(newBank.bankName || '').trim()
@@ -49,10 +51,9 @@ export default function AddBankForm({ newBank, setNewBank, onAddBank }) {
         </div>
       </div>
       <div className="admin-banks-ifsc-preview">
-        <div className="admin-banks-preview-label">Generated IFSC examples</div>
+        <div className="admin-banks-preview-label">IFSC example for this bank</div>
         <div className="admin-banks-preview-row">
-          <span>{sampleIfscPrimary}</span>
-          <span>{sampleIfscSecondary}</span>
+          <span>{ifscPattern}</span>
         </div>
       </div>
       <button

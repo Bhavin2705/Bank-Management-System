@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const { validateBudget } = require('../middleware/validation');
+const { validateBudget, validateObjectId } = require('../middleware/validation');
+const { apiLimiter, transactionLimiter } = require('../middleware/rateLimit');
 const {
   getBudgets,
   getBudget,
@@ -13,20 +14,23 @@ const {
   getBudgetStats
 } = require('../controllers/budget.controller');
 
-router.get('/', protect, getBudgets);
+router.use(protect);
+router.use(apiLimiter);
 
-router.get('/summary', protect, getBudgetSummary);
+router.get('/', getBudgets);
 
-router.get('/stats', protect, getBudgetStats);
+router.get('/summary', getBudgetSummary);
 
-router.get('/:id', protect, getBudget);
+router.get('/stats', getBudgetStats);
 
-router.post('/', protect, validateBudget, createBudget);
+router.get('/:id', validateObjectId, getBudget);
 
-router.post('/:id/update-spent', protect, updateBudgetSpent);
+router.post('/', transactionLimiter, validateBudget, createBudget);
 
-router.put('/:id', protect, validateBudget, updateBudget);
+router.post('/:id/update-spent', transactionLimiter, validateObjectId, updateBudgetSpent);
 
-router.delete('/:id', protect, deleteBudget);
+router.put('/:id', validateObjectId, validateBudget, updateBudget);
+
+router.delete('/:id', validateObjectId, deleteBudget);
 
 module.exports = router;

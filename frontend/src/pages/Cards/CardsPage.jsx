@@ -185,16 +185,21 @@ const Cards = ({ user }) => {
       return;
     }
 
-    const newStatus = card.status === 'active' ? 'inactive' : 'active';
+    if (card.statusRequest?.status === 'pending') {
+      showError('A card status request is already pending bank review.');
+      return;
+    }
+
     try {
       setUpdatingCardId(cardId);
-      const res = await api.cards.updateStatus(cardId, { status: newStatus });
+      const res = await api.cards.requestStatusChange(cardId);
       if (res.success) {
+        showSuccess(res.message || 'Request submitted. Bank will review your card status request.');
         await loadCards();
       }
     } catch (err) {
       console.error('Toggle lock error:', err);
-      showError(err.message || 'Failed to update card status');
+      showError(err.message || 'Failed to submit card status request');
     } finally {
       setUpdatingCardId(null);
     }
@@ -213,11 +218,25 @@ const Cards = ({ user }) => {
   };
 
   const openVirtualCard = (cardId) => {
+    setVisibleCvvs((prevVisibleCvvs) => {
+      const updatedVisibleCvvs = new Set(prevVisibleCvvs);
+      updatedVisibleCvvs.delete(cardId);
+      return updatedVisibleCvvs;
+    });
     setVirtualCardId(cardId);
   };
 
   const closeVirtualCard = () => {
     setVirtualCardId(null);
+  };
+
+  const hideCvvForCard = (cardId) => {
+    setVisibleCvvs((prevVisibleCvvs) => {
+      if (!prevVisibleCvvs.has(cardId)) return prevVisibleCvvs;
+      const updatedVisibleCvvs = new Set(prevVisibleCvvs);
+      updatedVisibleCvvs.delete(cardId);
+      return updatedVisibleCvvs;
+    });
   };
 
   const selectedVirtualCard = cards.find((card) => getCardId(card) === virtualCardId) || null;
@@ -323,6 +342,7 @@ const Cards = ({ user }) => {
         cvvVisible={selectedVirtualCard ? visibleCvvs.has(getCardId(selectedVirtualCard)) : false}
         onToggleCardNumber={() => selectedVirtualCard && toggleCardVisibility(getCardId(selectedVirtualCard))}
         onToggleCvv={() => selectedVirtualCard && toggleCvvVisibility(getCardId(selectedVirtualCard))}
+        onResetCvvVisibility={() => selectedVirtualCard && hideCvvForCard(getCardId(selectedVirtualCard))}
         onClose={closeVirtualCard}
       />
     </div>

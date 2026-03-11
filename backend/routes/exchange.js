@@ -10,7 +10,27 @@ const CACHE_TTL_MS = parseInt(process.env.EXCHANGE_CACHE_TTL_MS) || 60000;
 
 let lastLiveRates = null;
 
-const EXCHANGE_API_URL = `https://openexchangerates.org/api/latest.json?app_id=${process.env.OPEN_EXCHANGE_RATES_API_KEY}`;
+// USD-based fallback rates used when upstream key is missing/unavailable.
+const FALLBACK_RATES = Object.freeze({
+    USD: 1,
+    EUR: 0.92,
+    GBP: 0.79,
+    JPY: 148.7,
+    CAD: 1.35,
+    AUD: 1.52,
+    CHF: 0.89,
+    CNY: 7.23,
+    INR: 83.1,
+    BRL: 4.98
+});
+
+let hasWarnedMissingExchangeKey = false;
+
+const getExchangeApiUrl = () => {
+    const appId = String(process.env.OPEN_EXCHANGE_RATES_API_KEY || '').trim();
+    if (!appId) return null;
+    return `https://openexchangerates.org/api/latest.json?app_id=${appId}`;
+};
 
 const fetchRates = async () => {
     const now = Date.now();
@@ -18,8 +38,22 @@ const fetchRates = async () => {
         return { success: true, source: 'cache', timestamp: cachedAt, rates: cachedRates };
     }
 
+    const exchangeApiUrl = getExchangeApiUrl();
+    if (!exchangeApiUrl) {
+        if (!hasWarnedMissingExchangeKey) {
+            console.warn('OPEN_EXCHANGE_RATES_API_KEY is not set. Using fallback exchange rates.');
+            hasWarnedMissingExchangeKey = true;
+        }
+        return {
+            success: true,
+            source: 'fallback-static',
+            timestamp: now,
+            rates: FALLBACK_RATES
+        };
+    }
+
     try {
-        const response = await axios.get(EXCHANGE_API_URL, { timeout: 10000 });
+        const response = await axios.get(exchangeApiUrl, { timeout: 10000 });
         const data = response.data;
 
         if (!data || !data.rates) {
@@ -34,7 +68,12 @@ const fetchRates = async () => {
         if (lastLiveRates) {
             return { success: true, source: 'last-live', timestamp: cachedAt, rates: lastLiveRates };
         }
-        return { success: false, error: 'Failed to fetch exchange rates' };
+        return {
+            success: true,
+            source: 'fallback-static',
+            timestamp: now,
+            rates: FALLBACK_RATES
+        };
     }
 };
 

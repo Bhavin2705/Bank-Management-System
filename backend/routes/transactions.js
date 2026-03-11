@@ -23,6 +23,7 @@ const { apiLimiter, transactionLimiter } = require('../middleware/rateLimit');
 const router = express.Router();
 
 router.use(protect);
+router.use(apiLimiter);
 
 router.get('/categories', getTransactionCategories);
 router.get('/stats', getTransactionStats);

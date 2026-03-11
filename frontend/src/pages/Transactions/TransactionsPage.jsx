@@ -50,9 +50,13 @@ export default function Transactions({ user, onUserUpdate }) {
     try {
       const res = await api.cards.getAll();
       if (res && res.success) {
-        setCards(res.data || []);
-        if (res.data && res.data.length > 0) {
-          setSelectedCardId(getCardIdentifier(res.data[0]));
+        const nextCards = res.data || [];
+        setCards(nextCards);
+        if (nextCards.length > 0) {
+          const preferredCard = nextCards.find((card) => card.status === 'active') || nextCards[0];
+          setSelectedCardId(getCardIdentifier(preferredCard));
+        } else {
+          setSelectedCardId('');
         }
       }
     } catch (error) {
@@ -264,9 +268,14 @@ export default function Transactions({ user, onUserUpdate }) {
     }
 
     const isDeposit = actionType === 'deposit';
+    const selectedCard = cards.find((card) => getCardIdentifier(card) === selectedCardId) || null;
 
     if (!isDeposit && amount > user.balance) {
       showError('Insufficient balance');
+      return;
+    }
+    if (!isDeposit && (!selectedCard || selectedCard.status !== 'active')) {
+      showError('Select an active card to complete this withdrawal');
       return;
     }
 
@@ -286,7 +295,7 @@ export default function Transactions({ user, onUserUpdate }) {
           description: formData.description.trim() || (isDeposit ? 'Cash Deposit' : 'Cash Withdrawal'),
           category: isDeposit ? 'deposit' : 'withdrawal',
           clientRequestId: createClientRequestId(),
-          cardId: selectedCardId || (cards.length > 0 ? getCardIdentifier(cards[0]) : ''),
+          cardId: selectedCardId || '',
         };
 
         const transactionSuccess = await handleDepositOrWithdrawConfirmed(transactionData);

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Transaction = require('../models/Transaction');
+const Card = require('../models/Card');
 const User = require('../models/User');
 const notificationService = require('./notification.service');
 const { roundTwo } = require('../helpers/transaction.helpers');
@@ -19,6 +20,7 @@ const createTransaction = async ({ userId, body }) => {
         amount,
         description,
         category,
+        cardId,
         recipientId,
         recipientAccount,
         recipientName,
@@ -43,6 +45,22 @@ const createTransaction = async ({ userId, body }) => {
     const normalizedCategory = typeof category === 'string' ? category.trim() : '';
     const defaultCategory = type === 'credit' ? 'deposit' : type === 'debit' ? 'withdrawal' : 'transfer';
     const finalCategory = normalizedCategory || defaultCategory;
+
+    let validatedCard = null;
+    if (cardId) {
+        validatedCard = await Card.findById(cardId);
+        if (!validatedCard) {
+            throw createServiceError('Card not found', 404);
+        }
+
+        if (validatedCard.userId.toString() !== userId.toString()) {
+            throw createServiceError('Not authorized to use this card', 403);
+        }
+
+        if (type === 'debit' && !validatedCard.canTransact(numericAmount, 'online')) {
+            throw createServiceError('Card is locked or unavailable for transactions', 400);
+        }
+    }
 
     let session;
     try {
@@ -72,6 +90,7 @@ const createTransaction = async ({ userId, body }) => {
                 balance: newBalance,
                 description: finalDescription,
                 category: finalCategory,
+                cardId: validatedCard ? validatedCard._id : undefined,
                 clientRequestId,
                 recipientId,
                 recipientAccount,
@@ -125,6 +144,7 @@ const createTransaction = async ({ userId, body }) => {
                         balance: newBalance,
                         description: finalDescription,
                         category: finalCategory,
+                        cardId: validatedCard ? validatedCard._id : undefined,
                         clientRequestId,
                         recipientId,
                         recipientAccount,

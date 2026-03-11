@@ -121,6 +121,7 @@
 
 .admin-banks-item-main {
   min-width: 0;
+  flex: 1;
 }
 
 .admin-banks-item-name {
@@ -154,16 +155,69 @@
   overflow-wrap: anywhere;
 }
 
+.admin-banks-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.admin-banks-edit-btn,
+.admin-banks-save-btn,
+.admin-banks-cancel-btn,
 .admin-banks-remove-btn {
   align-self: center;
-  border: 1px solid rgba(220, 53, 69, 0.38);
-  background: rgba(220, 53, 69, 0.08);
-  color: #c81e35;
+  min-height: 40px;
   padding: 0.45rem 0.8rem;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
+}
+
+.admin-banks-edit-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.admin-banks-edit-btn:hover {
+  background: color-mix(in srgb, var(--bg-tertiary) 75%, transparent);
+}
+
+.admin-banks-save-btn {
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  background: rgba(14, 165, 233, 0.12);
+  color: #0369a1;
+}
+
+.admin-banks-save-btn:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.2);
+}
+
+.admin-banks-cancel-btn {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.admin-banks-cancel-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bg-tertiary) 70%, transparent);
+  color: var(--text-primary);
+}
+
+.admin-banks-save-btn:disabled,
+.admin-banks-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-banks-remove-btn {
+  border: 1px solid rgba(220, 53, 69, 0.38);
+  background: rgba(220, 53, 69, 0.08);
+  color: #c81e35;
 }
 
 .admin-banks-remove-btn:hover {
@@ -190,7 +244,16 @@
     align-items: stretch;
   }
 
-  .admin-banks-remove-btn {
+  .admin-banks-actions {
     width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-banks-edit-btn,
+  .admin-banks-save-btn,
+  .admin-banks-cancel-btn,
+  .admin-banks-remove-btn {
+    width: auto;
+    min-width: 96px;
   }
 }

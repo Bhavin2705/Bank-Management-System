@@ -92,20 +92,21 @@ const getAllBanks = () => {
 };
 
 const validateIFSC = (ifsc, bankId) => {
-    if (!ifsc || ifsc.length !== 11) return false;
+    const normalizedIfsc = String(ifsc || '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{4}0[A-Z0-9]{6}$/.test(normalizedIfsc)) return false;
 
     const bank = getBankById(bankId);
     if (!bank) return false;
 
-    return ifsc.startsWith(bank.bankCode || bank.ifscPrefix);
+    return normalizedIfsc.startsWith(bank.bankCode || bank.ifscPrefix);
 };
 
 const generateIFSCFromBankCode = (bankCode) => {
     const code = String(bankCode || '').trim().toUpperCase().slice(0, 4);
     if (!/^[A-Z0-9]{4}$/.test(code)) return '';
 
-    const suffix = Math.floor(1000000 + Math.random() * 9000000).toString();
-    return `${code}${suffix}`;
+    const branchCode = Math.floor(100000 + Math.random() * 900000).toString();
+    return `${code}0${branchCode}`;
 };
 
 module.exports = {

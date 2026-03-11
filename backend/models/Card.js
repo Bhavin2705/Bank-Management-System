@@ -65,6 +65,36 @@ const cardSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'blocked', 'expired', 'lost', 'closed'],
         default: 'active'
     },
+    statusRequest: {
+        requestedStatus: {
+            type: String,
+            enum: ['active', 'inactive'],
+            default: null
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'approved', 'rejected'],
+            default: null
+        },
+        requestedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        requestedAt: {
+            type: Date,
+            default: null
+        },
+        reviewedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        reviewedAt: {
+            type: Date,
+            default: null
+        }
+    },
     creditLimit: {
         type: Number,
         default: 0

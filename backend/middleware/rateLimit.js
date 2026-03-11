@@ -1,7 +1,15 @@
 const rateLimit = require('express-rate-limit');
 
-const inTestMode = () =>
-    process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
+const getEnv = () => String(process.env.NODE_ENV || 'development').toLowerCase();
+const inTestMode = () => getEnv() === 'test' || Boolean(process.env.JEST_WORKER_ID);
+const shouldSkipRateLimit = () => {
+    if (inTestMode()) return true;
+    // Keep local/dev workflows usable unless explicitly overridden.
+    if (getEnv() !== 'production' && process.env.RATE_LIMIT_IN_DEV !== 'true') {
+        return true;
+    }
+    return false;
+};
 const toInt = (value, fallback) => {
     const parsed = parseInt(value, 10);
     return Number.isFinite(parsed) ? parsed : fallback;
@@ -16,7 +24,7 @@ const apiLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode()
+    skip: () => shouldSkipRateLimit()
 });
 
 const authLimiter = rateLimit({
@@ -28,7 +36,7 @@ const authLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode()
+    skip: () => shouldSkipRateLimit()
 });
 
 const passwordResetLimiter = rateLimit({
@@ -40,7 +48,7 @@ const passwordResetLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode()
+    skip: () => shouldSkipRateLimit()
 });
 
 const transactionLimiter = rateLimit({
@@ -52,7 +60,7 @@ const transactionLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode()
+    skip: () => shouldSkipRateLimit()
 });
 
 const uploadLimiter = rateLimit({
@@ -64,7 +72,43 @@ const uploadLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => inTestMode()
+    skip: () => shouldSkipRateLimit()
+});
+
+const lookupLimiter = rateLimit({
+    windowMs: toInt(process.env.LOOKUP_RATE_LIMIT_WINDOW_MINUTES, 10) * 60 * 1000,
+    max: toInt(process.env.LOOKUP_RATE_LIMIT_MAX_REQUESTS, 60),
+    message: {
+        success: false,
+        error: 'Too many lookup requests, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => shouldSkipRateLimit()
+});
+
+const pinLimiter = rateLimit({
+    windowMs: toInt(process.env.PIN_RATE_LIMIT_WINDOW_MINUTES, 15) * 60 * 1000,
+    max: toInt(process.env.PIN_RATE_LIMIT_MAX_REQUESTS, 20),
+    message: {
+        success: false,
+        error: 'Too many PIN attempts, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => shouldSkipRateLimit()
+});
+
+const settingsWriteLimiter = rateLimit({
+    windowMs: toInt(process.env.SETTINGS_RATE_LIMIT_WINDOW_MINUTES, 15) * 60 * 1000,
+    max: toInt(process.env.SETTINGS_RATE_LIMIT_MAX_REQUESTS, 50),
+    message: {
+        success: false,
+        error: 'Too many settings updates, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => shouldSkipRateLimit()
 });
 
 module.exports = {
@@ -72,5 +116,8 @@ module.exports = {
     authLimiter,
     passwordResetLimiter,
     transactionLimiter,
-    uploadLimiter
+    uploadLimiter,
+    lookupLimiter,
+    pinLimiter,
+    settingsWriteLimiter
 };

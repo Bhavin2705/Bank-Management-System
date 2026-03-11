@@ -2,15 +2,15 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const { protect } = require('../middleware/auth');
+const { apiLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
-const MONEY_NOTIFICATION_TYPES = ['transaction', 'bill_paid'];
-
+ 
 router.use(protect);
+router.use(apiLimiter);
 
-const buildMoneyNotificationFilter = (userId, extra = {}) => ({
+const buildUserNotificationFilter = (userId, extra = {}) => ({
   userId,
-  type: { $in: MONEY_NOTIFICATION_TYPES },
   ...extra
 });
 
@@ -29,7 +29,7 @@ const mapNotification = (notification) => ({
 const markAllAsReadHandler = async (req, res) => {
   try {
     await Notification.updateMany(
-      buildMoneyNotificationFilter(req.user._id, { status: 'unread' }),
+      buildUserNotificationFilter(req.user._id, { status: 'unread' }),
       { status: 'read' }
     );
     return res.status(200).json({ success: true, message: 'All notifications marked as read' });
@@ -41,7 +41,7 @@ const markAllAsReadHandler = async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const notifications = await Notification.find(
-      buildMoneyNotificationFilter(req.user._id, { status: { $ne: 'archived' } })
+      buildUserNotificationFilter(req.user._id, { status: { $ne: 'archived' } })
     )
       .sort({ createdAt: -1 })
       .limit(100);
@@ -62,7 +62,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const notification = await Notification.findOne({
-      ...buildMoneyNotificationFilter(req.user._id),
+      ...buildUserNotificationFilter(req.user._id),
       _id: req.params.id
     });
 
@@ -83,7 +83,7 @@ router.put('/:id/read', async (req, res) => {
     }
 
     const notification = await Notification.findOneAndUpdate(
-      { ...buildMoneyNotificationFilter(req.user._id), _id: req.params.id },
+      { ...buildUserNotificationFilter(req.user._id), _id: req.params.id },
       { status: 'read' },
       { new: true }
     );
@@ -113,7 +113,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     const deleted = await Notification.findOneAndDelete({
-      ...buildMoneyNotificationFilter(req.user._id),
+      ...buildUserNotificationFilter(req.user._id),
       _id: req.params.id
     });
 
@@ -129,7 +129,7 @@ router.delete('/:id', async (req, res) => {
 
 router.delete('/', async (req, res) => {
   try {
-    await Notification.deleteMany(buildMoneyNotificationFilter(req.user._id));
+    await Notification.deleteMany(buildUserNotificationFilter(req.user._id));
     return res.status(200).json({ success: true, message: 'All notifications deleted' });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Server error deleting notifications' });

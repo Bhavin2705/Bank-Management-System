@@ -204,6 +204,14 @@ const updateCardStatus = async (req, res) => {
 
         const isOwner = card.userId.toString() === req.user._id.toString();
         const isAdminAction = req.user.role === 'admin' && !isOwner;
+        const isSelfAction = isOwner && req.user.role !== 'admin';
+
+        if (isSelfAction && status !== 'closed') {
+            return res.status(403).json({
+                success: false,
+                error: 'Please use lock/unlock request. Bank admin approval is required.'
+            });
+        }
 
         if (!isAdminAction && status === 'blocked') {
             return res.status(403).json({ success: false, error: 'Only bank admin can block cards' });
@@ -219,6 +227,11 @@ const updateCardStatus = async (req, res) => {
 
         const previousStatus = card.status;
         card.status = status;
+        if (card.statusRequest?.status === 'pending') {
+            card.statusRequest.status = 'rejected';
+            card.statusRequest.reviewedBy = req.user._id;
+            card.statusRequest.reviewedAt = new Date();
+        }
         await card.save();
 
         if (isAdminAction && previousStatus !== status) {
@@ -265,6 +278,140 @@ const updateCardStatus = async (req, res) => {
     } catch (error) {
         console.error('Update card status error:', error);
         res.status(500).json({ success: false, error: 'Server error updating card status' });
+    }
+};
+
+const requestCardStatusChange = async (req, res) => {
+    try {
+        const cardId = req.params.id;
+        const card = await Card.findById(cardId);
+        if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
+
+        if (card.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, error: 'Not authorized to request status change for this card' });
+        }
+
+        if (['lost', 'expired', 'closed'].includes(card.status)) {
+            return res.status(400).json({ success: false, error: 'This card status cannot be changed.' });
+        }
+
+        if (card.status === 'blocked') {
+            return res.status(400).json({ success: false, error: 'This card is blocked by bank. Please contact support.' });
+        }
+
+        const requestedStatus = card.status === 'active' ? 'inactive' : 'active';
+        const isPendingSameRequest = (
+            card.statusRequest?.status === 'pending'
+            && card.statusRequest?.requestedStatus === requestedStatus
+        );
+        if (isPendingSameRequest) {
+            return res.status(200).json({
+                success: true,
+                message: 'Your request is already pending bank review.'
+            });
+        }
+
+        card.statusRequest = {
+            requestedStatus,
+            status: 'pending',
+            requestedBy: req.user._id,
+            requestedAt: new Date(),
+            reviewedBy: null,
+            reviewedAt: null
+        };
+        await card.save();
+
+        const requestAction = requestedStatus === 'inactive' ? 'lock' : 'unlock';
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'account_update',
+            title: 'Card Request Submitted',
+            message: `Your ${requestAction} request for card ending with ${String(card.cardNumber || '').slice(-4)} is under review. Bank team will review it shortly.`,
+            priority: 'medium',
+            relatedId: card._id,
+            relatedModel: 'Card',
+            metadata: { category: 'card', requestedStatus }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Request submitted successfully. Bank will review your card status change request.'
+        });
+    } catch (error) {
+        console.error('Request card status change error:', error);
+        return res.status(500).json({ success: false, error: 'Server error requesting card status change' });
+    }
+};
+
+const reviewCardStatusRequest = async (req, res) => {
+    try {
+        const cardId = req.params.id;
+        const action = String(req.body?.action || '').toLowerCase();
+        if (!['approve', 'reject'].includes(action)) {
+            return res.status(400).json({ success: false, error: 'Action must be either approve or reject' });
+        }
+
+        const card = await Card.findById(cardId);
+        if (!card) return res.status(404).json({ success: false, error: 'Card not found' });
+
+        if (card.statusRequest?.status !== 'pending' || !card.statusRequest?.requestedStatus) {
+            return res.status(400).json({ success: false, error: 'No pending request found for this card' });
+        }
+
+        const previousStatus = card.status;
+        const requestedStatus = card.statusRequest.requestedStatus;
+        const isApprove = action === 'approve';
+
+        if (isApprove) {
+            card.status = requestedStatus;
+            card.statusRequest.status = 'approved';
+        } else {
+            card.statusRequest.status = 'rejected';
+        }
+
+        card.statusRequest.reviewedBy = req.user._id;
+        card.statusRequest.reviewedAt = new Date();
+        await card.save();
+
+        await logAdminAction(req, {
+            action: 'card_status_request_reviewed',
+            targetType: 'card',
+            targetId: String(card._id),
+            metadata: {
+                userId: String(card.userId),
+                previousStatus,
+                requestedStatus,
+                decision: action
+            }
+        });
+
+        await createInAppNotification({
+            userId: card.userId,
+            type: 'account_update',
+            title: isApprove ? 'Card Request Approved' : 'Card Request Rejected',
+            message: isApprove
+                ? `Your request has been approved. Card ending with ${String(card.cardNumber || '').slice(-4)} is now ${requestedStatus}.`
+                : `Your card status request for card ending with ${String(card.cardNumber || '').slice(-4)} was reviewed and rejected by bank admin.`,
+            priority: 'medium',
+            relatedId: card._id,
+            relatedModel: 'Card',
+            metadata: {
+                category: 'card',
+                previousStatus,
+                requestedStatus,
+                decision: action
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: isApprove
+                ? `Card request approved. Status updated to ${requestedStatus}.`
+                : 'Card request rejected.'
+        });
+    } catch (error) {
+        console.error('Review card status request error:', error);
+        return res.status(500).json({ success: false, error: 'Server error reviewing card request' });
     }
 };
 
@@ -335,5 +482,7 @@ module.exports = {
     createCard,
     updateCardPin,
     updateCardStatus,
+    requestCardStatusChange,
+    reviewCardStatusRequest,
     revealCardCvv
 };

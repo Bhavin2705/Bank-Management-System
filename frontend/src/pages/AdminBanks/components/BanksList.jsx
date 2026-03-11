@@ -10,6 +10,14 @@ export default function BanksList({
   onDeleteBank
 }) {
   const toBankCode = (bank) => String(bank.bankCode || bank.ifscPrefix || '').trim().toUpperCase();
+  const getIfscDisplay = (bank) => {
+    const bankCode = toBankCode(bank);
+    const knownIfscByBankCode = {
+      INDB: 'INDB0000001'
+    };
+
+    return knownIfscByBankCode[bankCode] || `${bankCode || 'XXXX'}0XXXXXX`;
+  };
 
   return (
     <div className="card admin-banks-card">
@@ -73,7 +81,7 @@ export default function BanksList({
                   <p className="admin-banks-item-meta">
                     Bank Code: <span>{toBankCode(bank) || 'N/A'}</span>
                   </p>
-                  <p className="admin-banks-item-ifsc">IFSC Format: {toBankCode(bank) || 'XXXX'}0001234</p>
+                  <p className="admin-banks-item-ifsc">IFSC Format: {getIfscDisplay(bank)}</p>
                   <p className="admin-banks-item-description">{bank.description || 'No description provided.'}</p>
                 </div>
                 <div className="admin-banks-actions">
