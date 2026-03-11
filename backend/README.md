@@ -1,324 +1,276 @@
-# BankPro - Backend API
+# BankPro Backend API
 
-A comprehensive REST API for BankPro's banking management system built with Node.js, Express, and MongoDB.
+Backend REST API and Socket.IO server for the BankPro banking platform, built with Node.js, Express, and MongoDB.
 
-## Features
+## Overview
 
-### 🔐 Authentication & Authorization
-- User registration and login
-- JWT-based authentication
-- Password reset functionality
-- Role-based access control (User/Admin)
-- Refresh token support
+This service provides:
 
-### 💳 Core Banking Features
-- **User Management**: Complete user profiles with KYC information
-- **Transaction Processing**: Credit, debit, and transfer operations
-- **Account Management**: Multiple account types (Savings, Checking, Business, etc.)
-- **Card Management**: Debit/credit card operations with security features
-- **Investment Portfolio**: Stock, mutual fund, and other investment tracking
-- **Budget Planning**: Financial goal setting and budget management
-- **Bill Payments**: Automated bill payment system
-- **Recurring Payments**: Scheduled payment processing
-
-### 🛡️ Security Features
-- Password hashing with bcrypt
-- JWT token authentication
-- Rate limiting
-- Input validation and sanitization
-- CORS protection
-- Helmet security headers
-- XSS and NoSQL injection protection
-
-### 📊 Analytics & Reporting
-- Transaction history and analytics
-- Financial insights and reporting
-- User activity monitoring
-- Performance metrics
+- JWT authentication with refresh token support
+- User profile and security settings management
+- Transactions and transfers
+- Cards, bills, budgets, and recurring payments
+- Bank directory management
+- Notifications
+- Currency rates and conversion utilities
+- Real-time socket events (when enabled)
 
 ## Tech Stack
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Security**: bcrypt, helmet, cors, express-rate-limit
-- **Validation**: express-validator
-- **Email**: Nodemailer (Implemented - SMTP support)
-- **File Upload**: multer (planned)
+- Runtime: Node.js
+- Framework: Express 4
+- Database: MongoDB with Mongoose
+- Auth: JWT + refresh tokens
+- Realtime: Socket.IO
+- Validation: express-validator
+- Security middleware: helmet, cors, rate limiting, mongo sanitize, xss-clean, hpp
+- Email: Nodemailer
+- Testing: Jest + Supertest
 
 ## Project Structure
 
-```
+```text
 backend/
-├── config/
-│   └── database.js          # MongoDB connection
-├── controllers/
-│   ├── authController.js    # Authentication logic
-│   ├── transactionController.js  # Transaction operations
-│   └── userController.js    # User management (Admin)
-├── middleware/
-│   ├── auth.js             # Authentication middleware
-│   ├── cors.js             # CORS configuration
-│   ├── errorHandler.js     # Global error handling
-│   ├── rateLimit.js        # Rate limiting
-│   └── validation.js       # Input validation
-├── models/
-│   ├── User.js             # User schema
-│   ├── Transaction.js      # Transaction schema
-│   ├── Account.js          # Account schema
-│   ├── Card.js             # Card schema
-│   ├── Investment.js       # Investment schema
-│   ├── Budget.js           # Budget schema
-│   ├── Goal.js             # Financial goals schema
-│   ├── Bill.js             # Bill payment schema
-│   ├── Notification.js     # Notification schema
-│   └── RecurringPayment.js # Recurring payment schema
-├── routes/
-│   ├── auth.js             # Authentication routes
-│   ├── users.js            # User management routes
-│   └── transactions.js     # Transaction routes
-├── utils/                  # Utility functions
-├── server.js               # Main server file
-├── package.json            # Dependencies
-├── .env.example           # Environment variables template
-└── README.md              # This file
+|- app.js
+|- server.js
+|- config/
+|- controllers/
+|- middleware/
+|- models/
+|- routes/
+|- services/
+|- socket/
+|- tests/
+|- validations/
+|- utils/
+`- seeders/
 ```
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
+- Node.js 18 or later recommended
+- MongoDB instance (local or cloud)
+- npm
 
-- Node.js (v14 or higher)
-- MongoDB (v4.4 or higher)
-- npm or yarn
+## Installation
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   cd backend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Environment Setup**
-   ```bash
-   cp .env.example .env
-   ```
-
-   Update the `.env` file with your configuration:
-   ```env
-   NODE_ENV=development
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/bank_management
-   JWT_SECRET=your_super_secret_jwt_key_here
-   JWT_EXPIRE=7d
-   FRONTEND_URL=http://localhost:5173
-   ```
-
-4. **Email Configuration (Optional)**
-   
-   For email functionality, configure SMTP in `.env`:
-   ```env
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your_email@gmail.com
-   SMTP_PASS=your_app_password
-   SMTP_SECURE=false
-   SMTP_FROM=noreply@bankpro.com
-   ```
-   
-   See [EMAIL_CONFIG.md](./EMAIL_CONFIG.md) for detailed setup instructions.
-
-5. **Start MongoDB**
-   Make sure MongoDB is running on your system.
-
-6. **Run the server**
-   ```bash
-   # Development mode
-   npm run dev
-
-   # Production mode
-   npm start
-   ```
-
-The server will start on `http://localhost:5000`
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET /api/auth/me` - Get current user
-- `PUT /api/auth/updatedetails` - Update user details
-- `PUT /api/auth/updatepassword` - Update password
-- `POST /api/auth/forgotpassword` - Request password reset
-- `PUT /api/auth/resetpassword/:token` - Reset password
-- `POST /api/auth/refresh` - Refresh access token
-
-### Users (Admin Only)
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
-- `GET /api/users/stats` - Get user statistics
-- `PUT /api/users/:id/role` - Update user role
-- `PUT /api/users/:id/status` - Update user status
-
-### Transactions
-- `GET /api/transactions` - Get user transactions
-- `GET /api/transactions/:id` - Get transaction by ID
-- `POST /api/transactions` - Create new transaction
-- `PUT /api/transactions/:id` - Update transaction
-- `DELETE /api/transactions/:id` - Delete transaction
-- `GET /api/transactions/stats` - Get transaction statistics
-- `GET /api/transactions/categories` - Get transaction categories
-- `POST /api/transactions/transfer` - Transfer money
-
-## Data Models
-
-### User Model
-```javascript
-{
-  name: String,
-  email: String,
-  phone: String,
-  password: String, // Hashed
-  role: 'user' | 'admin',
-  accountNumber: String,
-  balance: Number,
-  profile: Object,
-  security: Object,
-  preferences: Object,
-  status: String
-}
-```
-
-### Transaction Model
-```javascript
-{
-  userId: ObjectId,
-  type: 'credit' | 'debit' | 'transfer',
-  amount: Number,
-  balance: Number,
-  description: String,
-  category: String,
-  status: String,
-  recipientId: ObjectId,
-  reference: String
-}
-```
-
-## Security Features
-
-- **Password Security**: Bcrypt hashing with 12 rounds
-- **JWT Authentication**: Secure token-based authentication
-- **Rate Limiting**: Prevents brute force attacks
-- **Input Validation**: Comprehensive validation using express-validator
-- **CORS Protection**: Configured CORS policies
-- **Security Headers**: Helmet.js for security headers
-- **Data Sanitization**: Protection against XSS and NoSQL injection
-
-## Error Handling
-
-The API uses consistent error response format:
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "details": [] // Validation errors
-}
-```
-
-## Development
-
-### Available Scripts
-
-- `npm start` - Start production server
-- `npm run dev` - Start development server with nodemon
-- `npm test` - Run tests
-
-### Code Style
-
-- Use ESLint for code linting
-- Follow consistent naming conventions
-- Add JSDoc comments for functions
-- Use async/await for asynchronous operations
-
-## Deployment
-
-### Environment Variables for Production
-
-```env
-NODE_ENV=production
-PORT=5000
-MONGODB_URI=mongodb://username:password@host:port/database
-JWT_SECRET=your_production_jwt_secret
-JWT_REFRESH_SECRET=your_production_refresh_secret
-JWT_EXPIRE=7d
-FRONTEND_URL=https://your-frontend-domain.vercel.app
-EMAIL_HOST=smtp.gmail.com
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
-```
-
-### Render Deployment
-
-1. **Connect to Render**
-   - Go to [render.com](https://render.com) and sign up/login
-   - Connect your GitHub repository
-
-2. **Create Web Service**
-   - Click "New" → "Web Service"
-   - Select your repository
-   - Configure the service:
-     - **Name**: `bankpro-backend`
-     - **Runtime**: `Node`
-     - **Build Command**: `npm install`
-     - **Start Command**: `npm start`
-     - **Environment**: `Production`
-
-3. **Set Environment Variables**
-   In Render dashboard, go to your service → Environment → Add Environment Variable:
-   ```
-   NODE_ENV=production
-   PORT=5000
-   MONGODB_URI=your_mongodb_atlas_connection_string
-   JWT_SECRET=your_secure_jwt_secret
-   JWT_REFRESH_SECRET=your_secure_refresh_secret
-   FRONTEND_URL=https://your-frontend-domain.vercel.app
-   ```
-
-4. **Deploy**
-   - Render will automatically build and deploy your application
-   - Your API will be available at `https://your-service-name.onrender.com`
-
-### PM2 Deployment (Alternative)
+1. Change into backend directory:
 
 ```bash
-npm install -g pm2
-pm2 start server.js --name "bank-api"
-pm2 startup
-pm2 save
+cd backend
 ```
 
-## Contributing
+2. Install dependencies:
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+```bash
+npm install
+```
+
+3. Create an environment file:
+
+```bash
+cp .env.example .env
+```
+
+If `.env.example` is not present in your local copy, create `.env` manually.
+
+4. Add required environment variables:
+
+```env
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/bank_management_system
+JWT_SECRET=replace_with_strong_secret
+JWT_REFRESH_SECRET=replace_with_strong_refresh_secret
+JWT_EXPIRE=7d
+JWT_REFRESH_EXPIRE=30d
+FRONTEND_URL=http://localhost:5173
+```
+
+5. Optional email configuration:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_app_password
+SMTP_SECURE=false
+SMTP_FROM=noreply@bankpro.com
+```
+
+6. Start the server:
+
+```bash
+npm run dev
+```
+
+Server runs on `http://localhost:5000` by default.
+
+## Environment Notes
+
+- `MONGODB_URI`, `JWT_SECRET`, and `JWT_REFRESH_SECRET` are required.
+- CORS accepts `FRONTEND_URL` and optional comma-separated `FRONTEND_URLS`.
+- Set `ALLOW_VERCEL_PREVIEWS=true` to allow `*.vercel.app` preview origins.
+- Set `SUPPORT_CHAT_ENABLED=true` to activate socket chat/event handlers.
+- Set `OPEN_EXCHANGE_RATES_API_KEY` for live exchange rates (fallback static rates are used otherwise).
+
+## Health Check
+
+- `GET /health` returns service status, timestamp, environment, and email service state.
+
+## API Routes
+
+Base path: `/api`
+
+### Auth (`/api/auth`)
+
+- `POST /register`
+- `POST /login`
+- `POST /login-account`
+- `POST /forgotpassword`
+- `GET /resetpassword/:resettoken`
+- `PUT /resetpassword/:resettoken`
+- `POST /refresh`
+- `POST /logout` (auth required)
+- `GET /me` (auth required)
+- `PUT /updatedetails` (auth required)
+- `PUT /updatepassword` (auth required)
+
+### Users (`/api/users`)
+
+- `GET /banks` (public)
+- `GET /check-email` (public)
+- `GET /check-phone` (public)
+- `POST /verify-pin` (auth required)
+- `PUT /update-pin` (auth required)
+- `GET /me/client-data` (auth required)
+- `PUT /me/client-data` (auth required)
+- `GET /transfer-recipients` (auth required)
+- `GET /stats` (admin)
+- `GET /admin-actions` (admin)
+- `GET /bank-metrics` (admin)
+- `GET /` (admin)
+- `PUT /:id/status` (admin)
+- `GET /:id` (auth required)
+- `PUT /:id` (auth required)
+
+### Transactions (`/api/transactions`) (auth required)
+
+- `GET /categories`
+- `GET /stats`
+- `POST /validate-transfer`
+- `POST /transfer`
+- `GET /`
+- `POST /`
+- `GET /admin/user/:id` (admin)
+- `GET /:id`
+- `PUT /:id`
+- `DELETE /:id`
+
+### Cards (`/api/cards`) (auth required)
+
+- `GET /`
+- `GET /admin/user/:id` (admin)
+- `POST /`
+- `PUT /:id/pin`
+- `PUT /:id/status`
+- `POST /:id/status-request`
+- `PUT /:id/status-request` (admin)
+- `POST /:id/reveal-cvv`
+
+### Bills (`/api/bills`) (auth required)
+
+- `GET /`
+- `GET /stats`
+- `GET /:id`
+- `POST /`
+- `POST /:id/pay`
+- `PUT /:id`
+- `DELETE /:id`
+
+### Budgets (`/api/budgets`) (auth required)
+
+- `GET /`
+- `GET /summary`
+- `GET /stats`
+- `GET /:id`
+- `POST /`
+- `POST /:id/update-spent`
+- `PUT /:id`
+- `DELETE /:id`
+
+### Recurring (`/api/recurring`) (auth required)
+
+- `GET /`
+- `POST /`
+- `PUT /:id`
+- `DELETE /:id`
+
+### Notifications (`/api/notifications`) (auth required)
+
+- `GET /`
+- `GET /:id`
+- `PUT /:id/read`
+- `PUT /read-all`
+- `POST /mark-all-read`
+- `DELETE /:id`
+- `DELETE /`
+
+### Banks (`/api/banks`)
+
+- `GET /` (public)
+- `POST /` (admin)
+- `PUT /:id` (admin)
+- `DELETE /:id` (admin)
+
+### Exchange (`/api/exchange`)
+
+- `GET /rates`
+- `POST /convert`
+
+### Settings (`/api/settings`) (auth required)
+
+- `GET /`
+- `PUT /preferences`
+- `PUT /two-factor`
+- `GET /linked-accounts`
+- `GET /sessions`
+
+## NPM Scripts
+
+- `npm start` - Start server with Node
+- `npm run dev` - Start server with Node (same as start in current config)
+- `npm test` - Run Jest tests
+- `npm run seed:admin` - Seed admin user
+- `npm run seed:banks` - Seed bank data
+- `npm run seed` - Run all seeders
+- `npm run init` - Configured in `package.json`, but currently expects `init.js` (not present)
+
+## Testing
+
+Integration tests are available under `tests/integration` and include:
+
+- health endpoint
+- auth flows
+- user flows
+- transaction flows
+- error handling paths
+
+Run:
+
+```bash
+npm test
+```
+
+## Security and Reliability
+
+- Global error handling with consistent JSON response format
+- Route-level validation middleware
+- Multiple rate-limit profiles (`auth`, `lookup`, `transaction`, `settings`, `pin`)
+- CORS origin allow-list controls
+- MongoDB operator sanitization and XSS protection
+- Helmet headers and HPP protection
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Support
-
-For support, email support@bankpro.com or create an issue in the repository.
+ISC (as defined in `package.json`)
