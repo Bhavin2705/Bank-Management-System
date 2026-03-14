@@ -127,6 +127,7 @@ const buildAuthenticatedUserResponse = (user) => ({
     accountNumber: user.accountNumber,
     bankDetails: user.bankDetails,
     profile: user.profile,
+    kyc: user.kyc,
     preferences: user.preferences,
     createdAt: user.createdAt,
     firstLogin: user.firstLogin

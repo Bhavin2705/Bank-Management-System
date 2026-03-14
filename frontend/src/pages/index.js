@@ -1,4 +1,5 @@
 export { default as AdminBanks } from './AdminBanks/AdminBanksPage';
+export { default as AdminKyc } from './AdminKyc/AdminKycPage';
 export { default as CardControls } from './CardControls/CardControlsPage';
 export { default as Budget } from './Budget/BudgetPage';
 export { default as Cards } from './Cards/CardsPage';

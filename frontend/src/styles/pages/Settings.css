@@ -76,6 +76,31 @@
   color: var(--text-secondary);
 }
 
+.settings-input-icon-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-input-icon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.settings-input-icon-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .settings-password-toggle {
   position: absolute;
   right: 10px;
@@ -127,6 +152,198 @@
 
 .settings-panel {
   background-color: var(--bg-tertiary);
+}
+
+.settings-avatar-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.settings-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.settings-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-avatar-initials {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-avatar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.settings-avatar-btn {
+  min-width: 140px;
+  height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-file-input {
+  display: none;
+}
+
+/* Profile date input alignment */
+.settings-page .custom-calendar-input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.settings-page .calendar-text-input,
+.settings-page .calendar-display-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.settings-page .calendar-toggle-button {
+  flex: 0 0 40px;
+  margin-right: 0;
+}
+
+.settings-kyc-card {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.settings-kyc-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.settings-kyc-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  text-transform: capitalize;
+}
+
+.settings-kyc-status.is-verified {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.settings-kyc-status.is-pending {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fcd34d;
+}
+
+.settings-kyc-status.is-rejected {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.settings-kyc-reason {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.settings-kyc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.settings-kyc-upload input[type="file"] {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.35);
+  color: var(--text-secondary);
+}
+
+.settings-kyc-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.settings-kyc-upload-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-kyc-file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.settings-kyc-upload-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.settings-kyc-files {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .settings-avatar-buttons {
+    width: 100%;
+  }
+
+  .settings-avatar-btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
 }
 
 .settings-panel-title,

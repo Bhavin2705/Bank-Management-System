@@ -11,6 +11,7 @@ export const getInitialProfileData = (user) => ({
   name: user.name || '',
   email: user.email || '',
   phone: user.phone || '',
+  photoUrl: user.profile?.photoUrl || '',
   address: getAddressValue(user.profile?.address),
   dateOfBirth: user.profile?.dateOfBirth ? toLocalYYYYMMDD(new Date(user.profile.dateOfBirth)) : '',
   occupation: user.profile?.occupation || ''

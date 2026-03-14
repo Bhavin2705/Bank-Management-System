@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://bank-management-system-1-mf4e.onrender.com/api';
 const ACCESS_TOKEN_KEY = 'bank_auth_access_token';
 let inMemoryAccessToken = null;
 
@@ -98,17 +98,20 @@ const handleResponse = async (response, isLoginRequest = false) => {
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     const accessToken = getAuthToken();
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
     const config = {
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: {},
         credentials: 'include',
         ...options
     };
 
+    if (!isFormData) {
+        config.headers['Content-Type'] = 'application/json';
+    }
+
     if (options.headers) {
         config.headers = {
-            'Content-Type': 'application/json',
+            ...config.headers,
             ...options.headers
         };
     }
@@ -122,7 +125,7 @@ const apiRequest = async (endpoint, options = {}) => {
 
     let response = await Promise.race([fetch(url, config), timeoutPromise]);
 
-    if (response.status === 401 && shouldAttemptRefresh(endpoint)) {
+    if (response.status === 401 && accessToken && shouldAttemptRefresh(endpoint)) {
         const refreshedAccessToken = await requestNewAccessToken();
         if (refreshedAccessToken) {
             const retryConfig = {
@@ -212,8 +215,24 @@ export const api = {
     bills: {
         getAll: () => apiRequest('/bills'),
         create: (data) => apiRequest('/bills', { method: 'POST', body: JSON.stringify(data) }),
+        pay: (id, data) => apiRequest(`/bills/${id}/pay`, { method: 'POST', body: JSON.stringify(data) }),
         update: (id, data) => apiRequest(`/bills/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
         delete: (id) => apiRequest(`/bills/${id}`, { method: 'DELETE' })
+    },
+    kyc: {
+        getStatus: () => apiRequest('/kyc/status'),
+        submit: (data) => {
+            const formData = new FormData();
+            formData.append('idType', data.idType);
+            if (data.idNumber) formData.append('idNumber', data.idNumber);
+            data.documents.forEach((file) => formData.append('documents', file));
+            return apiRequest('/kyc/submit', { method: 'POST', body: formData });
+        }
+    },
+    adminKyc: {
+        list: () => apiRequest('/admin/kyc'),
+        approve: (userId) => apiRequest(`/admin/kyc/${userId}/approve`, { method: 'POST' }),
+        reject: (userId, reason) => apiRequest(`/admin/kyc/${userId}/reject`, { method: 'POST', body: JSON.stringify({ reason }) })
     },
 
     recurring: {
@@ -270,7 +289,12 @@ export const api = {
         checkPhone: (phone) => apiRequest(`/users/check-phone?phone=${encodeURIComponent(phone)}`),
         verifyPin: (pin) => apiRequest('/users/verify-pin', { method: 'POST', body: JSON.stringify({ pin }) }),
         getSelfTransferAccounts: () => apiRequest('/users/transfer-recipients?scope=self'),
-        updatePin: (data) => apiRequest('/users/update-pin', { method: 'PUT', body: JSON.stringify(data) })
+        updatePin: (data) => apiRequest('/users/update-pin', { method: 'PUT', body: JSON.stringify(data) }),
+        uploadProfilePhoto: (file) => {
+            const formData = new FormData();
+            formData.append('photo', file);
+            return apiRequest('/users/me/profile-photo', { method: 'POST', body: formData });
+        }
     },
 
     settings: {

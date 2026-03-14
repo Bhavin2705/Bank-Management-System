@@ -9,6 +9,8 @@ const exchangeRoutes = require('./exchange');
 const notificationRoutes = require('./notifications');
 const budgetsRoutes = require('./budgets');
 const settingsRoutes = require('./settings');
+const kycRoutes = require('./kyc');
+const adminKycRoutes = require('./adminKyc');
 
 const registerApiRoutes = (app) => {
     app.use('/api/auth', authRoutes);
@@ -22,6 +24,8 @@ const registerApiRoutes = (app) => {
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/budgets', budgetsRoutes);
     app.use('/api/settings', settingsRoutes);
+    app.use('/api/kyc', kycRoutes);
+    app.use('/api/admin/kyc', adminKycRoutes);
 };
 
 module.exports = registerApiRoutes;

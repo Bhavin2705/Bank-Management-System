@@ -712,6 +712,16 @@
   cursor: pointer;
 }
 
+.cards-page .form-input,
+.cards-page select.form-input {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.cards-page .form-input::placeholder {
+  color: var(--text-secondary);
+}
+
 .cards-list {
   width: 100%;
 }

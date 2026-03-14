@@ -180,6 +180,10 @@ const payBill = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment amount must be positive' });
     }
 
+    if (paymentAmount > req.user.balance) {
+      return res.status(400).json({ success: false, message: 'Insufficient balance for bill payment' });
+    }
+
     const reference = `BILLPAY-${bill._id}-${Date.now()}`;
 
     const transaction = await Transaction.create({

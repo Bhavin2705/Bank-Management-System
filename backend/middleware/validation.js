@@ -202,9 +202,9 @@ const validateCardCreation = [
         .withMessage('Card name is required and must be less than 50 characters'),
     body('pin')
         .optional()
-        .isLength({ min: 4, max: 6 })
+        .isLength({ min: 4, max: 4 })
         .isNumeric()
-        .withMessage('PIN must be 4-6 digits'),
+        .withMessage('PIN must be 4 digits'),
     handleValidationErrors
 ];
 
@@ -308,19 +308,19 @@ const validatePhoneAvailabilityQuery = [
 
 const validatePinVerification = [
     body('pin')
-        .matches(/^\d{4,6}$/)
-        .withMessage('PIN must be 4-6 digits'),
+        .matches(/^\d{4}$/)
+        .withMessage('PIN must be 4 digits'),
     handleValidationErrors
 ];
 
 const validatePinUpdate = [
     body('currentPin')
         .optional()
-        .matches(/^\d{4,6}$/)
-        .withMessage('Current PIN must be 4-6 digits'),
+        .matches(/^\d{4}$/)
+        .withMessage('Current PIN must be 4 digits'),
     body('newPin')
-        .matches(/^\d{4,6}$/)
-        .withMessage('New PIN must be 4-6 digits'),
+        .matches(/^\d{4}$/)
+        .withMessage('New PIN must be 4 digits'),
     handleValidationErrors
 ];
 

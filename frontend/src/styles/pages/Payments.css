@@ -72,6 +72,104 @@
   color: var(--error);
 }
 
+.bills-balance-warning {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Bill form input polish */
+.bills-form-card input[type="number"]::-webkit-outer-spin-button,
+.bills-form-card input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bills-form-card input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.bills-form-card .custom-calendar-input {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.bills-form-card .calendar-text-input {
+  background: transparent;
+  color: var(--text-primary);
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bills-form-card .calendar-text-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.bills-form-card .calendar-toggle-button {
+  height: 100%;
+  margin-right: 0;
+  padding: 0 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  flex: 0 0 40px;
+}
+
+.bills-form-card .calendar-input-icon {
+  opacity: 0.8;
+}
+
+.payments-transaction-status {
+  margin-right: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.payments-status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  text-transform: capitalize;
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5f5;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.payments-status-badge.is-paid {
+  background: rgba(16, 185, 129, 0.16);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.payments-status-badge.is-overdue {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.payments-status-badge.is-due_soon,
+.payments-status-badge.is-due-soon {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
 .payments-empty-state {
   text-align: center;
   padding: 3rem;

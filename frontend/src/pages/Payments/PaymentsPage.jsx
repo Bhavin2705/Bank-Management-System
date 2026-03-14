@@ -1,6 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
 import { formatCurrencyByPreference } from '../../utils/currency';
-import { addTransaction } from '../../utils/transactions';
 import api from '../../utils/api';
 import BillsTab from './components/BillsTab';
 import RecurringTab from './components/RecurringTab';
@@ -25,6 +24,7 @@ const Payments = ({ user, onUserUpdate }) => {
   const [showBillForm, setShowBillForm] = useState(false);
   const [billFormData, setBillFormData] = useState(initialBillFormData);
   const [submittingBill, setSubmittingBill] = useState(false);
+  const [billBalanceWarning, setBillBalanceWarning] = useState('');
 
   const [recurringPayments, setRecurringPayments] = useState([]);
   const [showRecurringForm, setShowRecurringForm] = useState(false);
@@ -50,7 +50,16 @@ const Payments = ({ user, onUserUpdate }) => {
   }, [user?._id, user?.id, loadBills]);
 
   const handleBillChange = (e) => {
-    setBillFormData({ ...billFormData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setBillFormData({ ...billFormData, [name]: value });
+    if (name === 'amount') {
+      const amount = parseFloat(value) || 0;
+      if (amount > 0 && amount > user.balance) {
+        setBillBalanceWarning(`INSUFFICIENT BALANCE: Amount (${formatCurrency(amount)}) exceeds your balance (${formatCurrency(user.balance)})`);
+      } else {
+        setBillBalanceWarning('');
+      }
+    }
   };
 
   const handleBillSubmit = async (e) => {
@@ -59,6 +68,11 @@ const Payments = ({ user, onUserUpdate }) => {
 
     const amount = parseFloat(billFormData.amount);
     if (amount <= 0) return;
+
+    if (!billFormData.dueDate) {
+      showBillError('Due date is required');
+      return;
+    }
 
     if (amount > user.balance) {
       showBillError('Insufficient balance for bill payment');
@@ -72,11 +86,8 @@ const Payments = ({ user, onUserUpdate }) => {
       dueDate: billFormData.dueDate,
       billNumber: `BILL-${Date.now()}`,
       accountNumber: user.accountNumber || 'N/A',
-      status: 'paid',
-      paidAmount: amount,
-      paidDate: new Date(),
-      paymentMethod: 'online',
-      description: `Bill Payment: ${billFormData.name} (${billFormData.category})`,
+      status: 'pending',
+      description: `Bill Payment: ${billFormData.name} (${billFormData.category})`
     };
 
     let billRes;
@@ -89,29 +100,22 @@ const Payments = ({ user, onUserUpdate }) => {
       return;
     }
 
-    const transaction = {
-      userId: user._id || user.id,
-      type: 'debit',
-      amount,
-      description: `Bill Payment: ${billFormData.name} (${billFormData.category})`,
-      billId: billRes?.data?._id,
-    };
-
     try {
-      const createdTransaction = await addTransaction(transaction);
-      if (!createdTransaction) {
-        throw new Error('Transaction was not created');
+      const payRes = await api.bills.pay(billRes?.data?._id, { amount });
+      if (!payRes?.success) {
+        throw new Error(payRes?.message || 'Bill payment failed');
       }
-      const nextBalance = typeof createdTransaction?.balance === 'number'
-        ? createdTransaction.balance
+      const nextBalance = typeof payRes?.data?.transaction?.balance === 'number'
+        ? payRes.data.transaction.balance
         : user.balance - amount;
       onUserUpdate({ ...user, balance: nextBalance });
       await loadBills();
       setShowBillForm(false);
       setBillFormData(initialBillFormData);
+      setBillBalanceWarning('');
     } catch (err) {
       console.error('Error processing bill payment:', err);
-      showBillError('Error processing bill payment');
+      showBillError(err.message || 'Error processing bill payment');
       if (billRes?.data?._id) {
         try {
           await api.bills.delete(billRes.data._id);
@@ -318,6 +322,7 @@ const Payments = ({ user, onUserUpdate }) => {
           formatCurrency={formatCurrency}
           formatDate={formatDate}
           submittingBill={submittingBill}
+          billBalanceWarning={billBalanceWarning}
         />
       )}
 

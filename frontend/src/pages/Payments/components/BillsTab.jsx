@@ -14,6 +14,7 @@ const BillsTab = ({
   formatCurrency,
   formatDate,
   submittingBill = false,
+  billBalanceWarning = ''
 }) => (
   <>
     <div className="bills-header">
@@ -65,6 +66,9 @@ const BillsTab = ({
             </button>
             <button type="button" onClick={() => setShowBillForm(false)} className="btn btn-secondary" disabled={submittingBill}>Cancel</button>
           </div>
+          {billBalanceWarning && (
+            <div className="bills-balance-warning">{billBalanceWarning}</div>
+          )}
         </form>
       </div>
     )}
@@ -77,7 +81,15 @@ const BillsTab = ({
             <div key={bill.id || bill._id} className="transaction-item">
               <div className="payments-transaction-main">
                 <div className="payments-transaction-description">{bill.description}</div>
-                <div className="payments-transaction-date">{formatDate(bill.createdAt || bill.paidDate || bill.date || new Date().toISOString())}</div>
+                <div className="payments-transaction-date">
+                  {formatDate(bill.createdAt || bill.paidDate || bill.date || new Date().toISOString())}
+                  {bill.dueDate && ` • Due ${formatDate(bill.dueDate)}`}
+                </div>
+              </div>
+              <div className="payments-transaction-status">
+                <span className={`payments-status-badge is-${bill.status || bill.paymentStatus || 'pending'}`}>
+                  {(bill.status || bill.paymentStatus || 'pending').replace('_', ' ')}
+                </span>
               </div>
               <div className="payments-transaction-amount">-{formatCurrency(bill.amount)}</div>
             </div>

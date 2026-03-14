@@ -131,10 +131,11 @@ export default function ActionFormModal({
               inputMode="numeric"
               className="form-input transactions-pin-input"
               value={pin || ''}
-              onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-              placeholder="Enter 4-6 digit PIN"
-              pattern="[0-9]{4,6}"
-              autoComplete="off"
+                onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                placeholder="Enter 4 digit PIN"
+                pattern="[0-9]{4}"
+                maxLength="4"
+                autoComplete="off"
             />
           </div>
 

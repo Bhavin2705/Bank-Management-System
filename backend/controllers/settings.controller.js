@@ -26,6 +26,7 @@ const getSettings = async (req, res) => {
                     name: user.name,
                     email: user.email,
                     phone: user.phone,
+                    photoUrl: user.profile?.photoUrl,
                     dateOfBirth: user.profile?.dateOfBirth,
                     address: user.profile?.address,
                     occupation: user.profile?.occupation,
@@ -42,6 +43,15 @@ const getSettings = async (req, res) => {
                     isPhoneVerified: user.security?.isPhoneVerified,
                     twoFactorEnabled: user.security?.twoFactorEnabled,
                     lastLogin: user.security?.lastLogin
+                },
+                kyc: {
+                    status: user.kyc?.status || 'unverified',
+                    idType: user.kyc?.idType,
+                    idNumberMasked: user.kyc?.idNumberMasked,
+                    documentUrls: user.kyc?.documentUrls,
+                    submittedAt: user.kyc?.submittedAt,
+                    reviewedAt: user.kyc?.reviewedAt,
+                    rejectionReason: user.kyc?.rejectionReason
                 },
                 preferences: {
                     currency: user.preferences?.currency || 'INR',

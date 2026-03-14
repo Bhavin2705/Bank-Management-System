@@ -18,6 +18,7 @@ import {
 import { useMemo, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { canAccessAdminFeatures } from '../../utils/auth';
+import { API_BASE_URL } from '../../utils/api';
 
 const BASE_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
@@ -33,6 +34,7 @@ const BASE_NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { id: 'users', label: 'User Management', icon: Users, path: '/users' },
+  { id: 'kyc', label: 'KYC Verifications', icon: User, path: '/admin-kyc' },
   { id: 'card-controls', label: 'Card Controls', icon: Shield, path: '/card-controls' },
   { id: 'admin-banks', label: 'Manage Banks', icon: Users, path: '/admin-banks' },
 ];
@@ -66,6 +68,16 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
   const handleLogoutClick = () => {
     setIsMobileMenuOpen(false);
     onLogout();
+  };
+
+  const getAbsolutePhotoUrl = (photoUrl) => {
+    if (!photoUrl) return '';
+    if (String(photoUrl).startsWith('blob:') || String(photoUrl).startsWith('data:')) {
+      return photoUrl;
+    }
+    if (/^https?:\/\//i.test(photoUrl)) return photoUrl;
+    const base = API_BASE_URL.replace('/api', '');
+    return `${base}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}`;
   };
 
   return (
@@ -117,7 +129,23 @@ const Sidebar = ({ user, onLogout, darkMode, toggleDarkMode }) => {
 
         <div className="sidebar-footer">
           <div className="sidebar-user-row">
-            <User size={22} />
+            {(() => {
+              const photoUrl = getAbsolutePhotoUrl(user?.profile?.photoUrl);
+              const initials = (user?.name || 'U')
+                .split(' ')
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]?.toUpperCase())
+                .join('');
+
+              return photoUrl ? (
+                <img src={photoUrl} alt="Profile" className="sidebar-user-avatar" />
+              ) : (
+                <div className="sidebar-user-avatar sidebar-user-avatar-fallback">
+                  <span>{initials || 'U'}</span>
+                </div>
+              );
+            })()}
             {!isCollapsed && (
               <div className="sidebar-user-meta">
                 <div className="sidebar-user-name">{user?.name}</div>

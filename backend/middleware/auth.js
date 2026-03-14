@@ -16,6 +16,12 @@ const protect = async (req, res, next) => {
 
 
         if (!token) {
+            if (req.originalUrl && req.originalUrl.includes('/api/users/me/profile-photo')) {
+                console.log('[profile-photo][auth] missing token', {
+                    hasAuthHeader: !!req.headers.authorization,
+                    hasCookie: !!(req.cookies && req.cookies.token)
+                });
+            }
             return res.status(401).json({
                 success: false,
                 error: 'Not authorized to access this route'
@@ -49,6 +55,11 @@ const protect = async (req, res, next) => {
             req.userId = user._id ? user._id.toString() : undefined;
             next();
         } catch (error) {
+            if (req.originalUrl && req.originalUrl.includes('/api/users/me/profile-photo')) {
+                console.log('[profile-photo][auth] token verify failed', {
+                    message: error?.message
+                });
+            }
             return res.status(401).json({
                 success: false,
                 error: 'Not authorized to access this route'

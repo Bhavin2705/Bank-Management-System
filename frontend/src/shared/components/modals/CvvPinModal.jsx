@@ -25,9 +25,10 @@ const CvvPinModal = ({
           type="password"
           inputMode="numeric"
           value={cvvPin}
-          onChange={(e) => setCvvPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-          placeholder="Enter 4-6 digit account PIN"
-          pattern="[0-9]{4,6}"
+          onChange={(e) => setCvvPin(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+          placeholder="Enter 4 digit account PIN"
+          pattern="[0-9]{4}"
+          maxLength="4"
           autoComplete="off"
           className="cvv-pin-modal-input"
           autoFocus

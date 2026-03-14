@@ -130,6 +130,10 @@ const Statements = ({ user }) => {
   };
 
   const printAccountStatement = () => {
+    if (!filteredTransactions.length) {
+      alert('No transactions to print for the selected period.');
+      return;
+    }
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Popup blocked. Please allow popups to print your statement.');
@@ -157,8 +161,22 @@ const Statements = ({ user }) => {
         <div className="statements-section-header statements-mini-header">
           <h3 className="statements-icon-title"><Receipt size={20} /> Mini Statement</h3>
           <div className="statements-actions-inline">
-            <button onClick={printMiniStatement} className="btn btn-secondary statements-btn-gap-right"><Printer size={16} className="statements-btn-icon" />Print</button>
-            <button onClick={downloadMiniStatement} className="btn btn-secondary"><Download size={16} className="statements-btn-icon" />Download</button>
+            <button
+              onClick={printMiniStatement}
+              className="btn btn-secondary statements-btn-gap-right"
+              disabled={!miniStatement}
+              title={miniStatement ? 'Print mini statement' : 'No transactions available'}
+            >
+              <Printer size={16} className="statements-btn-icon" />Print
+            </button>
+            <button
+              onClick={downloadMiniStatement}
+              className="btn btn-secondary"
+              disabled={!miniStatement}
+              title={miniStatement ? 'Download mini statement' : 'No transactions available'}
+            >
+              <Download size={16} className="statements-btn-icon" />Download
+            </button>
           </div>
         </div>
 
@@ -341,12 +359,20 @@ const Statements = ({ user }) => {
         <div className="statements-section-header statements-history-header">
           <h3>Transaction History</h3>
           <div className="statements-actions-inline">
-            <button className="btn btn-secondary statements-inline-btn" onClick={printAccountStatement}>
+            <button
+              className="btn btn-secondary statements-inline-btn"
+              onClick={printAccountStatement}
+              disabled={!filteredTransactions.length}
+              title={filteredTransactions.length ? 'Print statement' : 'No transactions available'}
+            >
               <Printer size={16} /> Print
             </button>
             <button
               className="btn btn-secondary statements-inline-btn"
+              disabled={!filteredTransactions.length}
+              title={filteredTransactions.length ? 'Download PDF' : 'No transactions available'}
               onClick={async () => {
+                if (!filteredTransactions.length) return;
                 await generateAccountStatementPDF(
                   filteredTransactions,
                   user,
@@ -384,7 +410,7 @@ const Statements = ({ user }) => {
                     {formatCurrency(toNumber(transaction.amount))}
                     {isTransferTransaction(transaction) && <span className="statements-transfer-tag">(Transfer)</span>}
                   </div>
-                  {transaction.balance && (
+                  {transaction.balance !== undefined && transaction.balance !== null && (
                     <div className="statements-balance-note">Balance: {formatCurrency(transaction.balance)}</div>
                   )}
                 </div>

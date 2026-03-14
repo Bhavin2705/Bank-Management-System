@@ -93,10 +93,10 @@ const register = async (req, res) => {
             });
         }
 
-        if (!/^\d{4,6}$/.test(pin)) {
+        if (!/^\d{4}$/.test(pin)) {
             return res.status(400).json({
                 success: false,
-                error: 'PIN must be a 4-6 digit number'
+                error: 'PIN must be a 4 digit number'
             });
         }
 

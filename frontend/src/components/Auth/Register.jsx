@@ -59,15 +59,21 @@ const Register = ({ onLogin, switchToLogin }) => {
     }
 
     let strength = 0;
-    if (formData.pin.length >= 4) strength += 1;
-    if (formData.pin.length >= 5) strength += 1;
-    if (formData.pin.length === 6) strength += 1;
-    if (!/^(\d)\1{3,5}$/.test(formData.pin)) strength += 1; // Not all same digits
+    if (formData.pin.length === 4) strength += 1;
+    if (!/^(\d)\1{3}$/.test(formData.pin)) strength += 1; // Not all same digits
     
     setPinStrength(strength);
   }, [formData.pin]);
 
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const checkEmailExists = async (email) => {
+    if (!isValidEmail(email)) {
+      setEmailExists(false);
+      setEmailCheckInProgress(false);
+      return;
+    }
+
     setEmailCheckInProgress(true);
     try {
       const response = await api.users.checkEmail(email);
@@ -188,13 +194,13 @@ const Register = ({ onLogin, switchToLogin }) => {
       return;
     }
 
-    if (!/^\d{4,6}$/.test(formData.pin)) {
-      setError('PIN must be a 4-6 digit number');
+    if (!/^\d{4}$/.test(formData.pin)) {
+      setError('PIN must be a 4 digit number');
       setLoading(false);
       return;
     }
 
-    if (/^(\d)\1{3,5}$/.test(formData.pin)) {
+    if (/^(\d)\1{3}$/.test(formData.pin)) {
       setError('PIN cannot be all the same digits (e.g., 1111)');
       setLoading(false);
       return;
@@ -277,7 +283,7 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handlePinChange = (e) => {
     const value = e.target.value;
-    if (/^\d*$/.test(value) && value.length <= 6) {
+    if (/^\d*$/.test(value) && value.length <= 4) {
       setFormData({
         ...formData,
         pin: value,
@@ -287,7 +293,7 @@ const Register = ({ onLogin, switchToLogin }) => {
 
   const handleConfirmPinChange = (e) => {
     const value = e.target.value;
-    if (/^\d*$/.test(value) && value.length <= 6) {
+    if (/^\d*$/.test(value) && value.length <= 4) {
       setFormData({
         ...formData,
         confirmPin: value,
@@ -541,11 +547,11 @@ const Register = ({ onLogin, switchToLogin }) => {
                     value={formData.pin}
                     onChange={handlePinChange}
                     required
-                    placeholder="Set a 4-6 digit PIN"
+                    placeholder="Set a 4 digit PIN"
                     inputMode="numeric"
-                    pattern="[0-9]{4,6}"
-                    maxLength="6"
-                    title="PIN must be 4-6 digits"
+                    pattern="[0-9]{4}"
+                    maxLength="4"
+                    title="PIN must be 4 digits"
                   />
                   <button
                     type="button"
@@ -579,7 +585,7 @@ const Register = ({ onLogin, switchToLogin }) => {
                   </div>
                 )}
                 <p className="mt-2 text-xs text-gray-500">
-                  Use a 4-6 digit PIN for deposits and withdrawals. Avoid patterns like 1111.
+                  Use a 4 digit PIN for deposits and withdrawals. Avoid patterns like 1111.
                 </p>
               </div>
               <div>
@@ -597,9 +603,9 @@ const Register = ({ onLogin, switchToLogin }) => {
                     required
                     placeholder="Confirm your PIN"
                     inputMode="numeric"
-                    pattern="[0-9]{4,6}"
-                    maxLength="6"
-                    title="PIN must be 4-6 digits"
+                    pattern="[0-9]{4}"
+                    maxLength="4"
+                    title="PIN must be 4 digits"
                   />
                   <button
                     type="button"

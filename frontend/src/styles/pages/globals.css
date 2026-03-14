@@ -2056,3 +2056,21 @@ option {
     font-size: 0.9rem;
 }
 
+/* Fix browser autofill white background on dark UI */
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] textarea:-webkit-autofill,
+[data-theme="dark"] select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px #12233a inset !important;
+  box-shadow: 0 0 0 1000px #12233a inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+[data-theme="dark"] input:-webkit-autofill:focus,
+[data-theme="dark"] textarea:-webkit-autofill:focus,
+[data-theme="dark"] select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px #12233a inset !important;
+  box-shadow: 0 0 0 1000px #12233a inset !important;
+}
+

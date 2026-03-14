@@ -52,14 +52,14 @@ const userSchema = new mongoose.Schema({
     pin: {
         type: String,
         required: [true, 'PIN is required'],
-        minlength: [4, 'PIN must be at least 4 digits'],
-        maxlength: [6, 'PIN must be at most 6 digits'],
+        minlength: [4, 'PIN must be 4 digits'],
+        maxlength: [4, 'PIN must be 4 digits'],
         select: false, // Don't include PIN in queries by default
         validate: {
             validator: function (v) {
-                return /^\d{4,6}$/.test(v);
+                return /^\d{4}$/.test(v);
             },
-            message: 'PIN must be a 4-6 digit number'
+            message: 'PIN must be a 4 digit number'
         }
     },
     role: {
@@ -94,6 +94,7 @@ const userSchema = new mongoose.Schema({
         min: [0, 'Balance cannot be negative']
     },
     profile: {
+        photoUrl: String,
         dateOfBirth: Date,
         address: {
             street: String,
@@ -104,6 +105,23 @@ const userSchema = new mongoose.Schema({
         },
         occupation: String,
         income: Number
+    },
+    kyc: {
+        status: {
+            type: String,
+            enum: ['unverified', 'pending', 'verified', 'rejected'],
+            default: 'unverified'
+        },
+        idType: {
+            type: String,
+            enum: ['aadhaar', 'pan', 'passport', 'driver_license', 'other']
+        },
+        idNumberMasked: String,
+        documentUrls: [String],
+        submittedAt: Date,
+        reviewedAt: Date,
+        reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        rejectionReason: String
     },
     security: {
         isEmailVerified: {

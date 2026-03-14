@@ -1,5 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
+const path = require('path');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const hpp = require('hpp');
@@ -12,7 +13,9 @@ const registerApiRoutes = require('./routes');
 const createApp = () => {
     const app = express();
 
-    app.use(helmet());
+    app.use(helmet({
+        crossOriginResourcePolicy: { policy: 'cross-origin' }
+    }));
     app.use(cookieParser());
     app.use(cors);
     app.use(express.json({ limit: '10mb' }));
@@ -20,6 +23,11 @@ const createApp = () => {
     app.use(mongoSanitize());
     app.use(xss());
     app.use(hpp());
+
+    app.use('/uploads', (req, res, next) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        next();
+    }, express.static(path.join(__dirname, 'uploads')));
 
     app.options('*', cors);
 

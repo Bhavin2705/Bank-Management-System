@@ -4,6 +4,10 @@ const Account = require('../models/Account');
 const Bank = require('../models/Bank');
 const AdminActionLog = require('../models/AdminActionLog');
 const { logAdminAction } = require('../utils/adminAudit');
+const { createInAppNotification } = require('../utils/notifications');
+const fs = require('fs');
+const path = require('path');
+const { PROFILE_UPLOAD_DIR } = require('../middleware/upload');
 
 const isAdmin = (req) => req.user && req.user.role === 'admin';
 
@@ -381,10 +385,10 @@ const updatePin = async (req, res) => {
             });
         }
 
-        if (!/^\d{4,6}$/.test(String(newPin))) {
+        if (!/^\d{4}$/.test(String(newPin))) {
             return res.status(400).json({
                 success: false,
-                error: 'New PIN must be 4 to 6 digits'
+                error: 'New PIN must be 4 digits'
             });
         }
 
@@ -422,6 +426,59 @@ const updatePin = async (req, res) => {
     }
 };
 
+const updateProfilePhoto = async (req, res) => {
+    try {
+        console.log('[profile-photo] file', {
+            hasFile: !!req.file,
+            fieldname: req.file?.fieldname,
+            mimetype: req.file?.mimetype,
+            size: req.file?.size
+        });
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'Profile photo is required' });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        const nextPhotoUrl = `/uploads/profile/${req.file.filename}`;
+        const existingUrl = user.profile?.photoUrl;
+
+        if (existingUrl && existingUrl.startsWith('/uploads/profile/')) {
+            const existingPath = path.join(PROFILE_UPLOAD_DIR, path.basename(existingUrl));
+            if (fs.existsSync(existingPath)) {
+                fs.unlink(existingPath, () => {});
+            }
+        }
+
+        user.profile = user.profile || {};
+        user.profile.photoUrl = nextPhotoUrl;
+        await user.save();
+
+        await createInAppNotification({
+            userId: req.user._id,
+            type: 'account_update',
+            title: 'Profile Photo Updated',
+            message: 'Your profile photo was updated successfully.',
+            priority: 'low',
+            metadata: { category: 'settings' }
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        console.error('Profile photo upload error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Server error uploading profile photo'
+        });
+    }
+};
+
 module.exports = {
     getUsers,
     getUser,
@@ -435,5 +492,6 @@ module.exports = {
     getClientData,
     updateClientData,
     verifyPin,
-    updatePin
+    updatePin,
+    updateProfilePhoto
 };

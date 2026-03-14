@@ -11,7 +11,8 @@ const {
     getClientData,
     updateClientData,
     verifyPin,
-    updatePin
+    updatePin,
+    updateProfilePhoto
 } = require('../controllers/user.controller');
 const { protect, authorize } = require('../middleware/auth');
 const {
@@ -25,7 +26,8 @@ const {
     validateUserStatusUpdate,
     validateUserUpdatePayload
 } = require('../middleware/validation');
-const { apiLimiter, lookupLimiter, pinLimiter } = require('../middleware/rateLimit');
+const { apiLimiter, lookupLimiter, pinLimiter, uploadLimiter } = require('../middleware/rateLimit');
+const { uploadProfilePhoto } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -70,6 +72,13 @@ router.use(apiLimiter);
 
 router.post('/verify-pin', pinLimiter, validatePinVerification, verifyPin);
 router.put('/update-pin', pinLimiter, validatePinUpdate, updatePin);
+router.post('/me/profile-photo', uploadLimiter, (req, res, next) => {
+    console.log('[profile-photo] request', {
+        userId: req.user?._id,
+        contentType: req.headers['content-type']
+    });
+    next();
+}, uploadProfilePhoto.single('photo'), updateProfilePhoto);
 router.get('/me/client-data', getClientData);
 router.put('/me/client-data', apiLimiter, validateClientDataUpdate, updateClientData);
 

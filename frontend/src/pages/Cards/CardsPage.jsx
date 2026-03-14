@@ -62,8 +62,8 @@ const Cards = ({ user }) => {
       return;
     }
 
-    if (formData.pin.length < 4 || formData.pin.length > 6 || !/^\d+$/.test(formData.pin)) {
-      showError('PIN must be 4-6 digits');
+    if (formData.pin.length !== 4 || !/^\d+$/.test(formData.pin)) {
+      showError('PIN must be 4 digits');
       return;
     }
 

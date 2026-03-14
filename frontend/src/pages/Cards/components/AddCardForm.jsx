@@ -32,16 +32,16 @@ const AddCardForm = ({ formData, setFormData, showPin, setShowPin, handleSubmit,
       </div>
 
       <div className="form-group">
-        <label className="form-label">Set 4-6 Digit PIN</label>
+        <label className="form-label">Set 4 Digit PIN</label>
         <div className="cards-pin-input-wrap">
           <input
             type={showPin ? 'text' : 'password'}
             name="pin"
             className="form-input"
             value={formData.pin}
-            onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/[^0-9]/g, '').slice(0, 6) })}
-            placeholder="Enter 4-6 digit PIN"
-            maxLength="6"
+            onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/[^0-9]/g, '').slice(0, 4) })}
+            placeholder="Enter 4 digit PIN"
+            maxLength="4"
             inputMode="numeric"
             required
             disabled={isSubmitting}

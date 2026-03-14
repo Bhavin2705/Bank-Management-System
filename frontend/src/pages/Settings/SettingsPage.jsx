@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { useNotification } from '../../components/providers/NotificationProvider';
-import { api } from '../../utils/api';
+import { api, API_BASE_URL } from '../../utils/api';
 import AccountsTab from './components/AccountsTab';
 import BankTab from './components/BankTab';
 import PreferencesTab from './components/PreferencesTab';
@@ -31,6 +31,19 @@ const Settings = ({ user, onUserUpdate }) => {
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [sessions, setSessions] = useState(null);
   const [profileData, setProfileData] = useState(getInitialProfileData(user));
+  const [profilePhotoFile, setProfilePhotoFile] = useState(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState('');
+  const [profilePhotoUploading, setProfilePhotoUploading] = useState(false);
+  const [profilePhotoError, setProfilePhotoError] = useState(false);
+  const [profilePhotoVersion, setProfilePhotoVersion] = useState(0);
+  const [kycStatus, setKycStatus] = useState(user?.kyc || { status: 'unverified' });
+  const [kycForm, setKycForm] = useState({
+    idType: 'aadhaar',
+    idNumber: '',
+    documents: []
+  });
+  const [kycSubmitting, setKycSubmitting] = useState(false);
+  const [locatingAddress, setLocatingAddress] = useState(false);
   const [bankData, setBankData] = useState(getInitialBankData(user));
   const [passwordData, setPasswordData] = useState(getInitialPasswordData());
   const [preferencesData, setPreferencesData] = useState(getInitialPreferencesData(user));
@@ -43,6 +56,12 @@ const Settings = ({ user, onUserUpdate }) => {
 
   useEffect(() => {
     setProfileData(getInitialProfileData(user));
+    setProfilePhotoFile(null);
+    setProfilePhotoPreview('');
+    setProfilePhotoError(false);
+    setProfilePhotoVersion(0);
+    setKycStatus(user?.kyc || { status: 'unverified' });
+    setKycForm({ idType: 'aadhaar', idNumber: '', documents: [] });
     setBankData(getInitialBankData(user));
     setPreferencesData(getInitialPreferencesData(user));
     setTwoFactorEnabled(user.security?.twoFactorEnabled || false);
@@ -62,19 +81,24 @@ const Settings = ({ user, onUserUpdate }) => {
         if (settingsRes?.success && settingsRes?.data) {
           const settings = settingsRes.data;
 
-          setProfileData((prev) => ({
-            ...prev,
-            name: settings.profile?.name ?? prev.name,
-            email: settings.profile?.email ?? prev.email,
-            phone: settings.profile?.phone ?? prev.phone,
-            dateOfBirth: settings.profile?.dateOfBirth
-              ? new Date(settings.profile.dateOfBirth).toISOString().slice(0, 10)
-              : '',
-            occupation: settings.profile?.occupation ?? prev.occupation,
-            address: typeof settings.profile?.address === 'object'
-              ? settings.profile.address?.street || ''
-              : settings.profile?.address || ''
-          }));
+            setProfileData((prev) => ({
+              ...prev,
+              name: settings.profile?.name ?? prev.name,
+              email: settings.profile?.email ?? prev.email,
+              phone: settings.profile?.phone ?? prev.phone,
+              photoUrl: settings.profile?.photoUrl ?? prev.photoUrl,
+              dateOfBirth: settings.profile?.dateOfBirth
+                ? new Date(settings.profile.dateOfBirth).toISOString().slice(0, 10)
+                : '',
+              occupation: settings.profile?.occupation ?? prev.occupation,
+              address: typeof settings.profile?.address === 'object'
+                ? settings.profile.address?.street || ''
+                : settings.profile?.address || ''
+            }));
+            setProfilePhotoError(false);
+            if (settings.kyc) {
+              setKycStatus(settings.kyc);
+            }
 
           setBankData((prev) => ({
             ...prev,
@@ -142,6 +166,13 @@ const Settings = ({ user, onUserUpdate }) => {
       return;
     }
 
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!profileData.name || profileData.name.trim().length < 2 || !nameRegex.test(profileData.name.trim())) {
+      showError('Please enter a valid full name');
+      setLoading((prev) => ({ ...prev, profile: false }));
+      return;
+    }
+
     const phoneRegex = /^\d{10}$/;
     if (profileData.phone && !phoneRegex.test(profileData.phone.replace(/\D/g, ''))) {
       showError('Please enter a valid 10-digit phone number');
@@ -149,15 +180,48 @@ const Settings = ({ user, onUserUpdate }) => {
       return;
     }
 
+    if (profileData.dateOfBirth) {
+      const dob = new Date(profileData.dateOfBirth);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (Number.isNaN(dob.getTime())) {
+        showError('Please select a valid date of birth');
+        setLoading((prev) => ({ ...prev, profile: false }));
+        return;
+      }
+      if (dob > today) {
+        showError('Date of birth cannot be in the future');
+        setLoading((prev) => ({ ...prev, profile: false }));
+        return;
+      }
+    }
+
+    if (profileData.occupation && profileData.occupation.trim().length > 50) {
+      showError('Occupation must be 50 characters or less');
+      setLoading((prev) => ({ ...prev, profile: false }));
+      return;
+    }
+
+    if (profileData.address && profileData.address.trim().length > 120) {
+      showError('Address must be 120 characters or less');
+      setLoading((prev) => ({ ...prev, profile: false }));
+      return;
+    }
+
     try {
-      const result = await api.auth.updateDetails({
+      const payload = {
         name: profileData.name,
         email: profileData.email,
         phone: profileData.phone,
         address: profileData.address,
-        dateOfBirth: profileData.dateOfBirth,
         occupation: profileData.occupation
-      });
+      };
+
+      if (profileData.dateOfBirth) {
+        payload.dateOfBirth = profileData.dateOfBirth;
+      }
+
+      const result = await api.auth.updateDetails(payload);
 
       if (result.success) {
         onUserUpdate(result.data);
@@ -378,6 +442,155 @@ const Settings = ({ user, onUserUpdate }) => {
     });
   };
 
+  const handleKycChange = (field, value) => {
+    setKycForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleKycDocuments = (files) => {
+    const selected = Array.from(files || []).filter((file) => (
+      file.type.startsWith('image/')
+    ));
+    setKycForm((prev) => ({ ...prev, documents: selected.slice(0, 3) }));
+  };
+
+  const submitKyc = async () => {
+    if (kycSubmitting) return;
+    if (!kycForm.documents.length) {
+      showError('Please upload at least one document image');
+      return;
+    }
+    setKycSubmitting(true);
+    try {
+      const result = await api.kyc.submit(kycForm);
+      if (result?.success) {
+        const nextStatus = result.data;
+        setKycStatus(nextStatus);
+        onUserUpdate({ ...user, kyc: nextStatus });
+        showSuccess('Verification submitted successfully');
+      } else {
+        showError(result?.error || 'Failed to submit verification');
+      }
+    } catch (error) {
+      console.error('KYC submit error:', error);
+      showError(error.message || 'Failed to submit verification');
+    } finally {
+      setKycSubmitting(false);
+    }
+  };
+
+  const detectLocation = async () => {
+    if (locatingAddress) return;
+    if (!navigator.geolocation) {
+      showError('Geolocation is not supported by your browser');
+      return;
+    }
+    setLocatingAddress(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords || {};
+        if (latitude === undefined || longitude === undefined) {
+          showError('Unable to read your location');
+          setLocatingAddress(false);
+          return;
+        }
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch address');
+        }
+        const data = await response.json();
+        const address = data?.display_name || '';
+        if (!address) {
+          showError('Could not determine address from location');
+        } else {
+          setProfileData((prev) => ({ ...prev, address }));
+          showSuccess('Address detected from your location');
+        }
+      } catch (error) {
+        console.error('Location detect error:', error);
+        showError('Unable to detect address. Please enter it manually.');
+      } finally {
+        setLocatingAddress(false);
+      }
+    }, (error) => {
+      console.error('Geolocation error:', error);
+      showError('Location permission denied or unavailable');
+      setLocatingAddress(false);
+    }, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 30000
+    });
+  };
+
+  const getAbsolutePhotoUrl = (photoUrl, version) => {
+    if (!photoUrl) return '';
+    if (String(photoUrl).startsWith('blob:') || String(photoUrl).startsWith('data:')) {
+      return photoUrl;
+    }
+    const hasQuery = String(photoUrl).includes('?');
+    const suffix = version ? `${hasQuery ? '&' : '?'}v=${version}` : '';
+    if (/^https?:\/\//i.test(photoUrl)) return `${photoUrl}${suffix}`;
+    const base = API_BASE_URL.replace('/api', '');
+    return `${base}${photoUrl.startsWith('/') ? '' : '/'}${photoUrl}${suffix}`;
+  };
+
+  const handleProfilePhotoSelect = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Image is too large. Max size is 2MB.');
+      return;
+    }
+    setProfilePhotoFile(file);
+    setProfilePhotoError(false);
+    const previewUrl = URL.createObjectURL(file);
+    setProfilePhotoPreview(previewUrl);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (profilePhotoPreview) {
+        URL.revokeObjectURL(profilePhotoPreview);
+      }
+    };
+  }, [profilePhotoPreview]);
+
+  const handleProfilePhotoUpload = async () => {
+    if (!profilePhotoFile) {
+      showError('Please select a photo first');
+      return;
+    }
+    setProfilePhotoUploading(true);
+    try {
+      const result = await api.users.uploadProfilePhoto(profilePhotoFile);
+      if (result?.success) {
+        onUserUpdate(result.data);
+        setProfileData((prev) => ({
+          ...prev,
+          photoUrl: result.data?.profile?.photoUrl || prev.photoUrl
+        }));
+        setProfilePhotoFile(null);
+        setProfilePhotoPreview('');
+        setProfilePhotoError(false);
+        setProfilePhotoVersion(Date.now());
+        showSuccess('Profile photo updated successfully!');
+      } else {
+        showError(result?.error || 'Failed to upload profile photo');
+      }
+    } catch (uploadError) {
+      console.error('Profile photo upload error:', uploadError);
+      setProfilePhotoError(true);
+      showError(uploadError.message || 'Failed to upload profile photo');
+    } finally {
+      setProfilePhotoUploading(false);
+    }
+  };
+
   const handlePasswordChangeInput = (e) => {
     setPasswordData({
       ...passwordData,
@@ -431,6 +644,22 @@ const Settings = ({ user, onUserUpdate }) => {
             user={user}
             profileData={profileData}
             setProfileData={setProfileData}
+            profilePhotoPreview={profilePhotoPreview}
+            profilePhotoUploading={profilePhotoUploading}
+            profilePhotoError={profilePhotoError}
+            profilePhotoVersion={profilePhotoVersion}
+            onProfilePhotoError={() => setProfilePhotoError(true)}
+            onProfilePhotoSelect={handleProfilePhotoSelect}
+            onProfilePhotoUpload={handleProfilePhotoUpload}
+            getAbsolutePhotoUrl={getAbsolutePhotoUrl}
+            kycStatus={kycStatus}
+            kycForm={kycForm}
+            onKycChange={handleKycChange}
+            onKycDocuments={handleKycDocuments}
+            onSubmitKyc={submitKyc}
+            kycSubmitting={kycSubmitting}
+            onDetectLocation={detectLocation}
+            locatingAddress={locatingAddress}
             handleProfileChange={handleProfileChange}
             handleProfileUpdate={handleProfileUpdate}
             handleFormKeyDown={handleFormKeyDown}

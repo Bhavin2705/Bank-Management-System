@@ -145,8 +145,8 @@ const updateCardPin = async (req, res) => {
         const cardId = req.params.id;
         const { currentPin, newPin } = req.body;
 
-        if (!newPin || typeof newPin !== 'string' || newPin.length < 4) {
-            return res.status(400).json({ success: false, error: 'New PIN is required and must be at least 4 digits' });
+        if (!newPin || typeof newPin !== 'string' || !/^\d{4}$/.test(newPin)) {
+            return res.status(400).json({ success: false, error: 'New PIN is required and must be 4 digits' });
         }
 
         const card = await Card.findById(cardId).select('+pin');
@@ -437,7 +437,7 @@ const revealCardCvv = async (req, res) => {
         const cardId = req.params.id;
         const { pin } = req.body || {};
 
-        if (!pin || !/^\d{4,6}$/.test(String(pin))) {
+        if (!pin || !/^\d{4}$/.test(String(pin))) {
             return res.status(400).json({ success: false, error: 'Valid PIN is required' });
         }
 
